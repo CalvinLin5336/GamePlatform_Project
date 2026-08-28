@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+   <head>
+        <title>遊戲主畫面與系統選單</title>
+        <meta charset="UTF-8">      
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+        <style>body { font-family: 'Noto Sans TC', sans-serif; }</style>
+        <script src="js/client.js"></script>
+    </head>
+    <body class="relative h-screen w-screen overflow-hidden bg-slate-950 flex flex-col">
+
+        <!-- ================= 1. 頂部導覽列 (Navigation Bar) ================= -->
+        <header class="h-14 bg-slate-900/70 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-6 z-40 select-none">
+            <!-- 左側：遊戲Logo或名稱 -->
+            <div class="flex items-center gap-3">
+                <span class="text-lg font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                    🎮 遊戲對戰平台
+                </span>
+            </div>
+
+            <!-- 中間/右側：分頁按鈕 -->
+            <nav class="flex items-center gap-2">
+                <button onclick="switchTab('lobby', '../poker_client.html')" 
+                        class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95 bg-slate-800 text-white" data-target="lobby">
+                    🏠 遊戲大廳
+                </button>
+                <button onclick="switchTab('party', 'http://10.10.1.210:5173/')" 
+                        class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="party">
+                    👥 組隊布告欄
+                </button>
+                <button onclick="switchTab('shop', 'https://example.com/shop')" 
+                        class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="shop">
+                    🛒 商城
+                </button>
+                <button onclick="switchTab('member', 'http://10.10.1.171:5173/')" 
+                        class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="member">
+                    ⚙️ 會員中心
+                </button>
+            </nav>
+        </header>
+
+
+        <!-- ================= 2. 內容主畫面區 (用 iframe 或 區塊切換) ================= -->
+        <main class="relative flex-1 w-full h-full overflow-hidden z-0">
+            <!-- 方案 A：如果是不同網頁，可以用單一 iframe 動態換 src -->
+           <!-- 將 src 改為與主畫面同層級的檔案名稱 -->
+            <iframe id="mainFrame" src="../poker_client.html" class="w-full h-full border-0"></iframe>
+
+            <!-- 方案 B：如果是單頁式應用 (SPA)，也可以放多個 div 區塊透過 JS 切換顯示 (hidden) -->
+        </main>
+
+
+        <!-- ================= 3. 右下角懸浮聊天室 (維持不變) ================= -->
+        <div class="absolute bottom-5 right-5 z-50 flex flex-col items-end">
+            <!-- 聊天室本體容器 -->
+            <div id="chatWindow" class="w-80 sm:w-96 h-[480px] bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 shadow-2xl rounded-2xl flex flex-col overflow-hidden transition-all duration-300 origin-bottom-right scale-0 opacity-0 pointer-events-none mb-3">
+                <!-- 頂部標題列 -->
+                <div class="p-3 bg-slate-900/60 border-b border-slate-700/50 flex justify-between items-center">
+                    <h1 class="font-bold text-sm tracking-wider bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                        🚀 遊戲即時聊天室
+                    </h1>
+                    <button id="closeChatBtn" class="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-slate-800 transition">✕ 縮小</button>
+                </div>
+                <!-- 登入與狀態列 -->
+                <div class="p-3 bg-slate-900/30 border-b border-slate-700/40 flex flex-col gap-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span id="infoWindow" class="text-slate-400">狀態：未登入</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="userNameInput" placeholder="輸入暱稱..." class="flex-1 bg-slate-900/60 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"/>
+                        <input type="button" id="loginBtn" value="登入" class="bg-indigo-600 hover:bg-indigo-500 cursor-pointer text-white text-xs font-medium px-3 py-1 rounded transition disabled:opacity-50"/>
+                    </div>
+                </div>
+                <!-- 訊息顯示區 -->
+                <div id="messageDisplay" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2 text-xs text-slate-200"></div>
+                <!-- 底部發言輸入框 -->
+                <form id="chatRoomForm" class="p-2.5 bg-slate-900/50 border-t border-slate-700/50 flex gap-2">
+                    <input type="text" id="userinput" placeholder="說點什麼..." class="flex-1 bg-slate-900/60 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"/>
+                    <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 cursor-pointer text-white text-xs font-medium px-3 py-1.5 rounded transition">發送</button>
+                </form>
+            </div>
+
+            <!-- 右下角常駐開關按鈕 -->
+            <button id="toggleChatBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3.5 rounded-full shadow-lg shadow-indigo-500/30 flex items-center justify-center transition hover:scale-105 active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+            </button>
+        </div>
+
+
+        <!-- ================= 4. 互動控制 Script ================= -->
+        <script>
+            // --- 頁面切換邏輯 ---
+            const mainFrame = document.getElementById('mainFrame');
+            const navButtons = document.querySelectorAll('.nav-btn');
+
+            function switchTab(tabName, url) {
+                // 1. 切換 iframe 顯示的網頁
+                mainFrame.src = url;
+
+                // 2. 更新按鈕的高亮樣式
+                navButtons.forEach(btn => {
+                    if (btn.getAttribute('data-target') === tabName) {
+                        btn.classList.add('bg-slate-800', 'text-white');
+                        btn.classList.remove('text-slate-300');
+                    } else {
+                        btn.classList.remove('bg-slate-800', 'text-white');
+                        btn.classList.add('text-slate-300');
+                    }
+                });
+            }
+
+            // --- 聊天室開合邏輯 ---
+            const toggleChatBtn = document.getElementById('toggleChatBtn');
+            const closeChatBtn = document.getElementById('closeChatBtn');
+            const chatWindow = document.getElementById('chatWindow');
+
+            toggleChatBtn.addEventListener('click', () => {
+                chatWindow.classList.remove('scale-0', 'opacity-0', 'pointer-events-none');
+                chatWindow.classList.add('scale-100', 'opacity-100', 'pointer-events-auto');
+                toggleChatBtn.classList.add('hidden');
+            });
+
+            closeChatBtn.addEventListener('click', () => {
+                chatWindow.classList.remove('scale-100', 'opacity-100', 'pointer-events-auto');
+                chatWindow.classList.add('scale-0', 'opacity-0', 'pointer-events-none');
+                toggleChatBtn.classList.remove('hidden');
+            });
+        </script>
+    </body>
+</html>
