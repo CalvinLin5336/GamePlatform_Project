@@ -11,7 +11,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "*") // 允許所有前端跨域請求（方便組員測試）
-public class AuthController {
+public class ChatAuthController {
 
     @PostMapping("/auth")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
