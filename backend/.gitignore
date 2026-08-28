@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+# 忽略所有副檔名為 .db 的 SQLite 資料庫檔案
+*.db
+
+# 如果你的資料庫有產生額外的日誌或暫存檔，也可以一併忽略
+*.db-shm
+*.db-wal
