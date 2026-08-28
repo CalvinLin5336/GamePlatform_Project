@@ -1,6 +1,5 @@
-package com.example.demo.modules.game.tjpoker.config;
+package com.example.demo.modules.game.tjpoker.server;
 
-import com.example.demo.modules.game.tjpoker.websocket.PokerWebSocketHandler;
 import com.example.demo.modules.game.tjpoker.service.PokerGameService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,17 +11,17 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 
 @Configuration
 @EnableWebSocket
-public class WebSocketConfig implements WebSocketConfigurer {
+public class TjpokerWebSocketConfig implements WebSocketConfigurer {
     @Autowired
     private PokerGameService pokerGameService;
 
     @Bean
-    public PokerWebSocketHandler pokerWebSocketHandler() {
-        return new PokerWebSocketHandler(pokerGameService);
+    public TjpokerWebSocketHandler tjpokerWebSocketHandler() {
+        return new TjpokerWebSocketHandler(pokerGameService);
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(pokerWebSocketHandler(), "/ws/poker").setAllowedOrigins("*");
+        registry.addHandler(tjpokerWebSocketHandler(), "/ws/poker").setAllowedOrigins("*");
     }
 }
