@@ -5,6 +5,8 @@ import com.example.demo.modules.user.dto.LoginResponse;
 import com.example.demo.modules.user.dto.UserRequest;
 import com.example.demo.modules.user.dto.UserResponse;
 import com.example.demo.modules.user.repository.UserPageRepository;
+import com.example.demo.modules.user.security.JwtService;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,13 +25,16 @@ public class UserService {
     private final UserPageRepository userPageRepository;
     private final PasswordService passwordService;
     private final OperationLogService operationLogService;
+    private final JwtService jwtService;
 
     public UserService(UserPageRepository userPageRepository,
                        PasswordService passwordService,
-                       OperationLogService operationLogService) {
+                       OperationLogService operationLogService,
+                       JwtService jwtService) {
         this.userPageRepository = userPageRepository;
         this.passwordService = passwordService;
         this.operationLogService = operationLogService;
+        this.jwtService = jwtService;
     }
 
     public List<UserResponse> findAll() {
@@ -164,13 +169,23 @@ public class UserService {
                 user.account(), "LOGIN", user.id(), user.role(), "User logged in"
         );
 
-        return new LoginResponse(
+        // 登入成功後產生 JWT
+        String token = jwtService.generateToken(
                 user.id(),
                 user.account(),
-                user.username(),
-                user.role(),
-                user.status()
+                user.role()
         );
+
+        LoginResponse response = new LoginResponse();
+
+        response.setUserId(user.id());
+        response.setAccount(user.account());
+        response.setUsername(user.username());
+        response.setRole(user.role());
+        response.setStatus(user.status());
+        response.setToken(token);
+
+        return response;
     }
 
     public UserResponse findById(Long id) {
