@@ -34,10 +34,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
                 // 登入 API 不需要 JWT
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/user/auth/**").permitAll()
 
                 // Admin API
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/user/admin/**").hasRole("ADMIN")
 
                 // 其他 API
                 .anyRequest().authenticated()

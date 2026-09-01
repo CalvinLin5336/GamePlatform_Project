@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/board/admin/operation-logs")
+@RequestMapping("/api/user/admin/operation-logs")
 public class OperationLogController {
 	private final OperationLogService service;
 

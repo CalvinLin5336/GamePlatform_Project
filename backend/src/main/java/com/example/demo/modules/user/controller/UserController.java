@@ -4,11 +4,12 @@ import com.example.demo.modules.user.dto.UserRequest;
 import com.example.demo.modules.user.dto.UserResponse;
 import com.example.demo.modules.user.service.UserService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/board/admin/users")
+@RequestMapping("/api/user/admin/users")
 public class UserController {
 
 	private final UserService userService;
@@ -28,17 +29,24 @@ public class UserController {
 	}
 
 	@PostMapping
-	public UserResponse create(@RequestBody UserRequest request) {
-		return userService.create(request, "admin");
+	public UserResponse create(
+			@RequestBody UserRequest request,
+			Authentication authentication) {
+		return userService.create(request, authentication.getName());
 	}
 
 	@PutMapping("/{id}")
-	public UserResponse update(@PathVariable Long id, @RequestBody UserRequest request) {
-		return userService.update(id, request, "admin");
+	public UserResponse update(
+			@PathVariable Long id,
+			@RequestBody UserRequest request,
+			Authentication authentication) {
+		return userService.update(id, request, authentication.getName());
 	}
 
 	@DeleteMapping("/{id}")
-	public void delete(@PathVariable Long id) {
-		userService.delete(id, "admin");
+	public void delete(
+			@PathVariable Long id,
+			Authentication authentication) {
+		userService.delete(id, authentication.getName());
 	}
 }

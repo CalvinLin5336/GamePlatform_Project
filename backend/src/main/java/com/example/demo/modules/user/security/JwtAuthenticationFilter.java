@@ -49,6 +49,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String account = jwtService.extractAccount(token);
                 String role = jwtService.extractRole(token);
 
+                // JWT 必須包含有效的 account 與 role，才建立 Authentication
+                if (account == null || account.isBlank() || role == null || role.isBlank()) {
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                role = role.trim().toUpperCase();
+
+                // user module 目前只允許 PLAYER / ADMIN
+                if (!role.equals("PLAYER") && !role.equals("ADMIN")) {
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 // ROLE_ADMIN / ROLE_PLAYER
                 String authority = "ROLE_" + role;
 
