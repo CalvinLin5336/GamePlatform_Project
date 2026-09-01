@@ -11,6 +11,7 @@ public interface GameManagementService {
     List<GameView> findEnabledGames();
     List<GameView> findAllGames();
     GameView findGame(Long gameId, boolean admin);
+    GameModeView findMode(Long modeId, boolean admin);
     GameView createGame(GameRequest request);
     GameView updateGame(Long gameId, GameRequest request);
     void deleteGame(Long gameId);

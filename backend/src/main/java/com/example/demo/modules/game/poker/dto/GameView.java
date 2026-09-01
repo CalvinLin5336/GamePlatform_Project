@@ -19,18 +19,21 @@ public class GameView {
     private Integer winner;
     private String player1Name;
     private String player2Name;
+    private long roundResultRemainingMillis;
 
     public GameView() { }
     public GameView(String roomId, String mode, String status, int currentRound, int seat,
             boolean player1Connected, boolean player2Connected, boolean player1Confirmed,
             boolean player2Confirmed, List<CardView> hand, Map<Integer, PreviewView> preview,
-            List<ResultView> results, Integer winner, String player1Name, String player2Name) {
+            List<ResultView> results, Integer winner, String player1Name, String player2Name,
+            long roundResultRemainingMillis) {
         this.roomId = roomId; this.mode = mode; this.status = status; this.currentRound = currentRound;
         this.seat = seat; this.player1Connected = player1Connected; this.player2Connected = player2Connected;
         this.player1Confirmed = player1Confirmed; this.player2Confirmed = player2Confirmed;
         this.hand = hand; this.preview = preview; this.results = results; this.winner = winner;
         this.player1Name = player1Name;
         this.player2Name = player2Name;
+        this.roundResultRemainingMillis = roundResultRemainingMillis;
     }
     public String getRoomId() { return roomId; }
     public void setRoomId(String value) { roomId = value; }
@@ -62,4 +65,6 @@ public class GameView {
     public void setPlayer1Name(String value) { player1Name = value; }
     public String getPlayer2Name() { return player2Name; }
     public void setPlayer2Name(String value) { player2Name = value; }
+    public long getRoundResultRemainingMillis() { return roundResultRemainingMillis; }
+    public void setRoundResultRemainingMillis(long value) { roundResultRemainingMillis = value; }
 }

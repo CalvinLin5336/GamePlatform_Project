@@ -5,7 +5,7 @@ import java.util.Map;
 import com.example.demo.modules.game.poker.dto.GameView;
 import com.example.demo.modules.game.poker.dto.JoinResult;
 public interface PokerGameService {
-    JoinResult join(String roomId, String mode, Long userId, Integer seat, String playerName);
+    JoinResult join(String roomId, String mode, Long userId, String playerName);
     void leave(String roomId, String token);
     GameView view(String roomId, String token);
     GameView select(String roomId, String token, Map<Integer, Integer> choices);

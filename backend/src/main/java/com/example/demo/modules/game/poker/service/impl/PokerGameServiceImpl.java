@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import com.example.demo.modules.game.poker.util.GameTool;
 
 @Service
 public class PokerGameServiceImpl implements PokerGameService {
+    private static final long ROUND_RESULT_DURATION_MILLIS=3000;
     private Map<String, GameRoom> rooms = new HashMap<String, GameRoom>();
     @Autowired
     private PokerRuleService pokerRuleService;
@@ -38,21 +40,17 @@ public class PokerGameServiceImpl implements PokerGameService {
             String roomId,
             String mode,
             Long userId,
-            Integer seatNumber,
             String playerName) {
         if(roomId==null || roomId.isBlank()) {
             throw new GameException("INVALID_ROOM", "缺少房間編號");
         }
+        roomId=roomId.trim();
+        if(!GameRoom.MODE_PLAYER.equals(mode) && !GameRoom.MODE_COMPUTER.equals(mode)) {
+            throw new GameException("INVALID_MODE", "模式必須是 PLAYER 或 COMPUTER");
+        }
         if(userId==null || userId<=0) {
             throw new GameException("INVALID_USER", "缺少玩家編號");
         }
-        if(seatNumber==null || seatNumber<1 || seatNumber>2) {
-            throw new GameException("INVALID_SEAT", "玩家位置必須是 1 或 2");
-        }
-        if(GameRoom.MODE_COMPUTER.equals(mode) && seatNumber!=1) {
-            throw new GameException("INVALID_SEAT", "電腦對戰的真人玩家必須是玩家一");
-        }
-
         GameRoom room=rooms.get(roomId);
         if(room==null) {
             room=new GameRoom(roomId, mode);
@@ -60,18 +58,9 @@ public class PokerGameServiceImpl implements PokerGameService {
         }
         if(!room.getMode().equals(mode)) throw new GameException("MODE_MISMATCH", "此房間已使用其他遊戲模式");
 
-        int seat=seatNumber-1;
-        for(int i=0;i<room.getUserIds().length;i++) {
-            if(i!=seat && userId.equals(room.getUserIds()[i])) {
-                throw new GameException("SEAT_MISMATCH", "此玩家已安排在其他位置");
-            }
-        }
-        Long seatedUserId=room.getUserIds()[seat];
-        if(seatedUserId!=null && !seatedUserId.equals(userId)) {
-            throw new GameException("SEAT_TAKEN", "此玩家位置已有人使用");
-        }
+        int seat=findOrAssignSeat(room, userId);
 
-        String token=roomId+"-"+userId+"-"+System.currentTimeMillis()+"-"+(int)(Math.random()*1000000);
+        String token=UUID.randomUUID().toString();
         room.getUserIds()[seat]=userId;
         room.getSeatTokens()[seat]=token;
         room.getConnected()[seat]=true;
@@ -84,9 +73,29 @@ public class PokerGameServiceImpl implements PokerGameService {
         if(GameRoom.MODE_COMPUTER.equals(mode)) room.getConnected()[1]=true;
 
         if(GameRoom.STATUS_WAITING.equals(room.getStatus())) {
-            if(GameRoom.MODE_COMPUTER.equals(mode) || room.getConnected()[1]) deal(room);
+            if(GameRoom.MODE_COMPUTER.equals(mode)
+                    || (room.getConnected()[0] && room.getConnected()[1])) deal(room);
         }
         return new JoinResult(roomId, token, seat+1, view(roomId, token));
+    }
+
+    private int findOrAssignSeat(GameRoom room, Long userId) {
+        for(int i=0;i<room.getUserIds().length;i++) {
+            if(userId.equals(room.getUserIds()[i])) return i;
+        }
+        if(GameRoom.MODE_COMPUTER.equals(room.getMode())) {
+            if(room.getUserIds()[0]!=null) {
+                throw new GameException("ROOM_FULL", "此電腦對戰房間已有玩家");
+            }
+            return 0;
+        }
+        boolean seat1Empty=room.getUserIds()[0]==null;
+        boolean seat2Empty=room.getUserIds()[1]==null;
+        if(!seat1Empty && !seat2Empty) {
+            throw new GameException("ROOM_FULL", "此房間已有兩位玩家");
+        }
+        if(seat1Empty && seat2Empty) return Math.random()<0.5 ? 0 : 1;
+        return seat1Empty ? 0 : 1;
     }
 
     @Override
@@ -100,6 +109,7 @@ public class PokerGameServiceImpl implements PokerGameService {
     @Override
     public synchronized GameView view(String roomId, String token) {
         GameRoom room=requireRoom(roomId);
+        advanceRoundIfReady(room);
         int seat=requireSeat(room, token);
         Player player=room.getPlayers()[seat];
         int choice[]=room.getChoices()[seat];
@@ -120,11 +130,15 @@ public class PokerGameServiceImpl implements PokerGameService {
             resultViews.add(resultView);
         }
 
+        long remaining=0;
+        if(room.getRoundResultEndsAt()!=null) {
+            remaining=Math.max(0, room.getRoundResultEndsAt()-System.currentTimeMillis());
+        }
         return new GameView(room.getId(), room.getMode(), room.getStatus(),
                 room.getCurrentRound(), seat+1, room.getConnected()[0], room.getConnected()[1],
                 room.getRoundConfirmed()[0], room.getRoundConfirmed()[1], hand,
                 preview(player, choice), resultViews, room.getWinner(),
-                room.getPlayers()[0].getName(), room.getPlayers()[1].getName());
+                room.getPlayers()[0].getName(), room.getPlayers()[1].getName(), remaining);
     }
 
     @Override
@@ -176,15 +190,12 @@ public class PokerGameServiceImpl implements PokerGameService {
     public synchronized GameView nextRound(String roomId, String token) {
         GameRoom room=requireRoom(roomId);
         requireSeat(room, token);
+        advanceRoundIfReady(room);
         if(GameRoom.STATUS_PLAYING.equals(room.getStatus())) return view(roomId, token);
-        if(!GameRoom.STATUS_ROUND_RESULT.equals(room.getStatus())) {
-            throw new GameException("NOT_ROUND_RESULT", "目前不能進入下一輪");
+        if(GameRoom.STATUS_ROUND_RESULT.equals(room.getStatus())) {
+            throw new GameException("RESULT_PAUSE", "結果展示倒數尚未結束");
         }
-        room.setCurrentRound(room.getCurrentRound()+1);
-        room.getRoundConfirmed()[0]=false;
-        room.getRoundConfirmed()[1]=false;
-        room.setStatus(GameRoom.STATUS_PLAYING);
-        return view(roomId, token);
+        throw new GameException("NOT_ROUND_RESULT", "目前不能進入下一輪");
     }
 
     @Override
@@ -225,6 +236,7 @@ public class PokerGameServiceImpl implements PokerGameService {
         for(int i=0;i<room.getChoices().length;i++) Arrays.fill(room.getChoices()[i], 0);
         room.setResults(new ArrayList<RoundResult>());
         room.setWinner(null);
+        room.setRoundResultEndsAt(null);
         room.setCurrentRound(1);
         room.getRoundConfirmed()[0]=false;
         room.getRoundConfirmed()[1]=false;
@@ -273,10 +285,8 @@ public class PokerGameServiceImpl implements PokerGameService {
         room.getResults().add(result);
 
         if(room.getCurrentRound()<3) {
-            room.setCurrentRound(room.getCurrentRound()+1);
-            room.getRoundConfirmed()[0]=false;
-            room.getRoundConfirmed()[1]=false;
-            room.setStatus(GameRoom.STATUS_PLAYING);
+            room.setStatus(GameRoom.STATUS_ROUND_RESULT);
+            room.setRoundResultEndsAt(System.currentTimeMillis()+ROUND_RESULT_DURATION_MILLIS);
         }
         else finishGame(room);
     }
@@ -291,7 +301,19 @@ public class PokerGameServiceImpl implements PokerGameService {
         if(player1Wins>player2Wins) room.setWinner(1);
         else if(player2Wins>player1Wins) room.setWinner(2);
         else throw new GameException("RESULT_ERROR", "勝場相同，整局勝負計算異常");
+        room.setRoundResultEndsAt(null);
         room.setStatus(GameRoom.STATUS_FINISHED);
+    }
+
+    private void advanceRoundIfReady(GameRoom room) {
+        if(!GameRoom.STATUS_ROUND_RESULT.equals(room.getStatus())) return;
+        if(room.getRoundResultEndsAt()==null
+                || System.currentTimeMillis()<room.getRoundResultEndsAt()) return;
+        room.setCurrentRound(room.getCurrentRound()+1);
+        room.getRoundConfirmed()[0]=false;
+        room.getRoundConfirmed()[1]=false;
+        room.setRoundResultEndsAt(null);
+        room.setStatus(GameRoom.STATUS_PLAYING);
     }
 
     private List<String> cardNames(List<Card> cards) {
@@ -308,6 +330,7 @@ public class PokerGameServiceImpl implements PokerGameService {
 
     private GameRoom requirePlaying(String roomId) {
         GameRoom room=requireRoom(roomId);
+        advanceRoundIfReady(room);
         if(!GameRoom.STATUS_PLAYING.equals(room.getStatus())) {
             throw new GameException("NOT_PLAYING", "目前不是選牌階段");
         }

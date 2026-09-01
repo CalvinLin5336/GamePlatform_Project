@@ -4,6 +4,7 @@ import com.example.demo.modules.game.management.model.GameMode;
 
 public class GameModeView {
     private Long modeId;
+    private Long gameId;
     private String modeCode;
     private String modeName;
     private int minPlayers;
@@ -15,6 +16,7 @@ public class GameModeView {
 
     public GameModeView(GameMode mode) {
         this.modeId = mode.getModeId();
+        this.gameId = mode.getGameId();
         this.modeCode = mode.getModeCode();
         this.modeName = mode.getModeName();
         this.minPlayers = mode.getMinPlayers();
@@ -25,6 +27,8 @@ public class GameModeView {
 
     public Long getModeId() { return modeId; }
     public void setModeId(Long modeId) { this.modeId = modeId; }
+    public Long getGameId() { return gameId; }
+    public void setGameId(Long gameId) { this.gameId = gameId; }
     public String getModeCode() { return modeCode; }
     public void setModeCode(String modeCode) { this.modeCode = modeCode; }
     public String getModeName() { return modeName; }

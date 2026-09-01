@@ -232,9 +232,7 @@ public class PokerRuleServiceImpl implements PokerRuleService {
 
     // 判斷是否為紅牌(愛心/方塊) top
     public boolean isRedSuit(Card card) {
-        if(card.getSuits()=="♡") return true;
-        if(card.getSuits()=="♢") return true;
-        return false;
+        return "♡".equals(card.getSuits()) || "♢".equals(card.getSuits());
     }
     // 判斷是否為紅牌(愛心/方塊) end
 

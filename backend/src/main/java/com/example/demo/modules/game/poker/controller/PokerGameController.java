@@ -24,6 +24,8 @@ import com.example.demo.modules.game.poker.model.GameRoom;
 import com.example.demo.modules.game.poker.service.PokerGameService;
 import com.example.demo.modules.game.management.dto.GameModeView;
 import com.example.demo.modules.game.management.service.GameManagementService;
+import com.example.demo.modules.user.dto.UserResponse;
+import com.example.demo.modules.user.service.UserService;
 
 @CrossOrigin(origins="*")
 @RestController
@@ -35,30 +37,24 @@ public class PokerGameController {
     @Autowired
     private GameManagementService gameSystemService;
 
+    @Autowired
+    private UserService userService;
+
     @PostMapping("/join")
     public JoinResult join(@RequestBody JoinRequest request) {
-        String mode=request.getMode();
-        if(mode!=null) mode=mode.toUpperCase();
+        GameModeView selectedMode=gameSystemService.findMode(request.getModeId(), false);
+        String mode=selectedMode.getModeCode();
         if(!GameRoom.MODE_PLAYER.equals(mode) && !GameRoom.MODE_COMPUTER.equals(mode)) {
-            throw new GameException("INVALID_MODE", "模式必須是 PLAYER 或 COMPUTER");
+            throw new GameException("INVALID_MODE", "這個模式不屬於田忌撲克");
         }
         com.example.demo.modules.game.management.dto.GameView selectedGame =
-                gameSystemService.findGame(request.getGameId(), false);
+                gameSystemService.findGame(selectedMode.getGameId(), false);
         if(!"POKER".equals(selectedGame.getGameCode())) {
             throw new GameException("INVALID_GAME", "這個入口只能開啟田忌撲克");
         }
-        GameModeView selectedMode=null;
-        for(GameModeView gameMode:selectedGame.getModes()) {
-            if(gameMode.getModeId().equals(request.getModeId())) selectedMode=gameMode;
-        }
-        if(selectedMode==null) {
-            throw new GameException("INVALID_MODE", "找不到房間選擇的遊戲模式");
-        }
-        if(!selectedMode.getModeCode().equals(mode)) {
-            throw new GameException("MODE_MISMATCH", "遊戲模式資料不一致");
-        }
+        UserResponse user=userService.findById(request.getUserId());
         return pokerGameService.join(request.getRoomId(), mode,
-                request.getUserId(), request.getSeat(), request.getPlayerName());
+                request.getUserId(), user.username());
     }
 
     @GetMapping("/rooms/{roomId}")

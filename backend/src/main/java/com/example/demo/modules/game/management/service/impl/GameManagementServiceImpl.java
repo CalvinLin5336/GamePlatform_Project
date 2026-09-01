@@ -48,6 +48,20 @@ public class GameManagementServiceImpl implements GameManagementService {
     }
 
     @Override
+    public GameModeView findMode(Long modeId, boolean admin) {
+        if (modeId == null || modeId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "模式 ID 不正確");
+        }
+        GameMode mode = gameModeRepository.findById(modeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "找不到遊戲模式"));
+        Game game = requireGame(mode.getGameId());
+        if (!admin && (!game.isEnabled() || !mode.isEnabled())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "找不到遊戲模式");
+        }
+        return new GameModeView(mode);
+    }
+
+    @Override
     public GameView createGame(GameRequest request) {
         validateGame(request, null);
         Game game = new Game();

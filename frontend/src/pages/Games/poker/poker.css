@@ -17,8 +17,6 @@ button:disabled { opacity:1; cursor:not-allowed; background:#aab7b1; color:#5c69
 .key-one { background:#659cf2; }.key-two { background:#61b77a; }.key-three { background:#eaa552; }
 .badge { padding:6px 11px; border-radius:999px; background:#e9f5ee; color:#24724f; font-size:13px; font-weight:bold; }
 .lobby { max-width:720px; margin:6vh auto; padding:25px; text-align:center; }
-.player-name-label { display:block; width:260px; margin:16px auto; text-align:left; color:#566a8d; }
-.player-name-label input { width:100%; margin-top:5px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; }
 .mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px; }
 .mode-card { min-height:165px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:10px; background:#f5f8ff; }
 .mode-card:hover { border-color:var(--blue); transform:translateY(-2px); }
@@ -58,6 +56,5 @@ button:disabled { opacity:1; cursor:not-allowed; background:#aab7b1; color:#5c69
 .playing-card:not(:disabled):hover { transform:translateY(-7px); border-color:#e0ba45; }.mini-card { flex-basis:66px; width:66px; max-width:66px; height:96px; }
 .red { color:#d14b66; }.playing-card.slot-1 { border-color:#659cf2; background:var(--round1); }.playing-card.slot-2 { border-color:#61b77a; background:var(--round2); }.playing-card.slot-3 { border-color:#eaa552; background:var(--round3); }.playing-card.locked { opacity:.62; }.mini-card.selectable { cursor:pointer; border-color:var(--blue); }
 .actions { display:flex; justify-content:center; flex-wrap:wrap; gap:9px; border-top:1px solid #55796e; padding-top:9px; }.primary { min-width:150px; background:#d5a632; color:#17233b; border-color:#edc85c; }.secondary { background:#fffdf5; color:#334c45; }.danger { margin-left:auto; background:#fffdf5; color:var(--red); border-color:#e1a5ad; }
-#nextButton { min-width:190px; background:#28a66b; color:#fff; border-color:#42c184; animation:pulse 1.5s infinite; } @keyframes pulse { 50% { box-shadow:0 0 0 6px rgba(66,193,132,.18); } }
 @media(max-width:1000px) { .app-shell { width:96%; }.game-header,.hand-panel { width:96%; }.status-grid,.result-panel { width:92%; }.round-title,.player-preview-grid { width:88%; }.rank-guide { position:static; width:88%; margin:0 auto 8px; flex-direction:row; justify-content:center; gap:6px; }.rank-guide strong { margin:0 8px 0 0; }.hand { justify-content:flex-start; overflow-x:auto; }.hand .playing-card+ .playing-card { margin-left:0; } }
 @media(max-width:700px) { .app-shell { padding:6px; }.round-key { display:none; }.mode-grid,.status-grid,.player-preview-grid { grid-template-columns:1fr; }.playing-card { flex-basis:66px; width:66px; }.danger { margin-left:0; }.result-panel { grid-template-columns:1fr; }.result-symbol { display:none; }.result-row { grid-template-columns:1fr; }.versus { display:none; }.round-hand { grid-template-columns:58px 62px 1fr; } }
