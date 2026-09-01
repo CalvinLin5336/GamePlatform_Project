@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="簡易遊戲平台組隊公告欄">
+    <title>簡易遊戲平台｜組隊公告欄</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="#home"><span>SGP</span> 簡易遊戲平台</a>
+        <button id="menuButton" class="menu-button" type="button" aria-label="開啟選單">☰</button>
+        <nav id="mainNav">
+            <a href="#home">遊戲大廳</a>
+            <a href="#posts">組隊公告</a>
+            <a data-login-only href="#applications">我的申請</a>
+            <a data-login-only href="#favorites">收藏</a>
+            <a data-login-only href="#notifications">通知</a>
+            <a data-login-only href="#captain">隊長管理</a>
+        </nav>
+        <div id="memberArea" class="member-area"></div>
+    </header>
+
+    <div class="quick-nav">
+        <a href="#home">⌂ 組隊大廳</a>
+        <a href="#posts">⌕ 尋找夥伴</a>
+        <a href="#form/new">＋ 建立隊伍</a>
+        <button id="quickBattle" type="button">⚔ 即刻開戰</button>
+    </div>
+
+    <main id="app" class="container" aria-live="polite"></main>
+
+    <footer>
+        <p>Simple Game Platform Team Recruitment · HTML / JavaScript / jQuery</p>
+    </footer>
+
+    <script src="assets/app.js"></script>
+</body>
+</html>
