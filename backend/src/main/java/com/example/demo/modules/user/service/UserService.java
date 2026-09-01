@@ -255,7 +255,6 @@ public class UserService {
 
         return switch (role.trim().toUpperCase()) {
             case "PLAYER" -> "PLAYER";
-            case "MODERATOR" -> "MODERATOR";
             case "ADMIN" -> "ADMIN";
             default -> throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "Invalid role");

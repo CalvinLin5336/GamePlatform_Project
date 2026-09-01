@@ -4,6 +4,7 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import io.jsonwebtoken.Claims;
@@ -14,19 +15,16 @@ import io.jsonwebtoken.security.Keys;
 public class JwtService {
 
     // JWT 簽章金鑰
-    // 正式環境不要直接寫死在程式碼裡
-    private static final String SECRET_KEY =
-            "gameplatform-jwt-secret-key-2026-change-this-key";
+    // 開發階段先放在 application.properties；正式部署時再改成環境變數。
+    private final SecretKey key;
 
     // Token 有效時間：1 小時
     private static final long EXPIRATION_TIME =
             1000 * 60 * 60;
 
-    private final SecretKey key;
-
-    public JwtService() {
+    public JwtService(@Value("${jwt.secret}") String secretKey) {
         this.key = Keys.hmacShaKeyFor(
-                SECRET_KEY.getBytes()
+                secretKey.getBytes(java.nio.charset.StandardCharsets.UTF_8)
         );
     }
 

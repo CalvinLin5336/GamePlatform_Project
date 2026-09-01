@@ -49,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String account = jwtService.extractAccount(token);
                 String role = jwtService.extractRole(token);
 
-                // ROLE_ADMIN / ROLE_PLAYER / ROLE_MODERATOR
+                // ROLE_ADMIN / ROLE_PLAYER
                 String authority = "ROLE_" + role;
 
                 UsernamePasswordAuthenticationToken authentication =
