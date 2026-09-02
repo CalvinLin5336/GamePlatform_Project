@@ -1,7 +1,7 @@
 package com.example.demo.modules.chat.dto;
 
 
-public class LoginRequest {
+public class ChatLoginRequest {
     private String username;
     private String password;
 

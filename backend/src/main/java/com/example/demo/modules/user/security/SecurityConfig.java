@@ -34,7 +34,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
                 // 登入 API 不需要 JWT
+<<<<<<< Updated upstream
                 .requestMatchers("/api/user/auth/**").permitAll()
+=======
+            		.requestMatchers("/api/auth/**", "/api/lobby/**").permitAll()
+>>>>>>> Stashed changes
 
                 // Admin API
                 .requestMatchers("/api/user/admin/**").hasRole("ADMIN")

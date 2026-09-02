@@ -4,7 +4,7 @@ package com.example.demo.modules.chat.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.example.demo.modules.chat.dto.LoginRequest;
+import com.example.demo.modules.chat.dto.ChatLoginRequest;
 
 import java.util.Map;
 
@@ -14,7 +14,7 @@ import java.util.Map;
 public class ChatAuthController {
 
     @PostMapping("/auth")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@RequestBody ChatLoginRequest request) {
         String username = request.getUsername();
         String password = request.getPassword();
 

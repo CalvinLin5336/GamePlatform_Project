@@ -11,9 +11,7 @@ import jakarta.persistence.Table;
 @Table(name = "game_modes")
 public class GameMode {
     @Id
-    // Hibernate 7's SQLite IDENTITY DDL can omit the column type; AUTO keeps the primary key typed and non-null.
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "mode_id")
     private Long modeId;
 
     @Column(nullable = false)
