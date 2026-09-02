@@ -33,21 +33,23 @@ public class SecurityConfig {
             // API 權限
             .authorizeHttpRequests(auth -> auth
 
-                // 登入 API 不需要 JWT
-
+                // User 登入 API
                 .requestMatchers("/api/user/auth/**").permitAll()
 
-            		.requestMatchers("/api/auth/**", "/api/lobby/**").permitAll()
+                // Board 登入 / 註冊 API
+                .requestMatchers("/api/auth/**").permitAll()
 
-
-                // Admin API
+                // Admin API 必須先放在 /api/** 前面
                 .requestMatchers("/api/user/admin/**").hasRole("ADMIN")
 
-                // 其他 API
+                // 開發階段暫時允許其他 API
+                .requestMatchers("/**").permitAll()
+
+                // 其他請求仍需要登入
                 .anyRequest().authenticated()
             )
 
-            // JWT Filter 放在 UsernamePasswordAuthenticationFilter 前面
+            // JWT Filter
             .addFilterBefore(
                 jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter.class

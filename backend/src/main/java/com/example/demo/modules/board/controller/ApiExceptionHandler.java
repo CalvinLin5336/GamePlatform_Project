@@ -1,1 +1,19 @@
-package com.example.demo.modules.board.controller;import org.springframework.http.*;import org.springframework.web.bind.annotation.*;import java.util.Map;@RestControllerAdvice public class ApiExceptionHandler{@ExceptionHandler(IllegalArgumentException.class)ResponseEntity<Map<String,String>>handle(IllegalArgumentException e){return ResponseEntity.badRequest().body(Map.of("message",e.getMessage()));}@ExceptionHandler(Exception.class)ResponseEntity<Map<String,String>>unexpected(Exception e){return ResponseEntity.internalServerError().body(Map.of("message",e.getMessage()==null?"系統錯誤":e.getMessage()));}}
+package com.example.demo.modules.board.controller;
+
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import java.util.Map;
+
+@RestControllerAdvice
+public class ApiExceptionHandler {
+	@ExceptionHandler(IllegalArgumentException.class)
+	ResponseEntity<Map<String, String>> handle(IllegalArgumentException e) {
+		return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+	}
+
+	@ExceptionHandler(Exception.class)
+	ResponseEntity<Map<String, String>> unexpected(Exception e) {
+		return ResponseEntity.internalServerError()
+				.body(Map.of("message", e.getMessage() == null ? "系統錯誤" : e.getMessage()));
+	}
+}

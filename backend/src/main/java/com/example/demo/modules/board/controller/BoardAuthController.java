@@ -10,7 +10,7 @@ import com.example.demo.modules.board.entity.Member;
 import com.example.demo.modules.board.service.AuthService;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/board/auth")
 @RequiredArgsConstructor
 public class BoardAuthController {
 	private final AuthService service;

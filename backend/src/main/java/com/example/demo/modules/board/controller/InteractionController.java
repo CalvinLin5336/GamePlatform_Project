@@ -12,7 +12,7 @@ import com.example.demo.modules.board.service.InteractionService;
 import java.util.*;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/board")
 @RequiredArgsConstructor
 public class InteractionController {
 	private final InteractionService service;

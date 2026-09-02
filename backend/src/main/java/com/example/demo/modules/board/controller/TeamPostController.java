@@ -12,7 +12,7 @@ import com.example.demo.modules.board.service.TeamPostService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/team-posts")
+@RequestMapping("/board/team-posts")
 @RequiredArgsConstructor
 public class TeamPostController {
 	private final TeamPostService service;
