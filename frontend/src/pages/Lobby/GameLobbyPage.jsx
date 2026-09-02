@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+const API_BASE = `http://${window.location.hostname}:8080`;
+
 export default function GameLobbyPage() {
     // 狀態管理：控制彈窗顯示與否、以及目前選中的遊戲
     const [showModal, setShowModal] = useState(false);
@@ -18,7 +20,7 @@ export default function GameLobbyPage() {
 
         try {
             // ⚠️ 請確認你的 Spring Boot 伺服器是跑在 8080 port
-            const response = await fetch('http://localhost:8080/api/lobby/create-room', {
+            const response = await fetch(`${API_BASE}/api/lobby/create-room`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

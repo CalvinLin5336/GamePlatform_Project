@@ -1,11 +1,5 @@
-// === 動態判斷主機與通訊協定 ===
-const isFileProtocol = location.protocol === "file:";
-const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-
-// 本地雙擊檔案 (file://) 或 本機開發伺服器直接導向 8080，線上環境則自動帶入當前 host
-const API_BASE = (isFileProtocol || isLocal)
-    ? "http://localhost:8080/api/quiz"
-    : location.protocol + "//" + location.hostname + "/api/quiz";
+// API 一律連到目前提供前端頁面的主機；本機與區網測試都不必改 IP。
+const API_BASE = "http://" + location.hostname + ":8080/api/quiz";
 
 
 // 建立 Quill 富文本編輯器

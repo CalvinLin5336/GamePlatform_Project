@@ -1,7 +1,8 @@
 (function (window, $) {
     'use strict';
 
-    const API_BASE = 'http://' + (window.location.hostname || 'localhost') + ':8080';
+    // API 一律連到目前提供前端頁面的主機，方便本機與區網共用。
+    const API_BASE = 'http://' + window.location.hostname + ':8080';
     const sessionKeys = ['token', 'userId', 'account', 'username', 'role', 'status'];
 
     function getToken() {
