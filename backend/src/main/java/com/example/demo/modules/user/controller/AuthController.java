@@ -6,16 +6,24 @@ import com.example.demo.modules.user.dto.RegisterRequest;
 import com.example.demo.modules.user.dto.UserRequest;
 import com.example.demo.modules.user.dto.UserResponse;
 import com.example.demo.modules.user.service.UserService;
+import com.example.demo.modules.user.service.LoginSessionService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5500" })
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5500", "http://127.0.0.1:5500" })
 @RequestMapping("/api/user/auth")
 public class AuthController {
 	private final UserService userService;
+	private final LoginSessionService sessions;
 
-	public AuthController(UserService userService) {
+	public AuthController(UserService userService, LoginSessionService sessions) {
 		this.userService = userService;
+		this.sessions = sessions;
+	}
+
+	@GetMapping("/me")
+	public UserResponse me(@RequestHeader(value = "Authorization", required = false) String authorization) {
+		return sessions.requireUser(authorization);
 	}
 
 	@PostMapping("/login")

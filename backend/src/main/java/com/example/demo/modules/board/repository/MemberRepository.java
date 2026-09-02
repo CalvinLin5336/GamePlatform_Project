@@ -7,6 +7,7 @@ import com.example.demo.modules.board.entity.Member;
 import java.util.Optional;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
+	Optional<Member> findByPlatformUserId(Long platformUserId);
 	Optional<Member> findByAccount(String account);
 
 	boolean existsByAccount(String account);

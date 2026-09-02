@@ -8,12 +8,19 @@ import org.springframework.web.bind.annotation.*;
 import com.example.demo.modules.board.dto.*;
 import com.example.demo.modules.board.entity.Member;
 import com.example.demo.modules.board.service.AuthService;
+import com.example.demo.modules.board.service.BoardSessionService;
 
 @RestController
 @RequestMapping("/board/auth")
 @RequiredArgsConstructor
 public class BoardAuthController {
 	private final AuthService service;
+	private final BoardSessionService sessions;
+
+	@PostMapping("/session")
+	public ResponseEntity<Member> session(@RequestHeader(value = "Authorization", required = false) String authorization) {
+		return ResponseEntity.ok(sessions.currentMember(authorization));
+	}
 
 	@PostMapping("/login")
 	public ResponseEntity<Member> login(@Valid @RequestBody LoginRequest f) {

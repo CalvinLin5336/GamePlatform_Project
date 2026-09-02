@@ -1,5 +1,6 @@
 $(function () {
-    const LOBBY_URL = '/src/pages/Lobby/jquery_lobby.html';
+    const returnUrl = UserApi.getLoginReturnUrl();
+    $('.back-note strong').text(new URL(returnUrl).pathname.includes('/Board/') ? '組隊公告' : 'Lobby');
 
     const $loginTab = $('#loginTab');
     const $registerTab = $('#registerTab');
@@ -61,8 +62,8 @@ $(function () {
         UserApi.login(account, password)
             .done(function (response) {
                 UserApi.saveLoginSession(response);
-                setMessage('登入成功，正在回到 Lobby…', 'success');
-                window.location.href = LOBBY_URL;
+                setMessage('登入成功，正在返回頁面…', 'success');
+                window.location.href = returnUrl;
             })
             .fail(function (xhr) {
                 setMessage(getErrorMessage(xhr, '登入失敗，請確認帳號密碼或後端服務。'), 'error');
@@ -118,4 +119,6 @@ $(function () {
                 setButtonLoading($button, '建立中...', false);
             });
     });
+
+    if (new URLSearchParams(window.location.search).get('mode') === 'register') switchMode('register');
 });

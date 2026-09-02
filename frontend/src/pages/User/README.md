@@ -4,8 +4,8 @@
 
 ## 頁面
 
-- Login / Register：`/src/pages/User/Login/index.html`
-- Admin：`/src/pages/User/Admin/index.html`
+- Login / Register：`/src/pages/User/Login/login.html`
+- Admin：`/src/pages/User/Admin/admin.html`
 
 Admin 頁面提供：
 
@@ -15,10 +15,31 @@ Admin 頁面提供：
 
 ## 登入流程
 
-1. 從 Lobby 的登入按鈕進入 Login 頁面（本次沒有修改 Lobby）。
+1. Lobby 或 Board 共用 Login 頁面與 `UserApi`。
 2. 登入成功後將 token 與基本使用者資訊存入 `localStorage`。
-3. 登入成功導回：`/src/pages/Lobby/jquery_lobby.html`
+3. 登入成功返回 `returnTo` 指定的本站頁面；未指定時導回 `/src/pages/Lobby/jquery_lobby.html`。外部網址不會被採用。
 4. Admin 後台需要 `role = ADMIN`。
+5. Board 開啟時呼叫 `/api/user/auth/me` 驗證 JWT 簽章、期限與會員是否啟用，再呼叫 `/board/auth/session` 取得 Board 會員 ID。
+6. 登出會清除共用登入資料及 Board 快取；Board 的其他分頁同步更新。登入過期時，需登入的操作會返回登入頁。
+
+### 其他前端頁面取得登入狀態
+
+先載入 jQuery，再載入 `api/userApi.js`：
+
+```javascript
+const loggedIn = UserApi.isLoggedIn(); // 畫面顯示用的本機狀態
+const user = UserApi.getCurrentUser(); // {userId, account, username, role, status} 或 null
+
+UserApi.checkLogin().done(function (user) {
+    $('#memberName').text(user.username); // 後端確認後的會員資料
+}).fail(function (xhr) {
+    if (xhr.status === 401 || xhr.status === 403) UserApi.redirectToLogin();
+});
+```
+
+`UserApi.request(options)` 自動附上 Bearer token；收到 401 時清除過期登入。
+一般管理 API 的 403 不會登出會員，避免把「沒有管理權限」誤認為「未登入」。
+登入與註冊不會附上先前帳號的 token。前端 localStorage 的角色與登入提示不能代替後端授權。
 
 ## API
 
@@ -26,6 +47,8 @@ Admin 頁面提供：
 
 - `POST /api/user/auth/login`
 - `POST /api/user/auth/register`
+- `GET /api/user/auth/me`
+- `POST /board/auth/session`
 - `GET /api/user/admin/dashboard`
 - `GET /api/user/admin/users`
 - `GET /api/user/admin/users/{id}`
@@ -34,4 +57,10 @@ Admin 頁面提供：
 - `DELETE /api/user/admin/users/{id}`
 - `GET /api/user/admin/operation-logs`
 
-預設後端位址：`http://localhost:8080`。
+後端位址使用前端 hostname 的 8080 埠。localhost 與 127.0.0.1 的 5173／5500 開發來源均可呼叫會員 API。
+各頁面必須使用同一個前端 origin（協定、主機、埠），才能共用 localStorage 登入。
+
+## 驗證
+
+`node --test frontend/tests/userApi.test.cjs`：登入狀態、過期 token、401／403、舊請求與跨頁返回網址。
+後端 `BoardSessionIntegrationTests` 使用獨立暫存 SQLite 驗證會員狀態、兩模組 ID 對應及同名帳號防誤連結。

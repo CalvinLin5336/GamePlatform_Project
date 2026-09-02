@@ -1,19 +1,14 @@
 (function ($) {
     'use strict';
 
-    const SERVER_BASE = `http://${window.location.hostname || 'localhost'}:8080`;
+    const SERVER_BASE = UserApi.API_BASE;
     const API_BASE = SERVER_BASE + '/board';
     const app = $('#app');
+    let verifiedMember = null, sessionToken = '', sessionReady = false, sessionVersion = 0, sessionError = '';
 
     function currentUser() {
-        try { return JSON.parse(localStorage.getItem('sgpUser') || 'null'); }
-        catch (_) { return null; }
-    }
-
-    function saveUser(user) {
-        if (user) localStorage.setItem('sgpUser', JSON.stringify(user));
-        else localStorage.removeItem('sgpUser');
-        renderMember();
+        const session = UserApi.getLoginSession();
+        return session && sessionToken === UserApi.getToken() && verifiedMember?.platformUserId === session.userId ? verifiedMember : null;
     }
 
     function escapeHtml(value) {
@@ -29,9 +24,9 @@
     }
 
     function request(method, path, data, base = API_BASE) {
-        return $.ajax({
+        return UserApi.request({
             method: method,
-            url: base + path,
+            url: (base === API_BASE ? '/board' : '') + path,
             contentType: 'application/json; charset=UTF-8',
             dataType: 'json',
             data: data === undefined ? undefined : JSON.stringify(data)
@@ -42,8 +37,6 @@
     }
 
     const api = {
-        login: data => request('POST', '/auth/login', data),
-        register: data => request('POST', '/auth/register', data),
         games: () => request('GET', '/api/game-management/games', undefined, SERVER_BASE),
         posts: (keyword='', status='', gameId='', modeId='') => {
             const query = new URLSearchParams({keyword});
@@ -55,7 +48,7 @@
         post: id => request('GET', `/team-posts/${id}`),
         createPost: data => request('POST', '/team-posts', data),
         updatePost: (id,data) => request('PUT', `/team-posts/${id}`, data),
-        deletePost: id => $.ajax({method:'DELETE',url:API_BASE+`/team-posts/${id}`}),
+        deletePost: id => UserApi.request({method:'DELETE',url:`/board/team-posts/${id}`}),
         captainPosts: id => request('GET', `/team-posts/captain/${id}`),
         join: (id,data) => request('POST', `/team-posts/${id}/join`, data),
         myApplications: id => request('GET', `/applications/member/${id}`),
@@ -63,7 +56,7 @@
         review: (id,status) => request('PUT', `/applications/${id}/${status}?captainId=${currentUser().id}`),
         comments: id => request('GET', `/team-posts/${id}/comments`),
         comment: (id,data) => request('POST', `/team-posts/${id}/comments`, data),
-        deleteComment: id => $.ajax({method:'DELETE',url:API_BASE+`/comments/${id}`}),
+        deleteComment: id => UserApi.request({method:'DELETE',url:`/board/comments/${id}`}),
         favorite: (postId,memberId) => request('POST', `/team-posts/${postId}/favorite/${memberId}`),
         favorites: id => request('GET', `/favorites/member/${id}`),
         notifications: id => request('GET', `/notifications/member/${id}`),
@@ -81,14 +74,16 @@
 
     function renderMember() {
         const user = currentUser();
+        const session = UserApi.getLoginSession();
         $('[data-login-only]').toggleClass('hidden', !user);
-        $('#memberArea').html(user
-            ? `<span class="nickname">👤 ${escapeHtml(user.nickname || user.account)}</span><button id="logoutButton" class="secondary" type="button">登出</button>`
+        $('#memberArea').html(session
+            ? `<span class="nickname">👤 ${escapeHtml(session.username || session.account)}</span><button id="logoutButton" class="secondary" type="button">登出</button>`
             : '<a class="primary" href="#login">登入</a>');
     }
 
     function requireLogin() {
         if (currentUser()) return true;
+        if (UserApi.isLoggedIn()) { notify(sessionError || '會員資料載入中，請稍候', true); return false; }
         sessionStorage.setItem('afterLoginHash', location.hash || '#home');
         location.hash = '#login';
         notify('請先登入會員', true);
@@ -111,26 +106,17 @@
     }
 
     function loginPage() {
-        app.html(`<section class="card auth-card"><h1>會員登入</h1><p id="formMessage" class="error hidden"></p><form id="loginForm"><label>帳號／Email<input name="account" value="player02" autocomplete="username" required></label><label>密碼<input name="password" type="password" value="password" autocomplete="current-password" required></label><button class="primary" type="submit">登入</button></form><p>還沒有帳號？ <a href="#register">註冊帳號</a></p><small>測試：player02 / password、teamleader / password</small></section>`);
-        $('#loginForm').on('submit', function (event) {
-            event.preventDefault();
-            const button = $(this).find('button').prop('disabled', true).text('登入中...');
-            api.login({account:this.account.value.trim(), password:this.password.value})
-                .done(function (user) { saveUser(user); location.hash = sessionStorage.getItem('afterLoginHash') || '#home'; sessionStorage.removeItem('afterLoginHash'); })
-                .fail(function (error) { $('#formMessage').removeClass('hidden').text(error.message); })
-                .always(function () { button.prop('disabled', false).text('登入'); });
-        });
+        if (currentUser()) { location.hash = '#home'; return; }
+        const target = new URL(window.location.href);
+        target.hash = sessionStorage.getItem('afterLoginHash') || '#home';
+        sessionStorage.removeItem('afterLoginHash');
+        UserApi.redirectToLogin(target.href);
     }
 
     function registerPage() {
-        app.html(`<section class="card auth-card"><h1>註冊會員</h1><p id="formMessage" class="error hidden"></p><form id="registerForm"><label>帳號<input name="account" required></label><label>暱稱<input name="nickname" required></label><label>Email<input name="email" type="email" required></label><label>密碼<input name="password" type="password" minlength="4" required></label><button class="primary" type="submit">建立帳號</button></form></section>`);
-        $('#registerForm').on('submit', function (event) {
-            event.preventDefault();
-            const form = this;
-            api.register({account:form.account.value.trim(),nickname:form.nickname.value.trim(),email:form.email.value.trim(),password:form.password.value})
-                .done(function () { notify('註冊完成，請登入'); location.hash='#login'; })
-                .fail(function (error) { $('#formMessage').removeClass('hidden').text(error.message); });
-        });
+        const target = new URL(window.location.href);
+        target.hash = '#home';
+        UserApi.redirectToLogin(target.href, 'register');
     }
 
     function bindGameSelectors(games, gameSelect, modeSelect, onModeChange, selectedGame, selectedMode, filtering = false) {
@@ -351,6 +337,11 @@
     function notFoundPage(){app.html('<section class="card not-found"><strong>404</strong><h1>找不到這個頁面</h1><p>網址可能已變更，或頁面不存在。</p><a class="primary" href="#home">回到大廳</a></section>');}
 
     function route() {
+        if (!sessionReady) { app.html('<p class="loading">確認會員登入狀態中...</p>'); return; }
+        if (sessionError) {
+            app.html(`<section class="card"><h1>無法載入會員資料</h1><p class="error">${escapeHtml(sessionError)}</p><button class="primary retry-session">重新連線</button></section>`);
+            return;
+        }
         const hash = (location.hash || '#home').slice(1);
         const parts = hash.split('/');
         window.scrollTo(0,0);
@@ -368,7 +359,34 @@
         $('#mainNav').removeClass('open');
     }
 
-    $(document).on('click','#logoutButton',function(){saveUser(null);location.hash='#home';notify('已登出');});
+    function loadSession() {
+        if (sessionVersion && !sessionReady && sessionToken === UserApi.getToken()) return;
+        const version = ++sessionVersion;
+        sessionToken = UserApi.getToken();
+        verifiedMember = null;
+        sessionReady = !sessionToken;
+        sessionError = '';
+        renderMember();
+        route();
+        if (!sessionToken) return;
+        UserApi.checkLogin().then(() => UserApi.getBoardSession()).done(function(member) {
+            if (version !== sessionVersion) return;
+            verifiedMember = member;
+            sessionReady = true;
+            renderMember();
+            route();
+        }).fail(function(xhr) {
+            if (version !== sessionVersion) return;
+            if (xhr.status === 401 || xhr.status === 403) { UserApi.clearLoginSession(); return; }
+            sessionReady = true;
+            sessionError = xhr.responseJSON?.message || '無法連線至會員服務，請確認後端已啟動後重試。';
+            renderMember();
+            route();
+        });
+    }
+
+    $(document).on('click','.retry-session',loadSession);
+    $(document).on('click','#logoutButton',function(){location.hash='#home';UserApi.clearLoginSession();notify('已登出');});
     $(document).on('click','.protected-link',function(event){if(!currentUser()){event.preventDefault();requireLogin();}});
     $(document).on('click','.review',function(){const button=$(this).prop('disabled',true);api.review(button.data('id'),button.data('status')).done(result=>{if(result.post?.roomId)notify('隊伍已滿，可以選擇開始遊戲');refreshTeamPage();}).fail(e=>notify(e.message,true)).always(()=>button.prop('disabled',false));});
     $(document).on('click','.refresh-team',refreshTeamPage);
@@ -391,6 +409,18 @@
     $('#menuButton').on('click',()=>$('#mainNav').toggleClass('open'));
     $('#quickBattle').on('click',function(){api.posts('','RECRUITING').done(function(posts){if(posts?.length){const post=posts[Math.floor(Math.random()*posts.length)];location.hash=`#post/${post.id}`;}else notify('目前沒有招募中的公告',true);}).fail(e=>notify(e.message,true));});
     $(window).on('hashchange',route);
-    renderMember();
-    route();
+    $(window).on('user-session-changed',function(){
+        if (sessionToken !== UserApi.getToken()) loadSession();
+        else renderMember();
+    });
+    $(window).on('storage',function(event){
+        if (event.originalEvent.key === 'token' || event.originalEvent.key === null) loadSession();
+    });
+    $(window).on('focus',function(){
+        if (sessionToken !== UserApi.getToken() || sessionError) { loadSession(); return; }
+        // 返回分頁時只確認登入，不重繪表單，以保留尚未送出的輸入。
+        if (sessionToken && sessionReady) UserApi.checkLogin().fail(function(){});
+    });
+    setInterval(function(){if(UserApi.getToken() && !UserApi.isLoggedIn()) UserApi.clearLoginSession();},30000);
+    loadSession();
 })(jQuery);

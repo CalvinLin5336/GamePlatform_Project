@@ -4,7 +4,7 @@
 
 1. 重新啟動 `backend` 的 Spring Boot（Java 17 以上），預設後端為 `http://localhost:8080`。
 2. 使用 Live Server 開啟本資料夾的 `index.html`；不要直接使用 `file://`。
-3. 使用 `teamleader / password` 或 `player02 / password` 測試。
+3. 使用 User 模組的會員帳號登入；尚無帳號可在平台登入頁註冊。
 
 Board 是獨立 HTML／jQuery 頁面，不需要 React 或 npm build。後端保留
 `spring.jpa.hibernate.ddl-auto=update`，啟動時會補上 Board 新增的欄位。
@@ -95,8 +95,12 @@ Board 是獨立 HTML／jQuery 頁面，不需要 React 或 npm build。後端保
 只有隊長一人且沒有申請的舊公告可編輯補選模式；已有隊員的舊公告請重新建立隊伍。
 首次建立示範資料時，會從啟用遊戲模式產生真實可招募的公告，不再建立虛構隊員人數。
 
-身份沿用 Board 現有會員與 `captainId`／`memberId` 介面。這些 ID 的歸屬檢查不等同完整登入驗證；
-跨模組 JWT 與會員統一仍由既有登入整合負責。
+前端共用 `../User/api/userApi.js` 的平台登入。Board 啟動時先驗證 `/api/user/auth/me`，
+再以 Bearer token 呼叫 `/board/auth/session` 取得對應的 Board 會員，使用 `platformUserId` 關聯兩張會員表，
+不會直接把 User 的 `userId` 當成 Board 的 `memberId`。
+首次進入會建立 Board 會員資料；平台未提供 Email，因此僅建立 `.invalid` 內部佔位值，不供寄信。
+舊 `sgpUser` 快取不再視為已登入。舊 Board 帳號與平台帳號同名時不會自動認領舊隊伍，
+後端會要求先確認帳號歸屬。既有 Board API 的參數授權方式仍保留，全面後端權限改造不在此次登入狀態整合內。
 
 Board 建立的房間固定使用公告中的遊戲、模式及人數。等待頁依目前 hostname 連線後端 HTTP／WebSocket 的 8080 埠。
 田忌撲克入口由 Board 驗證已核准會員與房間名單後呼叫既有 `PokerGameService`，避免將 Board 會員 ID

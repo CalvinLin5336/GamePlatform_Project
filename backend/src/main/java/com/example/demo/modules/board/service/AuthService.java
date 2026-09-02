@@ -15,7 +15,8 @@ public class AuthService {
 	private final PasswordEncoder encoder;
 
 	public Member login(LoginRequest f) {
-		return repo.findByAccount(f.getAccount()).filter(m -> encoder.matches(f.getPassword(), m.getPassword()))
+		return repo.findByAccount(f.getAccount()).filter(m -> m.getPlatformUserId() == null)
+				.filter(m -> encoder.matches(f.getPassword(), m.getPassword()))
 				.orElseThrow(() -> new IllegalArgumentException("帳號或密碼錯誤"));
 	}
 
