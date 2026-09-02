@@ -14,7 +14,7 @@
     <!-- ================= 主畫面區 ================= -->
     <div class="w-full max-w-5xl px-8 flex flex-col items-center">
         
-        <!-- 🌟 頂部分頁按鈕區塊 -->
+        <!-- 頂部分頁按鈕區塊 -->
         <div class="flex justify-center gap-4 mb-8 bg-slate-900 p-2 rounded-full border border-slate-700">
             <button id="tabCreateBtn" class="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-full shadow-lg transition active:scale-95">
                 ➕ 新建房間
@@ -24,13 +24,13 @@
             </button>
         </div>
 
-        <!-- 🌟 區塊 A：新建房間 (預設顯示) -->
+        <!-- 區塊 A：新建房間 (預設顯示) -->
         <div id="createRoomSection" class="w-full animate-[fadeIn_0.3s_ease-out]">
             <h1 class="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
                 🎮 選擇你的遊戲
             </h1>
             
-            <!-- 🌟 動態遊戲方格容器 (交給 jQuery 渲染) -->
+            <!-- 動態遊戲方格容器 -->
             <div id="gameGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 <div class="col-span-full text-center text-slate-500 py-10">
                     正在從伺服器載入遊戲列表...
@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <!-- 🌟 區塊 B：現有房間列表 (預設隱藏 hidden) -->
+        <!-- 區塊 B：現有房間列表 (預設隱藏 hidden) -->
         <div id="roomListSection" class="hidden w-full max-w-3xl animate-[fadeIn_0.3s_ease-out]">
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
                 <div class="flex justify-between items-center mb-6">
@@ -67,7 +67,6 @@
             </h2>
             <div class="mb-6">
                 <label class="block text-sm text-slate-400 mb-2">房間模式</label>
-                <!-- 🌟 下拉選單改為空標籤，由 jQuery 動態塞入選項 -->
                 <select id="roomModeSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition">
                 </select>
             </div>
@@ -75,7 +74,6 @@
             <div class="mb-6">
                 <label class="block text-sm text-slate-400 mb-2">遊玩人數</label>
                 <select id="playerCountSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition">
-                    <!-- 選項將由 jQuery 動態生成 -->
                 </select>
             </div>
 
@@ -89,10 +87,10 @@
     <!-- ================= jQuery 互動邏輯 ================= -->
     <script>
         $(document).ready(function() {
-            let availableGames = []; // 存放從後端抓來的遊戲總表
+            let availableGames = []; 
             let selectedGameId = null;
 
-            // --- 1. 處理頂部分頁切換邏輯 ---
+            // 1. 分頁切換邏輯
             $('#tabCreateBtn').on('click', function() {
                 $(this).removeClass('bg-transparent text-slate-400').addClass('bg-indigo-600 text-white shadow-lg');
                 $('#tabListBtn').removeClass('bg-indigo-600 text-white shadow-lg').addClass('bg-transparent text-slate-400');
@@ -105,10 +103,10 @@
                 $('#tabCreateBtn').removeClass('bg-indigo-600 text-white shadow-lg').addClass('bg-transparent text-slate-400');
                 $('#roomListSection').removeClass('hidden');
                 $('#createRoomSection').addClass('hidden');
-                fetchWaitingRooms(); // 切換過來時自動刷新列表
+                fetchWaitingRooms(); 
             });
 
-            // --- 2. API 串接：抓取遊戲總表並動態渲染 ---
+            // 2. 抓取遊戲總表並動態渲染
             function fetchGamesInfo() {
                 $.ajax({
                     url: 'http://localhost:8080/api/lobby/games-info',
@@ -146,7 +144,7 @@
                 });
             }
 
-            // --- 3. 彈窗邏輯 (點擊遊戲方塊) ---
+            // 3. 彈窗設定邏輯
             $('#gameGrid').on('click', '.game-card', function() {
                 const gameId = $(this).data('game-id');
                 selectedGameId = gameId;
@@ -165,7 +163,6 @@
                     $modeSelect.append(`<option value="">無可用模式</option>`);
                 }
 
-                // 解除並重新綁定模式切換事件，確保抓到最新的 gameData
                 $modeSelect.off('change').on('change', function() {
                     const selectedModeCode = $(this).val();
                     const modeInfo = gameData.modes.find(m => m.modeCode === selectedModeCode);
@@ -174,7 +171,6 @@
                     $playerSelect.empty();
                     
                     if (modeInfo) {
-                        // 判斷人數上下限，用迴圈生成選項
                         if (modeInfo.minPlayers === modeInfo.maxPlayers) {
                             $playerSelect.append(`<option value="${modeInfo.maxPlayers}">${modeInfo.maxPlayers} 人 (人數固定)</option>`);
                         } else {
@@ -185,9 +181,7 @@
                     }
                 });
 
-                // 觸發一次 change 事件，讓它自動渲染第一個模式的人數選項
                 $modeSelect.trigger('change');
-
                 $('#gameModal').removeClass('hidden');
             });
 
@@ -196,9 +190,8 @@
                 selectedGameId = null;
             });
 
-            // --- 4. API 串接：建立房間 ---
+            // 4. 建立房間 API 串接 (成功後跳轉至 waiting_room.html)
             $('#confirmCreateBtn').on('click', function() {
-                // ✅ 修正 1：統一變數名稱為 currentAccount
                 const currentAccount = localStorage.getItem("account") || "test_account_01";
                 const modeCode = $('#roomModeSelect').val(); 
                 const playerCount = $('#playerCountSelect').val(); 
@@ -219,13 +212,12 @@
                         gameId: selectedGameId, 
                         modeCode: modeCode, 
                         playerCount: parseInt(playerCount), 
-                        hostAccount: currentAccount // ✅ 將帳號送給後端
+                        hostAccount: currentAccount 
                     }),
                     success: function(response) {
                         if (response.success) {
-                            alert(response.message);
-                            $('#gameModal').addClass('hidden');
-                            $('#tabListBtn').click(); // 自動切換到現有房間列表
+                            // 🌟 核心修改：直接跳轉到獨立的等待區頁面
+                            window.location.href = `waiting_room.html?room=${response.roomId}`;
                         } else {
                             alert('建立失敗：' + response.message);
                         }
@@ -239,7 +231,7 @@
                 });
             });
 
-            // --- 5. API 串接：取得等待中的房間列表 ---
+            // 5. 取得等待中的房間列表
             function fetchWaitingRooms() {
                 $.ajax({
                     url: 'http://localhost:8080/api/lobby/rooms',
@@ -254,11 +246,9 @@
                         }
                         
                         response.rooms.forEach(room => {
-                            // 查字典：用房間的 gameId 去 availableGames 陣列找對應的遊戲資料
                             const gameData = availableGames.find(g => g.gameId === room.gameId);
                             const displayGameName = gameData ? gameData.gameName : '未知遊戲';
                             
-                            // 查字典：找出模式名稱
                             let displayModeName = '未知模式';
                             if (gameData && gameData.modes) {
                                 const modeInfo = gameData.modes.find(m => m.modeId === room.modeId);
@@ -267,11 +257,9 @@
                                 }
                             }
                             
-                            // 計算目前人數與滿房狀態
                             const currentPlayers = room.players ? room.players.length : 0;
                             const isFull = currentPlayers >= room.maxPlayers;
 
-                            // 動態產生按鈕：滿房時變成灰色且不可點擊
                             let buttonHtml = '';
                             if (isFull) {
                                 buttonHtml = `
@@ -291,7 +279,6 @@
                                 <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 flex justify-between items-center hover:border-indigo-500 transition">
                                     <div>
                                         <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded mr-2">${displayGameName}</span>
-                                        <!-- ✅ 修正 2：使用 room.hostAccount -->
                                         <span class="font-bold text-slate-200">房主: ${room.hostAccount}</span>
                                         <p class="text-slate-400 text-sm mt-1">模式: ${displayModeName} (${room.minPlayers}~${room.maxPlayers}人)</p>
                                         <p class="text-cyan-400 text-sm font-medium mt-1">👥 房間人數: ${currentPlayers} / ${room.maxPlayers} 人</p>
@@ -311,19 +298,18 @@
 
             $('#refreshRoomsBtn').on('click', fetchWaitingRooms);
 
-            // --- 6. API 串接：加入房間 ---
+            // 6. 加入房間 API 串接 (成功後也跳轉至 waiting_room.html)
             window.joinRoom = function(roomId) {
-                // ✅ 修正 3：統一變數名稱為 currentAccount (這裡預設用 02 來測試加入)
                 const currentAccount = localStorage.getItem("account") || "test_account_02";
                 $.ajax({
                     url: 'http://localhost:8080/api/lobby/join-room',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ roomId: roomId, playerAccount: currentAccount }), // ✅ 對齊後端參數
+                    data: JSON.stringify({ roomId: roomId, playerAccount: currentAccount }),
                     success: function(res) {
                         if (res.success) {
-                            alert('成功加入房間！即將進入遊戲...');
-                            // window.location.href = '../poker_client.html?room=' + roomId;
+                            // 🌟 核心修改：成功加入後直接跳轉進等待區
+                            window.location.href = `waiting_room.html?room=${roomId}`;
                         } else {
                             alert('加入失敗：' + res.message);
                         }
@@ -331,7 +317,7 @@
                 });
             };
 
-            // 啟動！一載入網頁就去後端撈取最新的遊戲清單
+            // 初始化載入
             fetchGamesInfo();
         });
     </script>

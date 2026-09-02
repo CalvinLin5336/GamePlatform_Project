@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遊戲等待區</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 jQuery 核心 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-full flex flex-col items-center justify-center font-sans">
+
+    <!-- 🚀 房間等待區主卡片 -->
+    <div class="w-full max-w-4xl bg-slate-900 border border-indigo-500/50 rounded-2xl p-8 shadow-2xl shadow-indigo-900/20">
+        
+        <!-- 頂部標題與房號 -->
+        <div class="flex justify-between items-end mb-8 border-b border-slate-700 pb-4">
+            <div>
+                <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                    <span class="text-4xl">🚀</span> <span id="waitGameName">載入中...</span>
+                </h2>
+                <p class="text-slate-400 mt-2 text-sm">房號: <span id="waitRoomId" class="text-indigo-400 font-mono text-lg tracking-wider"></span></p>
+            </div>
+            <div class="text-right">
+                <span id="waitRoleBadge" class="bg-slate-600 text-white px-3 py-1 rounded-full text-sm shadow-md">驗證身分中...</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- 左側：遊戲設定 -->
+            <div class="col-span-1 bg-slate-950 rounded-xl p-5 border border-slate-800">
+                <h3 class="text-lg font-bold text-slate-200 mb-4 border-b border-slate-800 pb-2">⚙️ 房間設定</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm text-slate-400 mb-2">模式</label>
+                    <!-- 房主顯示 select，一般玩家顯示純文字 -->
+                    <select id="waitModeSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm host-only transition focus:border-indigo-500 focus:outline-none"></select>
+                    <div id="waitModeDisplay" class="text-white font-medium guest-only hidden p-2 bg-slate-900 rounded-lg"></div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm text-slate-400 mb-2">最高人數</label>
+                    <select id="waitPlayerCountSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm host-only transition focus:border-indigo-500 focus:outline-none"></select>
+                    <div id="waitPlayerCountDisplay" class="text-white font-medium guest-only hidden p-2 bg-slate-900 rounded-lg"></div>
+                </div>
+            </div>
+
+            <!-- 右側：玩家名單 -->
+            <div class="col-span-2 bg-slate-950 rounded-xl p-5 border border-slate-800 flex flex-col">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
+                    <h3 class="text-lg font-bold text-slate-200">👥 玩家名單</h3>
+                    <span class="text-cyan-400 text-sm font-medium"><span id="waitCurrentPlayers">1</span> / <span id="waitMaxPlayers">?</span> 人</span>
+                </div>
+                
+                <!-- 玩家列表容器 -->
+                <ul id="waitPlayerList" class="space-y-2 overflow-y-auto max-h-48 pr-1">
+                    <li class="text-center text-slate-500 py-4">載入名單中...</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 底部按鈕區 -->
+        <div class="flex justify-between items-center mt-8 pt-6 border-t border-slate-800">
+            <button id="leaveRoomBtn" class="px-6 py-2.5 bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white rounded-lg transition active:scale-95">
+                🚪 離開房間
+            </button>
+            <button id="startGameBtn" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/50 transition transform hover:scale-105 active:scale-95 host-only">
+                開始遊戲
+            </button>
+            <div class="text-slate-400 text-sm guest-only hidden">
+                等待房主開始遊戲...
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 等待區互動邏輯 ================= -->
+    <script>
+        $(document).ready(function() {
+            // 1. 從網址取得房號與個人帳號
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = urlParams.get('room');
+            const myAccount = localStorage.getItem("account") || "test_account_01";
+            
+            let roomSocket = null;
+            let currentRoomData = null;
+            let isHost = false;
+            let availableGames = []; // 用來存放遊戲字典
+
+            if (!roomId) {
+                alert('找不到房號！');
+                window.location.href = 'jquery_lobby.html';
+                return;
+            }
+
+            $('#waitRoomId').text(roomId);
+
+            // 2. 初始化：先取得遊戲字典，再去取得房間資料
+            function fetchInitialData() {
+                $.ajax({
+                    url: 'http://localhost:8080/api/lobby/games-info',
+                    type: 'GET',
+                    success: function(res) {
+                        if (res.success) {
+                            availableGames = res.games;
+                            fetchRoomDetail(); // 字典拿到了，接著去拿房間詳細資料
+                        }
+                    }
+                });
+            }
+
+            // 3. 取得單一房間資料
+            function fetchRoomDetail() {
+                $.ajax({
+                    url: `http://localhost:8080/api/lobby/room/${roomId}`,
+                    type: 'GET',
+                    success: function(res) {
+                        if (res.success) {
+                            currentRoomData = res.room;
+                            isHost = (myAccount === currentRoomData.hostAccount);
+                            
+                            updateWaitingRoomUI(currentRoomData); // 渲染畫面
+                            connectWebSocket(); // 建立 WebSocket 連線
+                        } else {
+                            alert(res.message);
+                            window.location.href = 'jquery_lobby.html';
+                        }
+                    },
+                    error: function() {
+                        alert('無法取得房間資料，請確認伺服器狀態！');
+                        window.location.href = 'jquery_lobby.html';
+                    }
+                });
+            }
+
+            // 4. 畫面渲染邏輯
+            function updateWaitingRoomUI(room) {
+                // 查字典：找出遊戲名稱
+                const gameData = availableGames.find(g => g.gameId === room.gameId);
+                const displayGameName = gameData ? gameData.gameName : '未知遊戲';
+                $('#waitGameName').text(displayGameName); 
+
+                // 身分調整
+                if (isHost) {
+                    $('#waitRoleBadge').text('👑 房主').removeClass('bg-slate-600').addClass('bg-amber-500');
+                    $('.host-only').removeClass('hidden');
+                    $('.guest-only').addClass('hidden');
+                } else {
+                    $('#waitRoleBadge').text('👤 玩家').removeClass('bg-amber-500').addClass('bg-slate-600');
+                    $('.host-only').addClass('hidden');
+                    $('.guest-only').removeClass('hidden');
+                }
+
+                // 動態產生下拉選單選項
+                if (gameData && gameData.modes) {
+                    const $modeSelect = $('#waitModeSelect');
+                    // 暫停監聽，避免渲染時觸發 change 事件一直發送 API
+                    $modeSelect.off('change');
+                    $modeSelect.empty();
+                    
+                    gameData.modes.forEach(mode => {
+                        $modeSelect.append(`<option value="${mode.modeId}">${mode.modeName}</option>`);
+                    });
+                    
+                    const currentModeInfo = gameData.modes.find(m => m.modeId === room.modeId);
+                    let displayModeName = currentModeInfo ? currentModeInfo.modeName : '未知模式';
+
+                    const $playerSelect = $('#waitPlayerCountSelect');
+                    $playerSelect.off('change'); // 暫停監聽
+                    $playerSelect.empty();
+                    
+                    if (currentModeInfo) {
+                        if (currentModeInfo.minPlayers === currentModeInfo.maxPlayers) {
+                            $playerSelect.append(`<option value="${currentModeInfo.maxPlayers}">${currentModeInfo.maxPlayers} 人 (人數固定)</option>`);
+                        } else {
+                            for (let i = currentModeInfo.minPlayers; i <= currentModeInfo.maxPlayers; i++) {
+                                $playerSelect.append(`<option value="${i}">${i} 人</option>`);
+                            }
+                        }
+                    }
+
+                    // 把選單的值設定成房間目前儲存的值
+                    $modeSelect.val(room.modeId);
+                    $playerSelect.val(room.maxPlayers);
+
+                    // 如果是一般玩家，更新純文字顯示區塊
+                    $('#waitModeDisplay').text(displayModeName);
+                    $('#waitPlayerCountDisplay').text(room.maxPlayers + ' 人');
+
+                    // 重新綁定事件
+                    bindHostSettingsEvents();
+                }
+
+                // 人數狀態更新
+                $('#waitCurrentPlayers').text(room.players.length);
+                $('#waitMaxPlayers').text(room.maxPlayers);
+
+                // 渲染右側玩家名單
+                const $list = $('#waitPlayerList');
+                $list.empty();
+                
+                room.players.forEach(playerAccount => {
+                    const isMe = (playerAccount === myAccount);
+                    const isThisHost = (playerAccount === room.hostAccount);
+                    
+                    let kickBtnHtml = '';
+                    if (isHost && !isMe) {
+                        kickBtnHtml = `<button onclick="kickPlayer('${playerAccount}')" class="text-xs bg-red-900/50 hover:bg-red-600 text-red-200 px-2.5 py-1 rounded transition active:scale-95">踢除</button>`;
+                    }
+
+                    const liHtml = `
+                        <li class="flex justify-between items-center bg-slate-900 p-3 rounded-lg border border-slate-800 ${isMe ? 'border-indigo-500/50' : ''}">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">🧑‍🚀</span>
+                                <span class="text-white font-medium ${isThisHost ? 'text-amber-400' : ''}">
+                                    ${playerAccount} ${isMe ? '(你)' : ''} ${isThisHost ? '👑' : ''}
+                                </span>
+                            </div>
+                            <div>${kickBtnHtml}</div>
+                        </li>
+                    `;
+                    $list.append(liHtml);
+                });
+            }
+
+            // 🌟 5. 綁定房主設定變更事件 (連動UI並送出API)
+            function bindHostSettingsEvents() {
+                if (!isHost) return;
+
+                // 模式切換時
+                $('#waitModeSelect').on('change', function() {
+                    const selectedModeId = parseInt($(this).val());
+                    const gameData = availableGames.find(g => g.gameId === currentRoomData.gameId);
+                    
+                    if (gameData && gameData.modes) {
+                        const modeInfo = gameData.modes.find(m => m.modeId === selectedModeId);
+                        const $playerSelect = $('#waitPlayerCountSelect');
+                        $playerSelect.empty();
+                        
+                        if (modeInfo) {
+                            if (modeInfo.minPlayers === modeInfo.maxPlayers) {
+                                $playerSelect.append(`<option value="${modeInfo.maxPlayers}">${modeInfo.maxPlayers} 人 (人數固定)</option>`);
+                            } else {
+                                for (let i = modeInfo.minPlayers; i <= modeInfo.maxPlayers; i++) {
+                                    $playerSelect.append(`<option value="${i}">${i} 人</option>`);
+                                }
+                            }
+                        }
+                    }
+                    // 呼叫 API 同步給後端
+                    syncRoomSettings();
+                });
+
+                // 人數切換時
+                $('#waitPlayerCountSelect').on('change', function() {
+                    syncRoomSettings();
+                });
+            }
+
+            // 🌟 將新設定送給後端
+            function syncRoomSettings() {
+                const newModeId = parseInt($('#waitModeSelect').val());
+                const newMaxPlayers = parseInt($('#waitPlayerCountSelect').val());
+
+                $.ajax({
+                    url: `http://localhost:8080/api/lobby/room/${roomId}/settings`,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        hostAccount: myAccount,
+                        modeId: newModeId,
+                        maxPlayers: newMaxPlayers
+                    }),
+                    success: function(res) {
+                        if (!res.success) {
+                            alert('設定更新失敗：' + res.message);
+                        }
+                        // 成功的話，後端會觸發 WebSocket 廣播，重新觸發 updateWaitingRoomUI，所以這邊不用額外寫
+                    }
+                });
+            }
+
+            // 6. WebSocket 即時連線
+            function connectWebSocket() {
+                roomSocket = new WebSocket(`ws://localhost:8080/ws/room/${roomId}?player=${myAccount}`);
+
+                roomSocket.onopen = function() {
+                    console.log("✅ 等待區 WebSocket 連線成功");
+                };
+
+                roomSocket.onmessage = function(event) {
+                    const message = JSON.parse(event.data);
+                    
+                    if (message.action === 'SYNC_ROOM') {
+                        // 有人加入、離開、或房主改設定，同步更新畫面
+                        currentRoomData = message.roomData;
+                        updateWaitingRoomUI(currentRoomData);
+                    } 
+                    else if (message.action === 'KICKED') {
+                        if (message.targetAccount === myAccount) {
+                            alert('您已被房主請出房間！');
+                            window.location.href = 'jquery_lobby.html';
+                        }
+                    } 
+                    else if (message.action === 'START_GAME') {
+                        alert('🚀 房主已開始遊戲，即將進入牌桌！');
+                        window.location.href = message.url; 
+                    }
+                };
+
+                roomSocket.onclose = function() {
+                    console.log("❌ 房間 WebSocket 連線斷開");
+                };
+            }
+
+            // 7. 房主踢人動作
+            window.kickPlayer = function(targetAccount) {
+                if (confirm(`確定要將玩家 ${targetAccount} 踢出房間嗎？`)) {
+                    $.ajax({
+                        url: `http://localhost:8080/api/lobby/room/${roomId}/kick`,
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ hostAccount: myAccount, targetAccount: targetAccount }),
+                        success: function(res) {
+                            if (!res.success) {
+                                alert('踢除失敗：' + res.message);
+                            }
+                        }
+                    });
+                }
+            };
+
+            // 8. 離開房間按鈕
+            $('#leaveRoomBtn').on('click', function() {
+                if (confirm('確定要離開房間嗎？')) {
+                    $.ajax({
+                        url: `http://localhost:8080/api/lobby/room/${roomId}/leave`,
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ playerAccount: myAccount }),
+                        complete: function() {
+                            if (roomSocket) roomSocket.close();
+                            window.location.href = 'jquery_lobby.html';
+                        }
+                    });
+                }
+            });
+
+            // 9. 房主點擊開始遊戲
+            $('#startGameBtn').on('click', function() {
+                $.ajax({
+                    url: `http://localhost:8080/api/lobby/room/${roomId}/start`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ hostAccount: myAccount }),
+                    success: function(res) {
+                        if (!res.success) {
+                            alert('無法開始遊戲：' + res.message);
+                        }
+                    }
+                });
+            });
+
+            // 啟動載入
+            fetchInitialData();
+        });
+    </script>
+</body>
+</html>
