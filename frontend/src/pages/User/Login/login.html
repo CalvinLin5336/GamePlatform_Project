@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Platform - 登入</title>
+    <link rel="stylesheet" href="./css/login.css">
+</head>
+<body>
+    <main class="auth-shell">
+        <section class="brand-panel">
+            <div class="brand-badge">GAME PLATFORM</div>
+            <div class="brand-mark">GP</div>
+            <p class="eyebrow">PLAYER NETWORK</p>
+            <h1>Play together.<br><span>Stay connected.</span></h1>
+            <p class="brand-copy">登入你的遊戲平台帳號，回到 Lobby 繼續遊玩。</p>
+            <div class="brand-meta">
+                <span>SECURE ACCESS</span>
+                <span>•</span>
+                <span>GAME PLATFORM</span>
+            </div>
+        </section>
+
+        <section class="auth-panel">
+            <div class="auth-card">
+                <div class="mobile-brand">
+                    <div class="brand-mini">GP</div>
+                    <strong>GAME PLATFORM</strong>
+                </div>
+
+                <div class="auth-tabs" role="tablist" aria-label="登入或註冊">
+                    <button class="auth-tab active" id="loginTab" type="button">登入</button>
+                    <button class="auth-tab" id="registerTab" type="button">註冊</button>
+                </div>
+
+                <div id="loginPanel" class="form-panel active-panel">
+                    <div class="form-heading">
+                        <span class="section-kicker">WELCOME BACK</span>
+                        <h2>登入帳號</h2>
+                        <p>使用你的帳號繼續進入 Lobby。</p>
+                    </div>
+
+                    <form id="loginForm" novalidate>
+                        <label class="field">
+                            <span>Account</span>
+                            <input id="loginAccount" type="text" autocomplete="username" maxlength="50" placeholder="輸入帳號" required>
+                        </label>
+
+                        <label class="field">
+                            <span>Password</span>
+                            <input id="loginPassword" type="password" autocomplete="current-password" maxlength="100" placeholder="輸入密碼" required>
+                        </label>
+
+                        <button id="loginBtn" class="primary-btn" type="submit">
+                            <span>登入</span>
+                            <span>→</span>
+                        </button>
+                    </form>
+                </div>
+
+                <div id="registerPanel" class="form-panel">
+                    <div class="form-heading">
+                        <span class="section-kicker">JOIN THE PLATFORM</span>
+                        <h2>建立帳號</h2>
+                        <p>註冊完成後，切換回登入即可開始使用。</p>
+                    </div>
+
+                    <form id="registerForm" novalidate>
+                        <div class="field-grid">
+                            <label class="field">
+                                <span>Account</span>
+                                <input id="registerAccount" type="text" maxlength="50" placeholder="帳號" required>
+                            </label>
+                            <label class="field">
+                                <span>Username</span>
+                                <input id="registerUsername" type="text" maxlength="100" placeholder="顯示名稱" required>
+                            </label>
+                        </div>
+
+                        <label class="field">
+                            <span>Password</span>
+                            <input id="registerPassword" type="password" minlength="8" maxlength="100" placeholder="至少 8 個字元" required>
+                        </label>
+
+                        <label class="field">
+                            <span>Avatar URL <em>optional</em></span>
+                            <input id="registerAvatar" type="url" maxlength="500" placeholder="https://...">
+                        </label>
+
+                        <label class="field">
+                            <span>Description <em>optional</em></span>
+                            <textarea id="registerDescription" maxlength="500" rows="3" placeholder="簡單介紹一下自己"></textarea>
+                        </label>
+
+                        <button id="registerBtn" class="primary-btn" type="submit">
+                            <span>建立帳號</span>
+                            <span>→</span>
+                        </button>
+                    </form>
+                </div>
+
+                <div id="authMessage" class="message" role="alert" aria-live="polite"></div>
+
+                <div class="back-note">
+                    <span>Login success returns to</span>
+                    <strong>Lobby</strong>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="../api/userApi.js"></script>
+    <script src="./js/login.js"></script>
+</body>
+</html>
