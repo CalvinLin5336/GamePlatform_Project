@@ -22,6 +22,9 @@ public class UserService {
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    // 帳號與密碼只能使用英文字母與數字
+    private static final String ALPHANUMERIC_REGEX = "^[A-Za-z0-9]+$";
+
     private final UserPageRepository userPageRepository;
     private final PasswordService passwordService;
     private final OperationLogService operationLogService;
@@ -220,8 +223,14 @@ public class UserService {
                     HttpStatus.BAD_REQUEST, "Request body is required");
         }
 
-        normalizeRequired(request.account(), "Account");
+        String account = normalizeRequired(request.account(), "Account");
         normalizeRequired(request.username(), "Username");
+
+        if (!account.matches(ALPHANUMERIC_REGEX)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Account can contain only English letters and numbers");
+        }
 
         if (!update && (request.password() == null || request.password().isBlank())) {
             throw new ResponseStatusException(
@@ -229,10 +238,17 @@ public class UserService {
         }
 
         if (request.password() != null
-                && !request.password().isBlank()
-                && request.password().length() < 8) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Password must be at least 8 characters");
+                && !request.password().isBlank()) {
+            if (request.password().length() < 8) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Password must be at least 8 characters");
+            }
+
+            if (!request.password().matches(ALPHANUMERIC_REGEX)) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Password can contain only English letters and numbers");
+            }
         }
 
         normalizeRole(request.role());
