@@ -19,10 +19,13 @@ public class InteractionService {
 	private final NotificationRepository notices;
 	private final TeamPostRepository posts;
 	private final MemberRepository members;
+	private final BoardRoomService rooms;
 
 	@Transactional
 	public JoinRequest join(Long postId, JoinRequestForm f) {
 		TeamPost p = post(postId);
+		if (p.getGameId() == null || p.getModeId() == null)
+			throw new IllegalArgumentException("此舊公告尚未設定遊戲模式，請隊長重新建立隊伍");
 		Member m = member(f.getMemberId());
 		if (p.getCaptain().getId().equals(m.getId()))
 			throw new IllegalArgumentException("隊長不能申請加入自己的隊伍");
@@ -34,8 +37,9 @@ public class InteractionService {
 		j.setPost(p);
 		j.setApplicant(m);
 		j.setMessage(f.getMessage());
-		notice(p.getCaptain(), "收到加入申請", m.getNickname() + " 想加入「" + p.getTitle() + "」");
-		return joins.save(j);
+		joins.save(j);
+		notice(p.getCaptain(), "收到加入申請", m.getNickname() + " 想加入「" + p.getTitle() + "」", j);
+		return j;
 	}
 
 	public List<JoinRequest> myApplications(Long memberId) {
@@ -47,8 +51,10 @@ public class InteractionService {
 	}
 
 	@Transactional
-	public JoinRequest review(Long id, ApplicationStatus status) {
+	public JoinRequest review(Long id, ApplicationStatus status, Long captainId) {
 		JoinRequest j = joins.findById(id).orElseThrow(() -> new IllegalArgumentException("找不到申請"));
+		if (!j.getPost().getCaptain().getId().equals(captainId))
+			throw new IllegalArgumentException("只有此隊伍的隊長可以審核");
 		if (j.getStatus() != ApplicationStatus.PENDING)
 			throw new IllegalArgumentException("此申請已完成審核");
 		if (status != ApplicationStatus.APPROVED && status != ApplicationStatus.REJECTED)
@@ -58,12 +64,13 @@ public class InteractionService {
 			if (p.getStatus() != PostStatus.RECRUITING || p.getCurrentPlayers() >= p.getMaxPlayers())
 				throw new IllegalArgumentException("隊伍已滿或停止招募");
 			p.setCurrentPlayers(p.getCurrentPlayers() + 1);
-			if (p.getCurrentPlayers() >= p.getMaxPlayers())
-				p.setStatus(PostStatus.FULL);
+			j.setStatus(status);
+			joins.saveAndFlush(j);
+			rooms.createWhenFull(p);
 			posts.save(p);
 		}
 		j.setStatus(status);
-		notice(j.getApplicant(), "申請結果", status == ApplicationStatus.APPROVED ? "隊長已同意你的申請" : "隊長已拒絕你的申請");
+		notice(j.getApplicant(), "申請結果", status == ApplicationStatus.APPROVED ? "隊長已同意你的申請" : "隊長已拒絕你的申請", j);
 		return joins.save(j);
 	}
 
@@ -115,11 +122,13 @@ public class InteractionService {
 		return members.findById(id).orElseThrow(() -> new IllegalArgumentException("找不到會員"));
 	}
 
-	private void notice(Member m, String title, String message) {
+	private void notice(Member m, String title, String message, JoinRequest application) {
 		Notification n = new Notification();
 		n.setMember(m);
 		n.setTitle(title);
 		n.setMessage(message);
+		n.setPostId(application.getPost().getId());
+		n.setApplicationId(application.getId());
 		notices.save(n);
 	}
 }

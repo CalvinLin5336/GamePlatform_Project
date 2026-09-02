@@ -33,8 +33,9 @@ public class InteractionController {
 	}
 
 	@PutMapping("/applications/{id}/{status}")
-	ResponseEntity<JoinRequest> review(@PathVariable Long id, @PathVariable ApplicationStatus status) {
-		return ResponseEntity.ok(service.review(id, status));
+	ResponseEntity<JoinRequest> review(@PathVariable Long id, @PathVariable ApplicationStatus status,
+			@RequestParam Long captainId) {
+		return ResponseEntity.ok(service.review(id, status, captainId));
 	}
 
 	@GetMapping("/team-posts/{id}/comments")

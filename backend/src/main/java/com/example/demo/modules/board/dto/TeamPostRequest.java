@@ -4,25 +4,28 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-import com.example.demo.modules.board.entity.PostStatus;
-
 @Data
 public class TeamPostRequest {
 	@NotBlank
+	@Size(max = 100)
 	private String title;
-	@NotBlank
-	private String gameName;
+	@NotNull
+	@Positive
+	private Long gameId;
+	@NotNull
+	@Positive
+	private Long modeId;
+	@Min(1)
+	private Integer playerCount;
 	private String activityType;
 	private LocalDateTime startTime;
 	private LocalDateTime endTime;
-	@NotNull
-	@Min(2)
-	private Integer maxPlayers;
 	private Boolean voiceRequired;
 	private String rankRequirement;
 	@NotBlank
 	private String description;
 	private String tags;
-	private PostStatus status;
+	@NotNull
+	@Positive
 	private Long captainId;
 }

@@ -17,6 +17,8 @@ var lastRound=0;
 var platformRoom=true;
 var platformModeId=null;
 var platformUserId=null;
+var boardPostId=null;
+var boardMemberId=null;
 
 function element(id) {
     return document.getElementById(id);
@@ -28,6 +30,8 @@ $(document).ready(function() {
     modeParameter=modeParameter.toUpperCase();
     platformModeId=Number(getParameter("modeId"));
     platformUserId=Number(getParameter("userId"));
+    boardPostId=Number(getParameter("boardPostId"));
+    boardMemberId=Number(getParameter("memberId"));
     element("roomInput").value=roomParameter || "room-1";
     element("computerButton").onclick=function() { join("COMPUTER", newComputerRoomId()); };
     element("playerButton").onclick=function() { join("PLAYER", element("roomInput").value.trim()); };
@@ -63,7 +67,7 @@ function newComputerRoomId() {
 function request(method, path, data, success, complete) {
     var options={
         method:method,
-        url:api+path,
+        url:path.startsWith("/board/") ? "http://"+backendHost+path : api+path,
         contentType:"application/json",
         dataType:"json",
         success:success,
@@ -95,14 +99,15 @@ function join(mode, id) {
     }
     var body={roomId:id};
     if(platformRoom) {
-        if(!platformModeId || !platformUserId) {
+        if(!platformModeId || (boardPostId ? !boardMemberId : !platformUserId)) {
             showMessage("缺少遊戲或房間玩家資料", true);
             return;
         }
         body.modeId=platformModeId;
         body.userId=platformUserId;
     }
-    request("POST", "/join", body, function(joined) {
+    var joinPath=boardPostId ? "/board/team-posts/"+boardPostId+"/game/join?memberId="+boardMemberId : "/join";
+    request("POST", joinPath, body, function(joined) {
         roomId=joined.roomId;
         token=joined.token;
         game=joined.game;

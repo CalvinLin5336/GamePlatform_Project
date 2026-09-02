@@ -10,8 +10,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class JoinRequest {
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(generator = "board_join_requests")
+	@org.hibernate.annotations.GenericGenerator(name = "board_join_requests",
+			type = com.example.demo.modules.board.config.BoardSequenceGenerator.class,
+			parameters = @org.hibernate.annotations.Parameter(name = "sequence_name", value = "join_requests_seq"))
 	private Long id;
+	@Version
+	@Column(nullable = false, columnDefinition = "bigint default 0")
+	private long version;
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "post_id")
 	private TeamPost post;

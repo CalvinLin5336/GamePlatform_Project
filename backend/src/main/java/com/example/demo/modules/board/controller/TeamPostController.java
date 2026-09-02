@@ -19,14 +19,19 @@ public class TeamPostController {
 
 	@GetMapping
 	public ResponseEntity<List<TeamPost>> all(@RequestParam(defaultValue = "") String keyword,
-			@RequestParam(required = false) PostStatus status) {
-		List<TeamPost> data = service.list(keyword, status);
-		return data.size() > 0 ? ResponseEntity.ok(data) : ResponseEntity.noContent().build();
+			@RequestParam(required = false) PostStatus status,
+			@RequestParam(required = false) Long gameId, @RequestParam(required = false) Long modeId) {
+		return ResponseEntity.ok(service.list(keyword, status, gameId, modeId));
 	}
 
 	@GetMapping("/{id}")
 	public ResponseEntity<TeamPost> one(@PathVariable Long id) {
 		return ResponseEntity.ok(service.get(id));
+	}
+
+	@GetMapping("/{id}/room")
+	public ResponseEntity<java.util.Map<String, String>> room(@PathVariable Long id, @RequestParam Long memberId) {
+		return ResponseEntity.ok(java.util.Map.of("roomId", service.roomId(id, memberId)));
 	}
 
 	@GetMapping("/captain/{memberId}")

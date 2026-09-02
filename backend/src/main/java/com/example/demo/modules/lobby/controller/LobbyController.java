@@ -11,6 +11,9 @@ import com.example.demo.modules.game.management.model.Game;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -318,6 +321,7 @@ public class LobbyController {
     // 8. 房主踢除玩家 API
     // =========================================================
     @PostMapping("/room/{roomId}/kick")
+    @Transactional
     public ResponseEntity<Map<String, Object>> kickPlayer(
             @PathVariable String roomId,
             @RequestBody Map<String, String> request) {
@@ -349,7 +353,7 @@ public class LobbyController {
             Map<String, Object> kickMessage = new HashMap<>();
             kickMessage.put("action", "KICKED");
             kickMessage.put("targetAccount", targetAccount);
-            RoomWebSocketHandler.broadcastToRoom(roomId, objectMapper.writeValueAsString(kickMessage));
+            broadcastAfterCommit(roomId, objectMapper.writeValueAsString(kickMessage));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -372,7 +376,7 @@ public class LobbyController {
             wsMessage.put("roomData", room);
             
             String jsonString = objectMapper.writeValueAsString(wsMessage);
-            RoomWebSocketHandler.broadcastToRoom(roomId, jsonString);
+            broadcastAfterCommit(roomId, jsonString);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -382,6 +386,7 @@ public class LobbyController {
     // 9. 房主開始遊戲
     // =========================================================
     @PostMapping("/room/{roomId}/start")
+    @Transactional
     public ResponseEntity<Map<String, Object>> startGame(
             @PathVariable String roomId,
             @RequestBody Map<String, String> request) {
@@ -404,6 +409,12 @@ public class LobbyController {
             response.put("success", false);
             response.put("message", "只有房主可以開始遊戲！");
             return ResponseEntity.status(403).body(response);
+        }
+
+        if (!"WAITING".equals(room.getStatus())) {
+            response.put("success", false);
+            response.put("message", "遊戲已開始或結束，不能重複開始！");
+            return ResponseEntity.badRequest().body(response);
         }
 
         // 3. (選擇性) 防護網：檢查人數是否符合最低要求
@@ -433,12 +444,23 @@ public class LobbyController {
             startMessage.put("action", "START_GAME");
             startMessage.put("url", targetUrl);
             
-            RoomWebSocketHandler.broadcastToRoom(roomId, objectMapper.writeValueAsString(startMessage));
+            broadcastAfterCommit(roomId, objectMapper.writeValueAsString(startMessage));
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         response.put("success", true);
         return ResponseEntity.ok(response);
+    }
+
+    private void broadcastAfterCommit(String roomId, String message) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() { RoomWebSocketHandler.broadcastToRoom(roomId, message); }
+            });
+        } else {
+            RoomWebSocketHandler.broadcastToRoom(roomId, message);
+        }
     }
 }

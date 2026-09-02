@@ -1,34 +1,48 @@
 package com.example.demo.modules.board.config;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.*;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.modules.board.entity.*;
 import com.example.demo.modules.board.repository.*;
+import com.example.demo.modules.board.dto.TeamPostRequest;
+import com.example.demo.modules.board.service.TeamPostService;
+import com.example.demo.modules.game.management.service.GameManagementService;
 
 import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "app.demo-data.enabled", havingValue = "true")
-public class DemoDataInitializer implements CommandLineRunner {
+public class DemoDataInitializer {
 	private final MemberRepository members;
-	private final TeamPostRepository posts;
+	private final TeamPostService posts;
+	private final GameManagementService games;
 	private final PasswordEncoder encoder;
 
-	public void run(String... args) {
+	@EventListener(ApplicationReadyEvent.class)
+	public void run() {
 		if (members.count() > 0)
 			return;
 		Member tom = member("teamleader", "Tom", "tom@example.com", 50, "CAPTAIN");
 		member("player02", "Amy", "amy@example.com", 45, "PLAYER");
-		post(tom, "撲克牌高手募集！", "撲克牌大對決", "四人競技牌局", 4, 2, PostStatus.RECRUITING, "喜歡策略牌局的玩家一起來，規則簡單，新手也能快速加入！",
-				"撲克牌,策略,新手友善");
-		post(tom, "知識王問答挑戰隊", "趣味問答王", "團隊知識挑戰", 5, 3, PostStatus.RECRUITING, "募集不同領域的知識夥伴，一起挑戰綜合題庫並爭取最高分！",
-				"問答,知識,團隊合作");
-		post(tom, "圖靈解密破譯小隊", "圖靈解密", "協力密碼破解", 4, 4, PostStatus.FULL, "透過邏輯、線索與程式概念合作破譯，歡迎喜歡推理的玩家。", "圖靈解密,邏輯,解謎");
+		// GameDataInitializer 的 CommandLineRunner 完成後，才使用正式遊戲資料建立範例。
+		games.findEnabledGames().forEach(game -> game.getModes().stream()
+				.filter(mode -> mode.getMaxPlayers() > 1).forEach(mode -> {
+			TeamPostRequest form = new TeamPostRequest();
+			form.setCaptainId(tom.getId());
+			form.setGameId(game.getGameId());
+			form.setModeId(mode.getModeId());
+			form.setTitle(game.getGameName() + " 隊友募集！");
+			form.setActivityType("新手友善");
+			form.setDescription("歡迎一起遊玩，隊長核准且滿員後自動建立房間！");
+			form.setStartTime(LocalDateTime.now().plusDays(1));
+			posts.create(form);
+		}));
 	}
 
 	private Member member(String a, String n, String e, int level, String role) {
@@ -42,22 +56,4 @@ public class DemoDataInitializer implements CommandLineRunner {
 		return members.save(m);
 	}
 
-	private void post(Member m, String title, String game, String activity, int max, int current, PostStatus status,
-			String description, String tags) {
-		TeamPost p = new TeamPost();
-		p.setCaptain(m);
-		p.setTitle(title);
-		p.setGameName(game);
-		p.setActivityType(activity);
-		p.setMaxPlayers(max);
-		p.setCurrentPlayers(current);
-		p.setStatus(status);
-		p.setVoiceRequired(true);
-		p.setRankRequirement("不限");
-		p.setStartTime(LocalDateTime.now().plusDays(1));
-		p.setEndTime(LocalDateTime.now().plusDays(1).plusHours(2));
-		p.setDescription(description);
-		p.setTags(tags);
-		posts.save(p);
-	}
 }

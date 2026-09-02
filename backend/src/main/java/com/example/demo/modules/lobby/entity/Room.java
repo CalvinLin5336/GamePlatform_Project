@@ -13,6 +13,10 @@ public class Room {
     @Id
     private String id; // 使用字串格式的 UUID 作為房號
 
+    @Version
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long version;
+
     @Column(nullable = false)
     private Long gameId; // 記錄遊戲的 ID
 
