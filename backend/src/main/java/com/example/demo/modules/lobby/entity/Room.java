@@ -16,8 +16,8 @@ public class Room {
     @Column(nullable = false)
     private Long gameId; // 記錄遊戲的 ID
 
-    @Column(nullable = false)
-    private String modeName; // 記錄模式名稱 (例如：玩家對戰)
+    @Column(name = "mode_id", nullable = false)
+    private Long modeId; // 記錄模式名稱 (例如：玩家對戰)
 
     @Column(name = "host_account", nullable = false)
     private String hostAccount;
@@ -59,8 +59,8 @@ public class Room {
     public void setId(String id) { this.id = id; }
     public Long getGameId() { return gameId; }
     public void setGameId(Long gameId) { this.gameId = gameId; }
-    public String getModeName() { return modeName; }
-    public void setModeName(String modeName) { this.modeName = modeName; }
+    public Long getModeId() { return modeId; }
+    public void setModeId(Long modeId) { this.modeId = modeId; }
     public String getHostAccount() { return hostAccount; }
     public void setHostAccount(String hostAccount) { this.hostAccount = hostAccount; }
     public int getMinPlayers() { return minPlayers; }

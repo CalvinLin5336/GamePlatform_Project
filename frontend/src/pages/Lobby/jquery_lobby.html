@@ -146,7 +146,7 @@
                 });
             }
 
-// --- 3. 彈窗邏輯 (點擊遊戲方塊) ---
+            // --- 3. 彈窗邏輯 (點擊遊戲方塊) ---
             $('#gameGrid').on('click', '.game-card', function() {
                 const gameId = $(this).data('game-id');
                 selectedGameId = gameId;
@@ -165,7 +165,7 @@
                     $modeSelect.append(`<option value="">無可用模式</option>`);
                 }
 
-                // 🌟 解除並重新綁定模式切換事件，確保抓到最新的 gameData
+                // 解除並重新綁定模式切換事件，確保抓到最新的 gameData
                 $modeSelect.off('change').on('change', function() {
                     const selectedModeCode = $(this).val();
                     const modeInfo = gameData.modes.find(m => m.modeCode === selectedModeCode);
@@ -185,7 +185,7 @@
                     }
                 });
 
-                // 🌟 觸發一次 change 事件，讓它自動渲染第一個模式的人數選項
+                // 觸發一次 change 事件，讓它自動渲染第一個模式的人數選項
                 $modeSelect.trigger('change');
 
                 $('#gameModal').removeClass('hidden');
@@ -198,10 +198,9 @@
 
             // --- 4. API 串接：建立房間 ---
             $('#confirmCreateBtn').on('click', function() {
-                const currentPlayer = localStorage.getItem("playerName") || "神秘玩家";
+                // ✅ 修正 1：統一變數名稱為 currentAccount
+                const currentAccount = localStorage.getItem("account") || "test_account_01";
                 const modeCode = $('#roomModeSelect').val(); 
-                
-                // 🌟 就是漏了這行！必須先從畫面上把人數抓下來存進變數
                 const playerCount = $('#playerCountSelect').val(); 
                 
                 if (!modeCode) {
@@ -219,18 +218,14 @@
                     data: JSON.stringify({ 
                         gameId: selectedGameId, 
                         modeCode: modeCode, 
-                        // 🌟 這裡才能安全地使用 playerCount 變數
                         playerCount: parseInt(playerCount), 
-                        hostName: currentPlayer 
+                        hostAccount: currentAccount // ✅ 將帳號送給後端
                     }),
                     success: function(response) {
                         if (response.success) {
                             alert(response.message);
                             $('#gameModal').addClass('hidden');
                             $('#tabListBtn').click(); // 自動切換到現有房間列表
-                            
-                            // (如果你前面有加上 WebSocket 函數，這裡可以呼叫連線)
-                            // connectToRoomWebSocket(response.roomId, currentPlayer);
                         } else {
                             alert('建立失敗：' + response.message);
                         }
@@ -239,7 +234,6 @@
                         alert('伺服器連線失敗，請檢查 Spring Boot 是否有啟動！');
                     },
                     complete: function() { 
-                        // 不管成功或失敗，最後一定要把按鈕狀態還原
                         $btn.prop('disabled', false).text('開始建立'); 
                     }
                 });
@@ -260,19 +254,24 @@
                         }
                         
                         response.rooms.forEach(room => {
-                            // 🌟 1. 查字典：用房間的 gameId 去 availableGames 陣列找對應的遊戲資料
+                            // 查字典：用房間的 gameId 去 availableGames 陣列找對應的遊戲資料
                             const gameData = availableGames.find(g => g.gameId === room.gameId);
-                            
-                            // 🌟 2. 取出名字：如果有找到就顯示遊戲名稱，萬一沒找到就先顯示備用的 ID
                             const displayGameName = gameData ? gameData.gameName : '未知遊戲';
-
-                            // 🌟 1. 計算目前人數：檢查 room.players 陣列的長度 (若無資料則為 0)
-                            const currentPlayers = room.players ? room.players.length : 0;
                             
-                            // 🌟 2. 判斷是否滿房
+                            // 查字典：找出模式名稱
+                            let displayModeName = '未知模式';
+                            if (gameData && gameData.modes) {
+                                const modeInfo = gameData.modes.find(m => m.modeId === room.modeId);
+                                if (modeInfo) {
+                                    displayModeName = modeInfo.modeName;
+                                }
+                            }
+                            
+                            // 計算目前人數與滿房狀態
+                            const currentPlayers = room.players ? room.players.length : 0;
                             const isFull = currentPlayers >= room.maxPlayers;
 
-                            // 🌟 3. 動態產生按鈕：滿房時變成灰色且不可點擊
+                            // 動態產生按鈕：滿房時變成灰色且不可點擊
                             let buttonHtml = '';
                             if (isFull) {
                                 buttonHtml = `
@@ -291,15 +290,13 @@
                             const roomHtml = `
                                 <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 flex justify-between items-center hover:border-indigo-500 transition">
                                     <div>
-                                        <!-- 🌟 3. 將原本的 room.gameId 替換成 displayGameName -->
                                         <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded mr-2">${displayGameName}</span>
-                                        <span class="font-bold text-slate-200">房主: ${room.hostName}</span>
-                                        <p class="text-slate-400 text-sm mt-1">模式: ${room.modeName} (${room.minPlayers}~${room.maxPlayers}人)</p>
-                                        <!-- 🌟 4. 新增一行用來顯示目前人數狀態 -->
+                                        <!-- ✅ 修正 2：使用 room.hostAccount -->
+                                        <span class="font-bold text-slate-200">房主: ${room.hostAccount}</span>
+                                        <p class="text-slate-400 text-sm mt-1">模式: ${displayModeName} (${room.minPlayers}~${room.maxPlayers}人)</p>
                                         <p class="text-cyan-400 text-sm font-medium mt-1">👥 房間人數: ${currentPlayers} / ${room.maxPlayers} 人</p>
                                         <p class="text-slate-500 text-xs mt-1">房號: ${room.id}</p>
                                     </div>
-                                   
                                     ${buttonHtml}
                                 </div>
                             `;
@@ -316,12 +313,13 @@
 
             // --- 6. API 串接：加入房間 ---
             window.joinRoom = function(roomId) {
-                const currentPlayer = localStorage.getItem("playerName") || "神秘玩家";
+                // ✅ 修正 3：統一變數名稱為 currentAccount (這裡預設用 02 來測試加入)
+                const currentAccount = localStorage.getItem("account") || "test_account_02";
                 $.ajax({
                     url: 'http://localhost:8080/api/lobby/join-room',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ roomId: roomId, playerName: currentPlayer }),
+                    data: JSON.stringify({ roomId: roomId, playerAccount: currentAccount }), // ✅ 對齊後端參數
                     success: function(res) {
                         if (res.success) {
                             alert('成功加入房間！即將進入遊戲...');

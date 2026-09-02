@@ -54,6 +54,7 @@ public class LobbyController {
             List<Map<String, Object>> modesData = new ArrayList<>();
             for (GameMode mode : modes) {
                 Map<String, Object> modeMap = new HashMap<>();
+                modeMap.put("modeId", mode.getModeId());
                 modeMap.put("modeCode", mode.getModeCode());
                 modeMap.put("modeName", mode.getModeName());
                 modeMap.put("minPlayers", mode.getMinPlayers());
@@ -126,7 +127,7 @@ public class LobbyController {
         Room newRoom = new Room();
         newRoom.setHostAccount(hostAccount); // 存入帳號
         newRoom.setGameId(gameId);
-        newRoom.setModeName(modeConfig.getModeName()); 
+        newRoom.setModeId(modeConfig.getModeId()); 
         newRoom.setMinPlayers(modeConfig.getMinPlayers()); 
         newRoom.setMaxPlayers(finalMaxPlayers);
         newRoom.setComputerPlayers(modeConfig.getComputerPlayers()); 
