@@ -20,11 +20,10 @@ import com.example.demo.modules.game.poker.dto.JoinRequest;
 import com.example.demo.modules.game.poker.dto.JoinResult;
 import com.example.demo.modules.game.poker.dto.SelectionRequest;
 import com.example.demo.modules.game.poker.exception.GameException;
-import com.example.demo.modules.game.poker.model.GameRoom;
 import com.example.demo.modules.game.poker.service.PokerGameService;
 import com.example.demo.modules.game.poker.service.PokerJwtService;
+import com.example.demo.modules.game.poker.service.PokerPlatformRoomService;
 import com.example.demo.modules.game.management.dto.GameModeView;
-import com.example.demo.modules.game.management.service.GameManagementService;
 import com.example.demo.modules.user.dto.UserResponse;
 
 @CrossOrigin(origins="*")
@@ -35,7 +34,7 @@ public class PokerGameController {
     private PokerGameService pokerGameService;
 
     @Autowired
-    private GameManagementService gameSystemService;
+    private PokerPlatformRoomService pokerPlatformRoomService;
 
     @Autowired
     private PokerJwtService pokerJwtService;
@@ -44,16 +43,9 @@ public class PokerGameController {
     public JoinResult join(@RequestBody JoinRequest request,
             @RequestHeader(value="Authorization", required=false) String authorization) {
         UserResponse user=pokerJwtService.requireUser(authorization);
-        GameModeView selectedMode=gameSystemService.findMode(request.getModeId(), false);
+        GameModeView selectedMode=pokerPlatformRoomService.requireJoinableRoom(
+                request.getRoomId(), request.getModeId(), user.account());
         String mode=selectedMode.getModeCode();
-        if(!GameRoom.MODE_PLAYER.equals(mode) && !GameRoom.MODE_COMPUTER.equals(mode)) {
-            throw new GameException("INVALID_MODE", "這個模式不屬於田忌撲克");
-        }
-        com.example.demo.modules.game.management.dto.GameView selectedGame =
-                gameSystemService.findGame(selectedMode.getGameId(), false);
-        if(!"POKER".equals(selectedGame.getGameCode())) {
-            throw new GameException("INVALID_GAME", "這個入口只能開啟田忌撲克");
-        }
         return pokerGameService.join(request.getRoomId(), mode,
                 user.id(), user.username());
     }
