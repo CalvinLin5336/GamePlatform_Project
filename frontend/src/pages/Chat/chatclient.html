@@ -6,7 +6,8 @@
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
         <style>body { font-family: 'Noto Sans TC', sans-serif; }</style>
-        <script src="js/client.js"></script>
+        <!-- 載入 jQuery 核心 -->
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     </head>
     <body class="relative h-screen w-screen overflow-hidden bg-slate-950 flex flex-col">
 
@@ -24,11 +25,11 @@
                 
                 <!-- 原本的導覽列按鈕 -->
                 <nav class="flex items-center gap-2 pr-4 border-r border-slate-700 mr-4">
-                    <button onclick="switchTab('lobby', '../Games/tjpoker/poker_client.html')" 
+                    <button onclick="switchTab('lobby', '../lobby/jquery_lobby.html')" 
                             class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95 bg-slate-800 text-white" data-target="lobby">
                         🏠 遊戲大廳
                     </button>
-                    <button onclick="switchTab('party', '../lobby/jquery_lobby.html')" 
+                    <button onclick="switchTab('party', '../board/index.html')" 
                             class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="party">
                         👥 組隊布告欄
                     </button>
@@ -42,13 +43,13 @@
                     </button>
                 </nav>
 
-                <!-- 🌟 新增：使用者狀態區 -->
+                <!-- 使用者狀態區 -->
                 <div id="userStatusArea" class="flex items-center">
                     
                     <!-- 狀態 A：未登入 (預設顯示) -->
                     <div id="loggedOutView" class="flex items-center gap-3">
                         <span class="text-sm text-slate-400">尚未登入</span>
-                        <button onclick="switchTab('member', 'http://10.10.1.171:5173/')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded transition shadow-lg shadow-indigo-500/20">
+                        <button onclick="switchTab('member', '../User/Login/login.html')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded transition shadow-lg shadow-indigo-500/20">
                             前往登入
                         </button>
                     </div>
@@ -148,21 +149,39 @@
                 toggleChatBtn.classList.remove('hidden');
             });
 
-            // --- 🌟 右上角使用者登入狀態邏輯 ---
+            // --- 🌟 右上角與聊天室同步登入狀態邏輯 (對齊 'account') ---
             const loggedOutView = document.getElementById('loggedOutView');
             const loggedInView = document.getElementById('loggedInView');
             const displayUserName = document.getElementById('displayUserName');
             const logoutBtn = document.getElementById('logoutBtn');
 
             function checkLoginStatus() {
-                const currentPlayer = localStorage.getItem("playerName");
+                const currentAccount = localStorage.getItem("account");
 
-                if (currentPlayer) {
-                    displayUserName.textContent = currentPlayer;
+                if (currentAccount) {
+                    // 1. 更新右上角介面
+                    displayUserName.textContent = currentAccount;
                     loggedOutView.classList.add('hidden');
                     loggedInView.classList.remove('hidden');
                     loggedInView.classList.add('flex');
+
+                    // 2. 同步更新右下角聊天室介面狀態
+                    const infoWindow = document.getElementById('infoWindow');
+                    const userNameInput = document.getElementById('userNameInput');
+                    const loginBtn = document.getElementById('loginBtn');
+                    
+                    if (infoWindow) infoWindow.textContent = "狀態：已登入 (" + currentAccount + ")";
+                    if (userNameInput) {
+                        userNameInput.value = currentAccount;
+                        userNameInput.disabled = true;
+                    }
+                    if (loginBtn) {
+                        loginBtn.value = "已登入";
+                        loginBtn.disabled = true;
+                    }
+
                 } else {
+                    // 未登入狀態
                     loggedInView.classList.add('hidden');
                     loggedInView.classList.remove('flex');
                     loggedOutView.classList.remove('hidden');
@@ -171,15 +190,82 @@
 
             logoutBtn.addEventListener('click', () => {
                 if (confirm('確定要登出嗎？')) {
-                    localStorage.removeItem("playerName");
+                    if (typeof UserApi !== 'undefined' && UserApi.clearLoginSession) {
+                        UserApi.clearLoginSession();
+                    } else {
+                        localStorage.removeItem("token");
+                        localStorage.removeItem("account");
+                        localStorage.removeItem("userId");
+                        localStorage.removeItem("username");
+                        localStorage.removeItem("role");
+                        localStorage.removeItem("status");
+                    }
+                    
                     checkLoginStatus();
+                    
+                    // 重置聊天室狀態
                     document.getElementById('infoWindow').textContent = "狀態：未登入";
+                    const userNameInput = document.getElementById('userNameInput');
+                    const loginBtn = document.getElementById('loginBtn');
+                    if (userNameInput) { userNameInput.value = ""; userNameInput.disabled = false; }
+                    if (loginBtn) { loginBtn.value = "登入"; loginBtn.disabled = false; }
+
                     alert('已成功登出！');
+                    window.location.reload();
                 }
             });
 
             // 網頁一載入時，立刻執行一次狀態檢查
             checkLoginStatus();
+
+            // 監聽 localStorage 變更（支援跨分頁同步）
+            window.addEventListener('storage', (event) => {
+                if (event.key === 'account') {
+                    checkLoginStatus();
+                }
+            });
+
+// --- 🌟 聊天室表單送出與訊息渲染 ---
+            $('#chatRoomForm').on('submit', function (event) {
+                event.preventDefault(); // 阻止表單預設提交與頁面重新整理
+
+                const messageInput = $('#userinput');
+                const messageText = messageInput.val().trim();
+                const currentAccount = localStorage.getItem("account") || "訪客";
+
+                if (!messageText) return;
+
+                // 1. 動態建立一則訊息的 HTML 結構 (你可以根據你們聊天室原本的樣式微調)
+                const messageHtml = `
+                    <div class="flex flex-col bg-slate-800/60 p-2 rounded-lg">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-indigo-400">${currentAccount}</span>
+                            <span class="text-[10px] text-slate-500">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <span class="text-slate-200 break-words">${escapeHtml(messageText)}</span>
+                    </div>
+                `;
+
+                // 2. 將訊息塞進顯示區
+                $('#messageDisplay').append(messageHtml);
+
+                // 3. 讓聊天室自動捲動到最底部，看得到最新訊息
+                const displayArea = document.getElementById('messageDisplay');
+                displayArea.scrollTop = displayArea.scrollHeight;
+
+                // 4. 清空輸入框
+                messageInput.val('');
+
+                // 💡 之後如果串接 WebSocket，發送邏輯可以直接寫在這邊：
+                // if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                //     chatSocket.send(JSON.stringify({ sender: currentAccount, content: messageText }));
+                // }
+            });
+
+            // 輔助函式：防止 HTML 標籤隱碼攻擊 (XSS 簡單防護)
+            function escapeHtml(text) {
+                return $('<div>').text(text).html();
+            }
         </script>
     </body>
 </html>
