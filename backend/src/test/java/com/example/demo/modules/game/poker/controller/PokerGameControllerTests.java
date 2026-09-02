@@ -14,19 +14,19 @@ import com.example.demo.modules.game.management.service.GameManagementService;
 import com.example.demo.modules.game.poker.dto.JoinRequest;
 import com.example.demo.modules.game.poker.dto.JoinResult;
 import com.example.demo.modules.game.poker.service.PokerGameService;
+import com.example.demo.modules.game.poker.service.PokerJwtService;
 import com.example.demo.modules.user.dto.UserResponse;
-import com.example.demo.modules.user.service.UserService;
 
 class PokerGameControllerTests {
     @Test
     void joinLoadsModeGameAndPlayerNameFromBackendServices() {
         PokerGameService pokerService=mock(PokerGameService.class);
         GameManagementService gameService=mock(GameManagementService.class);
-        UserService userService=mock(UserService.class);
+        PokerJwtService jwtService=mock(PokerJwtService.class);
         PokerGameController controller=new PokerGameController();
         ReflectionTestUtils.setField(controller, "pokerGameService", pokerService);
         ReflectionTestUtils.setField(controller, "gameSystemService", gameService);
-        ReflectionTestUtils.setField(controller, "userService", userService);
+        ReflectionTestUtils.setField(controller, "pokerJwtService", jwtService);
 
         GameModeView mode=new GameModeView();
         mode.setModeId(2L);
@@ -41,7 +41,7 @@ class PokerGameControllerTests {
 
         when(gameService.findMode(2L, false)).thenReturn(mode);
         when(gameService.findGame(1L, false)).thenReturn(game);
-        when(userService.findById(8L)).thenReturn(user);
+        when(jwtService.requireUser("Bearer platform-jwt")).thenReturn(user);
         when(pokerService.join("15", "PLAYER", 8L, "玩家八")).thenReturn(expected);
 
         JoinRequest request=new JoinRequest();
@@ -49,10 +49,10 @@ class PokerGameControllerTests {
         request.setModeId(2L);
         request.setUserId(8L);
 
-        assertSame(expected, controller.join(request));
+        assertSame(expected, controller.join(request, "Bearer platform-jwt"));
         verify(gameService).findMode(2L, false);
         verify(gameService).findGame(1L, false);
-        verify(userService).findById(8L);
+        verify(jwtService).requireUser("Bearer platform-jwt");
         verify(pokerService).join("15", "PLAYER", 8L, "玩家八");
     }
 }

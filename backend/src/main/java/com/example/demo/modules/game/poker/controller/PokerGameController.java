@@ -22,10 +22,10 @@ import com.example.demo.modules.game.poker.dto.SelectionRequest;
 import com.example.demo.modules.game.poker.exception.GameException;
 import com.example.demo.modules.game.poker.model.GameRoom;
 import com.example.demo.modules.game.poker.service.PokerGameService;
+import com.example.demo.modules.game.poker.service.PokerJwtService;
 import com.example.demo.modules.game.management.dto.GameModeView;
 import com.example.demo.modules.game.management.service.GameManagementService;
 import com.example.demo.modules.user.dto.UserResponse;
-import com.example.demo.modules.user.service.UserService;
 
 @CrossOrigin(origins="*")
 @RestController
@@ -38,10 +38,12 @@ public class PokerGameController {
     private GameManagementService gameSystemService;
 
     @Autowired
-    private UserService userService;
+    private PokerJwtService pokerJwtService;
 
     @PostMapping("/join")
-    public JoinResult join(@RequestBody JoinRequest request) {
+    public JoinResult join(@RequestBody JoinRequest request,
+            @RequestHeader(value="Authorization", required=false) String authorization) {
+        UserResponse user=pokerJwtService.requireUser(authorization);
         GameModeView selectedMode=gameSystemService.findMode(request.getModeId(), false);
         String mode=selectedMode.getModeCode();
         if(!GameRoom.MODE_PLAYER.equals(mode) && !GameRoom.MODE_COMPUTER.equals(mode)) {
@@ -52,9 +54,8 @@ public class PokerGameController {
         if(!"POKER".equals(selectedGame.getGameCode())) {
             throw new GameException("INVALID_GAME", "這個入口只能開啟田忌撲克");
         }
-        UserResponse user=userService.findById(request.getUserId());
         return pokerGameService.join(request.getRoomId(), mode,
-                request.getUserId(), user.username());
+                user.id(), user.username());
     }
 
     @GetMapping("/rooms/{roomId}")

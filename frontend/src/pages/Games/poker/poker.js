@@ -16,7 +16,7 @@ var confirmAfterSave=false;
 var lastRound=0;
 var platformRoom=true;
 var platformModeId=null;
-var platformUserId=null;
+var platformJwt="";
 
 function element(id) {
     return document.getElementById(id);
@@ -27,7 +27,7 @@ $(document).ready(function() {
     var modeParameter=getParameter("modeCode");
     modeParameter=modeParameter.toUpperCase();
     platformModeId=Number(getParameter("modeId"));
-    platformUserId=Number(getParameter("userId"));
+    platformJwt=localStorage.getItem("token") || "";
     element("roomInput").value=roomParameter || "room-1";
     element("computerButton").onclick=function() { join("COMPUTER", newComputerRoomId()); };
     element("playerButton").onclick=function() { join("PLAYER", element("roomInput").value.trim()); };
@@ -83,7 +83,9 @@ function request(method, path, data, success, complete) {
         }
     };
     if(complete) options.complete=complete;
-    if(token) options.headers={"X-Player-Token":token};
+    options.headers={};
+    if(platformJwt) options.headers["Authorization"]="Bearer "+platformJwt;
+    if(token) options.headers["X-Player-Token"]=token;
     if(data!==null) options.data=JSON.stringify(data);
     return $.ajax(options);
 }
@@ -95,12 +97,15 @@ function join(mode, id) {
     }
     var body={roomId:id};
     if(platformRoom) {
-        if(!platformModeId || !platformUserId) {
-            showMessage("缺少遊戲或房間玩家資料", true);
+        if(!platformModeId) {
+            showMessage("缺少遊戲模式資料", true);
+            return;
+        }
+        if(!platformJwt) {
+            showMessage("請先登入平台再進入遊戲", true);
             return;
         }
         body.modeId=platformModeId;
-        body.userId=platformUserId;
     }
     request("POST", "/join", body, function(joined) {
         roomId=joined.roomId;

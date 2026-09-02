@@ -50,6 +50,21 @@ public class GameDataInitializer implements CommandLineRunner {
 
         createModeIfMissing(tjpoker.getGameId(), "COMPUTER", "對戰電腦", 1, 1, 1, false);
         createModeIfMissing(tjpoker.getGameId(), "PLAYER", "玩家對戰", 2, 2, 0, false);
+
+        Game quiz = gameRepository.findByGameCode("QUIZ").orElse(null);
+        if (quiz == null) {
+            quiz = new Game();
+            quiz.setGameCode("QUIZ");
+            quiz.setGameName("限時問答挑戰");
+            quiz.setDescription("20 題計時問答挑戰，內容涵蓋電腦科學與軟體開發基礎知識。");
+            quiz.setFrontendPath("/src/pages/Games/quiz/quiz_client.html");
+            quiz.setBackendPath("/api/quiz");
+            quiz.setImagePath("/src/assets/Games/quiz/quiz_game_icon.png");
+            quiz.setEnabled(true);
+            quiz = gameRepository.save(quiz);
+        }
+
+        createModeIfMissing(quiz.getGameId(), "SINGLE", "單人挑戰", 1, 1, 0, true);
     }
 
     private void createModeIfMissing(
