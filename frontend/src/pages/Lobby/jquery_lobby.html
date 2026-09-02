@@ -266,6 +266,28 @@
                             // 🌟 2. 取出名字：如果有找到就顯示遊戲名稱，萬一沒找到就先顯示備用的 ID
                             const displayGameName = gameData ? gameData.gameName : '未知遊戲';
 
+                            // 🌟 1. 計算目前人數：檢查 room.players 陣列的長度 (若無資料則為 0)
+                            const currentPlayers = room.players ? room.players.length : 0;
+                            
+                            // 🌟 2. 判斷是否滿房
+                            const isFull = currentPlayers >= room.maxPlayers;
+
+                            // 🌟 3. 動態產生按鈕：滿房時變成灰色且不可點擊
+                            let buttonHtml = '';
+                            if (isFull) {
+                                buttonHtml = `
+                                    <button disabled class="bg-slate-700 text-slate-400 px-5 py-2 rounded-lg text-sm font-medium cursor-not-allowed border border-slate-600">
+                                        房間已滿
+                                    </button>
+                                `;
+                            } else {
+                                buttonHtml = `
+                                    <button onclick="joinRoom('${room.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition active:scale-95 shadow-md shadow-emerald-900/50">
+                                        加入遊戲
+                                    </button>
+                                `;
+                            }
+
                             const roomHtml = `
                                 <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 flex justify-between items-center hover:border-indigo-500 transition">
                                     <div>
@@ -273,11 +295,12 @@
                                         <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded mr-2">${displayGameName}</span>
                                         <span class="font-bold text-slate-200">房主: ${room.hostName}</span>
                                         <p class="text-slate-400 text-sm mt-1">模式: ${room.modeName} (${room.minPlayers}~${room.maxPlayers}人)</p>
+                                        <!-- 🌟 4. 新增一行用來顯示目前人數狀態 -->
+                                        <p class="text-cyan-400 text-sm font-medium mt-1">👥 房間人數: ${currentPlayers} / ${room.maxPlayers} 人</p>
                                         <p class="text-slate-500 text-xs mt-1">房號: ${room.id}</p>
                                     </div>
-                                    <button onclick="joinRoom('${room.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition active:scale-95">
-                                        加入遊戲
-                                    </button>
+                                   
+                                    ${buttonHtml}
                                 </div>
                             `;
                             $container.append(roomHtml);

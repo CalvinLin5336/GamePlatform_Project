@@ -91,7 +91,7 @@ public class LobbyController {
     // =========================================================
     @PostMapping("/create-room")
     public ResponseEntity<Map<String, Object>> createRoom(@RequestBody Map<String, Object> request) {
-        String hostName = (String) request.get("hostName"); 
+    	String hostAccount = (String) request.get("hostAccount"); 
         
         // 接收前端傳來的 gameId 與 modeCode
         Long gameId = Long.valueOf(request.get("gameId").toString());
@@ -124,7 +124,7 @@ public class LobbyController {
         
         // 建立新的 Room 物件並寫入限制條件
         Room newRoom = new Room();
-        newRoom.setHostName(hostName);
+        newRoom.setHostAccount(hostAccount); // 存入帳號
         newRoom.setGameId(gameId);
         newRoom.setModeName(modeConfig.getModeName()); 
         newRoom.setMinPlayers(modeConfig.getMinPlayers()); 
@@ -132,7 +132,7 @@ public class LobbyController {
         newRoom.setComputerPlayers(modeConfig.getComputerPlayers()); 
         
         // 房主開房的同時，自動把房主加入玩家名單中
-        newRoom.getPlayers().add(hostName);
+        newRoom.getPlayers().add(hostAccount);
         
         // 存入資料庫
         Room savedRoom = roomRepository.save(newRoom);
@@ -153,7 +153,7 @@ public class LobbyController {
     @PostMapping("/join-room")
     public ResponseEntity<Map<String, Object>> joinRoom(@RequestBody Map<String, Object> request) {
         String roomId = (String) request.get("roomId");
-        String playerName = (String) request.get("playerName");
+        String playerAccount = (String) request.get("playerAccount");
         Map<String, Object> response = new HashMap<>();
 
         // 去資料庫找這個房間是否存在
@@ -174,10 +174,16 @@ public class LobbyController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        // 檢查玩家是否已經在裡面 (防止重複加入)
-        if (!room.getPlayers().contains(playerName)) {
-            room.getPlayers().add(playerName); // 把玩家加入名單
-            roomRepository.save(room);         // 存回資料庫
+     // 🌟 新增防護網：檢查人數是否已達上限
+        if (room.getPlayers().size() >= room.getMaxPlayers()) {
+            response.put("success", false);
+            response.put("message", "加入失敗：房間人數已滿！");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        if (!room.getPlayers().contains(playerAccount)) {
+            room.getPlayers().add(playerAccount); // 把加入者的帳號存進陣列裡
+            roomRepository.save(room);         
         }
 
         response.put("success", true);

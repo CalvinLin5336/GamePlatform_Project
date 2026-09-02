@@ -19,8 +19,8 @@ public class Room {
     @Column(nullable = false)
     private String modeName; // 記錄模式名稱 (例如：玩家對戰)
 
-    @Column(nullable = false)
-    private String hostName; // 房主名稱
+    @Column(name = "host_account", nullable = false)
+    private String hostAccount;
 
     @Column(nullable = false)
     private int minPlayers; // 該模式的最低人數
@@ -40,7 +40,7 @@ public class Room {
     // 存放加入房間的玩家名單 (另建一張 room_players 關聯表儲存)
     @ElementCollection
     @CollectionTable(name = "room_players", joinColumns = @JoinColumn(name = "room_id"))
-    @Column(name = "player_name")
+    @Column(name = "player_account")
     private List<String> players = new ArrayList<>();
 
     // 在存入資料庫前，自動產生 ID 與建立時間
@@ -61,8 +61,8 @@ public class Room {
     public void setGameId(Long gameId) { this.gameId = gameId; }
     public String getModeName() { return modeName; }
     public void setModeName(String modeName) { this.modeName = modeName; }
-    public String getHostName() { return hostName; }
-    public void setHostName(String hostName) { this.hostName = hostName; }
+    public String getHostAccount() { return hostAccount; }
+    public void setHostAccount(String hostAccount) { this.hostAccount = hostAccount; }
     public int getMinPlayers() { return minPlayers; }
     public void setMinPlayers(int minPlayers) { this.minPlayers = minPlayers; }
     public int getMaxPlayers() { return maxPlayers; }
