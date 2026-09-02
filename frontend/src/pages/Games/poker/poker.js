@@ -58,7 +58,7 @@ function loadPlatformRoom(id) {
         showMessage("請先登入平台再進入遊戲", true);
         return;
     }
-    showMessage("正在讀取平台房間資料...");
+    showMessage("正在讀取平台房間資料...", true);
     $.ajax({
         method:"GET",
         url:lobbyApi+"/room/"+encodeURIComponent(id),
@@ -163,6 +163,8 @@ function join(mode, id) {
         roomId=joined.roomId;
         token=joined.token;
         game=joined.game;
+        showMessage("", true);
+        showMessage("");
         syncDraft();
         document.body.classList.add("playing");
         element("lobby").classList.add("hidden");
