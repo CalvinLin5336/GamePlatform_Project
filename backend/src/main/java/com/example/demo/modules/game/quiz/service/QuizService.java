@@ -38,9 +38,30 @@ public class QuizService {
 		this.playerService = playerService;
 	}
 	
-	//隨機抽取測驗考題
+	//隨機抽取測驗考題:記憶體洗牌防呆，避免SQL方言衝突或資料量不足越界
+	//加上唯讀事務避免 LazyInitializationException
+	@Transactional(readOnly=true)
 	public List<Question> getRandomExamQuestions(int count){
-		return questionrepo.findRandomQuestions(count);
+		List<Question> allQuestions = questionrepo.findAll();
+		if(allQuestions== null || allQuestions.isEmpty()) {
+			return Collections.emptyList();
+		}
+		//複製一份清單避免影響快取，進行隨機洗牌
+		List<Question> shuffled = new ArrayList<>(allQuestions);
+		Collections.shuffle(shuffled);
+		
+		//使用 stream limit，即便題庫少於count題也部會拋出 IndexOutOfBoundsException
+		List<Question> examQuestions = shuffled.stream()
+				.limit(count)
+				.collect(Collectors.toList());
+		
+		//明確觸發選項加載，確保序列化為JSON 時不中斷
+		examQuestions.forEach(q->{
+			if(q.getOptions()!=null) {
+				q.getOptions().size();
+			}
+		});
+		return examQuestions;
 	}
 	
 	//查詢題庫中所有題目
@@ -151,8 +172,9 @@ public class QuizService {
 			List<Option> options = question.getOptions() != null
 					? question.getOptions()
 					: Collections.emptyList();
+			// 防呆處理: 使用Boolean.TRUE.equals避免isCorrect 為null 時噴出 NPE
 			Set<Long> correctSelections =options.stream()
-					.filter(Option::getIsCorrect)
+					.filter(opt -> Boolean.TRUE.equals(opt.getIsCorrect()))
 					.map(Option::getId)
 					.collect(Collectors.toSet());
 			
@@ -170,8 +192,9 @@ public class QuizService {
 					);	
 		}
 		
-		//計分規則: 每題5分(以20題滿分100為例)
-		int score = correctCount * 5;
+		//動態計算比分制總分(若無題目則0分)
+		int totolQuestions = answers.size();
+		int score = totolQuestions > 0 ? (int) Math.round(((double) correctCount / totolQuestions) * 100) : 0;
 		
 		//若有填寫完加名稱，則呼叫PlayerService 嘗試更新排行榜與個人最高分
 		if(request.getUsername() != null && !request.getUsername().isBlank()){

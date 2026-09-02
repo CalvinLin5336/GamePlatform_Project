@@ -16,7 +16,7 @@ import com.example.demo.modules.game.quiz.model.Player;
 import com.example.demo.modules.game.quiz.service.PlayerService;
 
 @RestController
-@RequestMapping("/api/quiz/play")
+@RequestMapping("/api/quiz/players")
 @CrossOrigin(origins="*")  //允許所有來源進行 API 呼叫
 public class PlayerController {
 	@Autowired

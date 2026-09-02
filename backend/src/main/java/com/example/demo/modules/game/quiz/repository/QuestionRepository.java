@@ -29,6 +29,9 @@ public interface QuestionRepository extends JpaRepository<Question,Long> {
 	 * @return 隨機挑選出的 Question 實體清單
 	 * */	
 	//使用 MySQL 原生 SQL 隨機抽取指定數量的題目(預設20題)	
-	@Query(value = "SELECT * FROM questions ORDER BY RAND() LIMIT :count", nativeQuery=true)
-	List<Question> findRandomQuestions(@Param("count") int count);
+	//@Query(value = "SELECT * FROM question ORDER BY RAND() LIMIT :count", nativeQuery=true)
+	//List<Question> findRandomQuestions(@Param("count") int count);
+	//交由Service層洗牌
+	//搭配Service 層 getRundomExamQuestion() 使用，無需自訂SQL
+	
 }
