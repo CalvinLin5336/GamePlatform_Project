@@ -39,12 +39,30 @@ function requireAuth(){
 	return true;
 }
 
+//解析 JWT Payload
+function parseJwt(token){
+	try{
+		const base64Url = token.split('.')[1];
+		const base64 = base64Url.replace(/-/g,'+').replace(/_/g,'/');
+		const jsonPayLoad = decodeURIComponent(
+			atob(base64)
+				.split('')
+				.map(c=> '%' + ('00'+ c.charCodeAt(0).toString(16)).slice(-2))
+				.join('')
+			);
+			return JSON.parse(jsonPayLoad);
+
+	}catch(e){
+		return null;
+	}
+}
+
 /*
 * 封裝feth: 自動在 Headers 帶入 Authorization Bearer Token
 * 並統一攔截 401/403 授權失敗
 */
 async function authFetch(url,options={}){
-	options.options.headers || {};
+	options.headers = options.headers || {};
 
 	if(platformJwt){
 		options.headers["Authorization"]= `Bearer ${platformJwt}`;
@@ -66,6 +84,22 @@ document.addEventListener("DOMContentLoaded", ()=>{
 	//從 localStorage讀取 Token
 	const urlParams = new URLSearchParams(location.search);
 	platformJwt = urlParams.get('token') || localStorage.getItem("token")||"";
+
+	const nameInput = document.getElementById('player-name');
+
+	//若有 Token，解析出使用者名稱或帳號填入
+	if(platformJwt && nameInput){
+		const payload = parseJwt(platformJwt);
+		if(payload){
+			//依後端 JWT生成時塞入的claim鍵名調整(例如: sub, username, account, nickname)
+			const loggedUser = payload.username || payload.account || payload.sub;
+			if(loggedUser){
+				nameInput.value = loggedUser;
+				//避免竄改
+				//nameInput.readOnly = true;
+			}
+		}
+	}
 
 	addAdminOptionRow();
 	addAdminOptionRow();
