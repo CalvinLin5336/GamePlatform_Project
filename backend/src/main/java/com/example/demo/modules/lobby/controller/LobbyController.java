@@ -57,6 +57,7 @@ public class LobbyController {
                 modeMap.put("modeCode", mode.getModeCode());
                 modeMap.put("modeName", mode.getModeName());
                 modeMap.put("minPlayers", mode.getMinPlayers());
+                modeMap.put("maxPlayers", mode.getMaxPlayers());
                 modesData.add(modeMap);
             }
             gameMap.put("modes", modesData);
@@ -96,6 +97,9 @@ public class LobbyController {
         Long gameId = Long.valueOf(request.get("gameId").toString());
         String modeCode = (String) request.get("modeCode");
         
+        Object playerCountObj = request.get("playerCount");
+        Integer playerCount = Integer.valueOf(request.get("playerCount").toString()); // 接收房主選擇的人數
+        
         // 呼叫隊員寫好的方法，精準查出該模式的設定
         Optional<GameMode> optionalMode = gameModeRepository.findByGameIdAndModeCode(gameId, modeCode);
         
@@ -108,13 +112,23 @@ public class LobbyController {
 
         GameMode modeConfig = optionalMode.get();
 
+     // 決定最終人數：如果前端有傳，就用前端的；如果沒傳(或發生錯誤)，就退回使用資料庫的預設最大值
+        int finalMaxPlayers = modeConfig.getMaxPlayers();
+        if (playerCountObj != null) {
+            try {
+                finalMaxPlayers = Integer.parseInt(playerCountObj.toString());
+            } catch (NumberFormatException e) {
+                // 萬一前端傳來奇奇怪怪的字串，就忽略它，維持預設值
+            }
+        }
+        
         // 建立新的 Room 物件並寫入限制條件
         Room newRoom = new Room();
         newRoom.setHostName(hostName);
         newRoom.setGameId(gameId);
         newRoom.setModeName(modeConfig.getModeName()); 
         newRoom.setMinPlayers(modeConfig.getMinPlayers()); 
-        newRoom.setMaxPlayers(modeConfig.getMaxPlayers()); 
+        newRoom.setMaxPlayers(finalMaxPlayers);
         newRoom.setComputerPlayers(modeConfig.getComputerPlayers()); 
         
         // 房主開房的同時，自動把房主加入玩家名單中
