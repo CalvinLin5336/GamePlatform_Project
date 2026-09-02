@@ -22,6 +22,7 @@ public class GameRoom {
     private boolean[] roundConfirmed = new boolean[2];
     private List<RoundResult> results = new ArrayList<RoundResult>();
     private Integer winner;
+    private Long roundResultEndsAt;
 
     public GameRoom(String id, String mode) {
         this.id = id;
@@ -46,4 +47,6 @@ public class GameRoom {
     public void setResults(List<RoundResult> results) { this.results = results; }
     public Integer getWinner() { return winner; }
     public void setWinner(Integer winner) { this.winner = winner; }
+    public Long getRoundResultEndsAt() { return roundResultEndsAt; }
+    public void setRoundResultEndsAt(Long roundResultEndsAt) { this.roundResultEndsAt = roundResultEndsAt; }
 }

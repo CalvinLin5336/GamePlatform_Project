@@ -65,12 +65,6 @@ public class TjpokerGameController {
         return pokerGameService.nextRound(roomId, token);
     }
 
-    @PostMapping("/rooms/{roomId}/restart")
-    public GameView restart(@PathVariable String roomId,
-            @RequestHeader("X-Player-Token") String token) {
-        return pokerGameService.restart(roomId, token);
-    }
-
     @PostMapping("/rooms/{roomId}/auto-select")
     public GameView autoSelect(@PathVariable String roomId,
             @RequestHeader("X-Player-Token") String token) {

@@ -29,6 +29,7 @@ import com.example.demo.modules.game.tjpoker.util.GameTool;
 
 @Service
 public class TjpokerGameServiceImpl implements PokerGameService {
+    private static final long ROUND_RESULT_DURATION_MILLIS=3000;
     private Map<String, GameRoom> rooms = new HashMap<String, GameRoom>();
     @Autowired
     private PokerRuleService pokerRuleService;
@@ -81,6 +82,7 @@ public class TjpokerGameServiceImpl implements PokerGameService {
     @Override
     public synchronized GameView view(String roomId, String token) {
         GameRoom room=requireRoom(roomId);
+        advanceRoundIfReady(room);
         int seat=requireSeat(room, token);
         Player player=room.getPlayers()[seat];
         int choice[]=room.getChoices()[seat];
@@ -101,11 +103,15 @@ public class TjpokerGameServiceImpl implements PokerGameService {
             resultViews.add(resultView);
         }
 
+        long remaining=0;
+        if(room.getRoundResultEndsAt()!=null) {
+            remaining=Math.max(0, room.getRoundResultEndsAt()-System.currentTimeMillis());
+        }
         return new GameView(room.getId(), room.getMode(), room.getStatus(),
                 room.getCurrentRound(), seat+1, room.getConnected()[0], room.getConnected()[1],
                 room.getRoundConfirmed()[0], room.getRoundConfirmed()[1], hand,
                 preview(player, choice), resultViews, room.getWinner(),
-                room.getPlayers()[0].getName(), room.getPlayers()[1].getName());
+                room.getPlayers()[0].getName(), room.getPlayers()[1].getName(), remaining);
     }
 
     @Override
@@ -157,23 +163,12 @@ public class TjpokerGameServiceImpl implements PokerGameService {
     public synchronized GameView nextRound(String roomId, String token) {
         GameRoom room=requireRoom(roomId);
         requireSeat(room, token);
+        advanceRoundIfReady(room);
         if(GameRoom.STATUS_PLAYING.equals(room.getStatus())) return view(roomId, token);
-        if(!GameRoom.STATUS_ROUND_RESULT.equals(room.getStatus())) {
-            throw new GameException("NOT_ROUND_RESULT", "目前不能進入下一輪");
+        if(GameRoom.STATUS_ROUND_RESULT.equals(room.getStatus())) {
+            throw new GameException("RESULT_PAUSE", "結果展示倒數尚未結束");
         }
-        room.setCurrentRound(room.getCurrentRound()+1);
-        room.getRoundConfirmed()[0]=false;
-        room.getRoundConfirmed()[1]=false;
-        room.setStatus(GameRoom.STATUS_PLAYING);
-        return view(roomId, token);
-    }
-
-    @Override
-    public synchronized GameView restart(String roomId, String token) {
-        GameRoom room=requireRoom(roomId);
-        requireSeat(room, token);
-        deal(room);
-        return view(roomId, token);
+        throw new GameException("NOT_ROUND_RESULT", "目前不能進入下一輪");
     }
 
     @Override
@@ -181,8 +176,8 @@ public class TjpokerGameServiceImpl implements PokerGameService {
         GameRoom room=requirePlaying(roomId);
         int seat=requireSeat(room, token);
         if(room.getRoundConfirmed()[seat]) throw new GameException("ALREADY_CONFIRMED", "本輪已確認，不能再修改");
-        if(room.getCurrentRound()!=1) throw new GameException("AUTO_SELECT_STARTED", "自動選牌需在第一輪確認前使用");
-        GameTool.auto_choose_best(room.getPlayers()[seat], room.getChoices()[seat]);
+        GameTool.auto_choose_current_round(
+                room.getPlayers()[seat], room.getChoices()[seat], room.getCurrentRound());
         return view(roomId, token);
     }
 
@@ -206,6 +201,7 @@ public class TjpokerGameServiceImpl implements PokerGameService {
         for(int i=0;i<room.getChoices().length;i++) Arrays.fill(room.getChoices()[i], 0);
         room.setResults(new ArrayList<RoundResult>());
         room.setWinner(null);
+        room.setRoundResultEndsAt(null);
         room.setCurrentRound(1);
         room.getRoundConfirmed()[0]=false;
         room.getRoundConfirmed()[1]=false;
@@ -254,10 +250,8 @@ public class TjpokerGameServiceImpl implements PokerGameService {
         room.getResults().add(result);
 
         if(room.getCurrentRound()<3) {
-            room.setCurrentRound(room.getCurrentRound()+1);
-            room.getRoundConfirmed()[0]=false;
-            room.getRoundConfirmed()[1]=false;
-            room.setStatus(GameRoom.STATUS_PLAYING);
+            room.setStatus(GameRoom.STATUS_ROUND_RESULT);
+            room.setRoundResultEndsAt(System.currentTimeMillis()+ROUND_RESULT_DURATION_MILLIS);
         }
         else finishGame(room);
     }
@@ -272,7 +266,19 @@ public class TjpokerGameServiceImpl implements PokerGameService {
         if(player1Wins>player2Wins) room.setWinner(1);
         else if(player2Wins>player1Wins) room.setWinner(2);
         else throw new GameException("RESULT_ERROR", "勝場相同，整局勝負計算異常");
+        room.setRoundResultEndsAt(null);
         room.setStatus(GameRoom.STATUS_FINISHED);
+    }
+
+    private void advanceRoundIfReady(GameRoom room) {
+        if(!GameRoom.STATUS_ROUND_RESULT.equals(room.getStatus())) return;
+        if(room.getRoundResultEndsAt()==null
+                || System.currentTimeMillis()<room.getRoundResultEndsAt()) return;
+        room.setCurrentRound(room.getCurrentRound()+1);
+        room.getRoundConfirmed()[0]=false;
+        room.getRoundConfirmed()[1]=false;
+        room.setRoundResultEndsAt(null);
+        room.setStatus(GameRoom.STATUS_PLAYING);
     }
 
     private List<String> cardNames(List<Card> cards) {
@@ -289,6 +295,7 @@ public class TjpokerGameServiceImpl implements PokerGameService {
 
     private GameRoom requirePlaying(String roomId) {
         GameRoom room=requireRoom(roomId);
+        advanceRoundIfReady(room);
         if(!GameRoom.STATUS_PLAYING.equals(room.getStatus())) {
             throw new GameException("NOT_PLAYING", "目前不是選牌階段");
         }

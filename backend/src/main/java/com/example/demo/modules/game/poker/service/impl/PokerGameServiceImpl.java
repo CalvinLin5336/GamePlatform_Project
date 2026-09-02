@@ -199,20 +199,12 @@ public class PokerGameServiceImpl implements PokerGameService {
     }
 
     @Override
-    public synchronized GameView restart(String roomId, String token) {
-        GameRoom room=requireRoom(roomId);
-        requireSeat(room, token);
-        deal(room);
-        return view(roomId, token);
-    }
-
-    @Override
     public synchronized GameView autoSelect(String roomId, String token) {
         GameRoom room=requirePlaying(roomId);
         int seat=requireSeat(room, token);
         if(room.getRoundConfirmed()[seat]) throw new GameException("ALREADY_CONFIRMED", "本輪已確認，不能再修改");
-        if(room.getCurrentRound()!=1) throw new GameException("AUTO_SELECT_STARTED", "自動選牌需在第一輪確認前使用");
-        GameTool.auto_choose_best(room.getPlayers()[seat], room.getChoices()[seat]);
+        GameTool.auto_choose_current_round(
+                room.getPlayers()[seat], room.getChoices()[seat], room.getCurrentRound());
         return view(roomId, token);
     }
 

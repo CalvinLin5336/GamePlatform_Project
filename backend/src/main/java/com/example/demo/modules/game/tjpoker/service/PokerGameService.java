@@ -11,7 +11,6 @@ public interface PokerGameService {
     GameView select(String roomId, String token, Map<Integer, Integer> choices);
     GameView confirm(String roomId, String token);
     GameView nextRound(String roomId, String token);
-    GameView restart(String roomId, String token);
     GameView autoSelect(String roomId, String token);
     boolean tokenIsValid(String roomId, String token);
 }

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -130,5 +131,39 @@ class PokerGameServiceImplTests {
         assertEquals(GameRoom.STATUS_PLAYING, secondAdvanced.getStatus());
         assertEquals(2, firstAdvanced.getCurrentRound());
         assertEquals(2, secondAdvanced.getCurrentRound());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void humanAutoSelectOnlyFillsCurrentRoundAndCanBeUsedAgainAfterClearing() {
+        JoinResult joined=service.join("room-auto", GameRoom.MODE_COMPUTER, 11L, "玩家甲");
+
+        GameView first=service.autoSelect("room-auto", joined.getToken());
+        assertEquals(3, cardsInSlot(first, 1));
+        assertEquals(0, cardsInSlot(first, 2));
+        assertEquals(0, cardsInSlot(first, 3));
+
+        service.confirm("room-auto", joined.getToken());
+        Map<String, GameRoom> rooms=(Map<String, GameRoom>)ReflectionTestUtils.getField(service, "rooms");
+        rooms.get("room-auto").setRoundResultEndsAt(System.currentTimeMillis()-1);
+        GameView secondRound=service.view("room-auto", joined.getToken());
+        assertEquals(2, secondRound.getCurrentRound());
+
+        GameView second=service.autoSelect("room-auto", joined.getToken());
+        assertEquals(3, cardsInSlot(second, 1));
+        assertEquals(5, cardsInSlot(second, 2));
+        assertEquals(0, cardsInSlot(second, 3));
+
+        Map<Integer, Integer> cleared=new HashMap<Integer, Integer>();
+        second.getHand().forEach(card -> cleared.put(card.getId(), card.getSlot()==1 ? 1 : 0));
+        service.select("room-auto", joined.getToken(), cleared);
+        GameView selectedAgain=service.autoSelect("room-auto", joined.getToken());
+        assertEquals(3, cardsInSlot(selectedAgain, 1));
+        assertEquals(5, cardsInSlot(selectedAgain, 2));
+        assertEquals(0, cardsInSlot(selectedAgain, 3));
+    }
+
+    private long cardsInSlot(GameView view, int slot) {
+        return view.getHand().stream().filter(card -> card.getSlot()==slot).count();
     }
 }

@@ -1,3 +1,4 @@
+/* global $ */
 var backendHost=location.hostname+":8080";
 var api="http://"+backendHost+"/api/games/poker";
 var lobbyApi="http://"+backendHost+"/api/lobby";
@@ -40,7 +41,6 @@ $(document).ready(function() {
     element("playerButton").onclick=function() { join("PLAYER", element("roomInput").value.trim()); };
     element("sortButton").onclick=changeSort;
     element("clearButton").onclick=clearCurrentRound;
-    element("restartButton").onclick=restart;
     element("autoButton").onclick=autoSelect;
     element("confirmButton").onclick=confirmRound;
     element("leaveButton").onclick=leave;
@@ -186,9 +186,7 @@ function connectSocket() {
     socket.onopen=function() { element("connectionBadge").textContent="已連線"; };
     socket.onclose=function() {
         if(token) {
-            element("connectionBadge").textContent="連線已中斷，請重新載入";
-            clearInterval(pollTimer);
-            pollTimer=null;
+            element("connectionBadge").textContent="WebSocket 已中斷，改用輪詢同步";
         }
     };
 }
@@ -271,9 +269,14 @@ function render() {
     var canEdit=game.status==="PLAYING" && !ownConfirmed() && !isResultPause();
     element("sortButton").disabled=!canEdit;
     element("clearButton").disabled=!canEdit;
-    element("autoButton").disabled=!canEdit || game.currentRound!==1;
+    element("autoButton").disabled=!canEdit;
     element("confirmButton").disabled=!canEdit || selectedCount()!==cardsNeeded();
-    element("confirmButton").classList.toggle("hidden", game.status==="FINISHED");
+    var finished=game.status==="FINISHED";
+    element("sortButton").classList.toggle("hidden", finished);
+    element("clearButton").classList.toggle("hidden", finished);
+    element("autoButton").classList.toggle("hidden", finished);
+    element("confirmButton").classList.toggle("hidden", finished);
+    element("leaveButton").textContent=finished && platformRoom ? "返回遊戲大廳" : "離開遊戲";
     element("handInstruction").textContent=canEdit ? "點擊手牌放入本輪出牌區" : "本輪手牌已鎖定";
 }
 
@@ -297,7 +300,7 @@ function renderOnePreview(playerNumber) {
     var result=currentRoundResult();
     var cards=[];
     var type="--";
-    var countText="待開牌";
+    var countText;
     var canRemove=false;
 
     if(result) {
@@ -417,7 +420,7 @@ function clearCurrentRound() {
     }
     selectedOrder=[];
     queueSave();
-    showMessage("本輪選牌已清除");
+    showMessage("出牌區已清空");
     render();
 }
 
@@ -486,15 +489,6 @@ function sendConfirm() {
         if(paused || game.status==="FINISHED") showMessage("雙方已確認，本輪開牌");
         else showMessage("本輪已確認，等待對手");
         if(paused) syncDraft();
-        render();
-    });
-}
-
-function restart() {
-    request("POST", "/rooms/"+encodeURIComponent(roomId)+"/restart", null, function(result) {
-        game=result;
-        syncDraft();
-        showMessage("遊戲已重新開始");
         render();
     });
 }
@@ -615,20 +609,27 @@ function cardImagePath(card) {
 }
 
 function leave() {
+    if(game && game.status!=="FINISHED" && !confirm("確定要離開目前遊戲嗎？")) return;
     if(!token) {
-        location.replace("poker_client.html");
+        location.replace(exitDestination());
         return;
     }
-    $.ajax({
-        method:"DELETE",
-        url:api+"/rooms/"+encodeURIComponent(roomId)+"/leave",
-        headers:{"X-Player-Token":token}
-    });
+    var destination=exitDestination();
+    var leaveToken=token;
     token="";
     refreshing=false;
     clearInterval(pollTimer);
     if(socket) socket.close();
-    setTimeout(function() { location.replace("poker_client.html"); }, 30);
+    $.ajax({
+        method:"DELETE",
+        url:api+"/rooms/"+encodeURIComponent(roomId)+"/leave",
+        headers:{"X-Player-Token":leaveToken},
+        complete:function() { location.replace(destination); }
+    });
+}
+
+function exitDestination() {
+    return platformRoom ? "../../Lobby/jquery_lobby.html" : "poker_client.html";
 }
 
 function showMessage(message, lobby) {

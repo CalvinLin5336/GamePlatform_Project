@@ -28,6 +28,36 @@ public class GameTool {
 		put_round(player, choice, 1, round2);
 		put_round(player, choice, 2, round3);
 	}
+
+	// 真人玩家只替目前輪次選牌；已完成輪次保持鎖定，未來輪次不預先占牌。
+	public static void auto_choose_current_round(Player player, int choice[], int round_number)
+	{
+		if(round_number<1 || round_number>3)
+		{
+			throw new IllegalArgumentException("round_number must be between 1 and 3");
+		}
+
+		Card hand[]=copy_cards(player.getHand());
+		boolean used[]=new boolean[hand.length];
+		for(int i=0;i<hand.length;i++)
+		{
+			int card_number=hand[i].getNumber();
+			int selected_round=choice[card_number];
+			if(selected_round>0 && selected_round<round_number)
+			{
+				used[i]=true;
+			}
+			else if(selected_round>=round_number)
+			{
+				choice[card_number]=0;
+			}
+		}
+
+		clear_rounds_from(player, round_number-1);
+		int count=round_number==1 ? 3 : 5;
+		Card selected[]=find_best_cards(hand, used, count);
+		put_round(player, choice, round_number-1, selected);
+	}
 	
 	private static void clear_choice(int choice[])
 	{
@@ -40,6 +70,17 @@ public class GameTool {
 	private static void clear_rounds(Player player)
 	{
 		for(int i=0;i<player.getRounds().length;i++)
+		{
+			for(int j=0;j<player.getRounds()[i].getRound_hand().length;j++)
+			{
+				player.getRounds()[i].getRound_hand()[j].copy(new Card());
+			}
+		}
+	}
+
+	private static void clear_rounds_from(Player player, int start_index)
+	{
+		for(int i=start_index;i<player.getRounds().length;i++)
 		{
 			for(int j=0;j<player.getRounds()[i].getRound_hand().length;j++)
 			{
