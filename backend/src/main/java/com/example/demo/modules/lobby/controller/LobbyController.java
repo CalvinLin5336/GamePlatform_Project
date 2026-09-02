@@ -377,4 +377,68 @@ public class LobbyController {
             e.printStackTrace();
         }
     }
+    
+ // =========================================================
+    // 9. 房主開始遊戲
+    // =========================================================
+    @PostMapping("/room/{roomId}/start")
+    public ResponseEntity<Map<String, Object>> startGame(
+            @PathVariable String roomId,
+            @RequestBody Map<String, String> request) {
+
+        String hostAccount = request.get("hostAccount");
+        Map<String, Object> response = new HashMap<>();
+
+        // 1. 尋找房間
+        Optional<Room> optionalRoom = roomRepository.findById(roomId);
+        if (optionalRoom.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "找不到該房間！");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        Room room = optionalRoom.get();
+
+        // 2. 防護網：確認是房主按的
+        if (!room.getHostAccount().equals(hostAccount)) {
+            response.put("success", false);
+            response.put("message", "只有房主可以開始遊戲！");
+            return ResponseEntity.status(403).body(response);
+        }
+
+        // 3. (選擇性) 防護網：檢查人數是否符合最低要求
+        if (room.getPlayers().size() < room.getMinPlayers()) {
+            response.put("success", false);
+            response.put("message", "人數不足，無法開始遊戲！最低需要 " + room.getMinPlayers() + " 人。");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // 4. 更改房間狀態並存檔
+        room.setStatus("PLAYING");
+        roomRepository.save(room);
+
+        // 5. 找出這款遊戲的前端網址 (假設在 games 表格中有存 frontendPath，例如 "poker.html")
+        Optional<Game> optionalGame = gameRepository.findById(room.getGameId());
+        String frontendUrl = "game.html"; // 預設值
+        if (optionalGame.isPresent() && optionalGame.get().getFrontendPath() != null) {
+            frontendUrl = optionalGame.get().getFrontendPath();
+        }
+        
+        // 組合出最終帶有房號的網址，例如： poker.html?room=128F0C0E
+        String targetUrl = frontendUrl + "?room=" + roomId;
+
+        // 6. 廣播 START_GAME 指令給全場
+        try {
+            Map<String, Object> startMessage = new HashMap<>();
+            startMessage.put("action", "START_GAME");
+            startMessage.put("url", targetUrl);
+            
+            RoomWebSocketHandler.broadcastToRoom(roomId, objectMapper.writeValueAsString(startMessage));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        response.put("success", true);
+        return ResponseEntity.ok(response);
+    }
 }
