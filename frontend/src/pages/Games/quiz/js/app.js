@@ -21,16 +21,58 @@ let examTimer = null;
 let secondsLeft= 15;
 let currentUsername = "";
 
+//儲存使用者 Token
+let platformJwt= "";
+
+//=================
+//身分驗證與統一請求
+//=================
+
+/*
+* 檢查登入狀態，若未登入則阻擋操作
+*/
+function requireAuth(){
+	if(!platformJwt){
+		alert("請先登入平台再進行操作");
+		return false;
+	}
+	return true;
+}
+
+/*
+* 封裝feth: 自動在 Headers 帶入 Authorization Bearer Token
+* 並統一攔截 401/403 授權失敗
+*/
+async function authFetch(url,options={}){
+	options.options.headers || {};
+
+	if(platformJwt){
+		options.headers["Authorization"]= `Bearer ${platformJwt}`;
+	}
+	const res = await fetch(url,options);
+
+	//攔截Token 過期或未授權
+	if(res.status===401 || res.status ===403){
+		alert("登入憑證已失效或無權限，請重新登入!");
+		localStorage.removeItem("token");
+		platformJwt="";
+		return null;
+	}
+	return res;
+}
 
 // 頁面初始化
 document.addEventListener("DOMContentLoaded", ()=>{
+	//從 localStorage讀取 Token
+	const urlParams = new URLSearchParams(location.search);
+	platformJwt = urlParams.get('token') || localStorage.getItem("token")||"";
+
 	addAdminOptionRow();
 	addAdminOptionRow();
 	loadAdminTable();
 	loadLeaderboard();
 
-	// 檢查網址參數是否需要自動參考(列如:index.html?user=Player1&auto=true)
-	const urlParams = new URLSearchParams(location.search);
+	// 檢查網址參數是否需要自動參考(列如:index.html?user=Player1&auto=true)	
 	const autoStart = urlParams.get('auto');
 	const userParam = urlParams.get('user');
 	if(autoStart === 'true'){
@@ -44,6 +86,11 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
 // 分頁切換
 function switchTab(tabName,event){
+	//進入 admin頁面時強制檢查是否有登入
+	if(tabName==='admin'&& !requireAuth()){
+		return;
+	}
+
 	document.querySelectorAll('.tab-content').forEach(el=> el.classList.remove('active'));
 	document.querySelectorAll('.nav-tabs button').forEach(el=> el.classList.remove('active'));
 	document.getElementById(`${tabName}-tab`).classList.add('active');
@@ -57,6 +104,8 @@ function switchTab(tabName,event){
 //---1. 遊戲邏輯 ---
 
 async function startQuiz(){
+	//開始作答前驗證使用者是否登入
+	if(!requireAuth())return;
 	
 	currentUsername = document.getElementById('player-name').value.trim();
 	if(!currentUsername) return alert('請輸入暱稱!');
