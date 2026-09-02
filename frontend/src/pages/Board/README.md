@@ -2,7 +2,7 @@
 
 ## 啟動
 
-1. 重新啟動 `backend` 的 Spring Boot（Java 17 以上），預設後端為 `http://localhost:8080`。
+1. 重新啟動 `backend` 的 Spring Boot（Java 17 以上）；前端會連到目前網頁主機的 `8080` 埠。
 2. 使用 Live Server 開啟本資料夾的 `index.html`；不要直接使用 `file://`。
 3. 使用 User 模組的會員帳號登入；尚無帳號可在平台登入頁註冊。
 

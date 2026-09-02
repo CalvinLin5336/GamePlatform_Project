@@ -312,7 +312,8 @@
 
             // 6. WebSocket 即時連線
             function connectWebSocket() {
-                roomSocket = new WebSocket(`ws://${location.hostname || 'localhost'}:8080/ws/room/${roomId}?player=${encodeURIComponent(myAccount)}`);
+                const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+                roomSocket = new WebSocket(`${wsProtocol}://${location.hostname}:8080/ws/room/${roomId}?player=${encodeURIComponent(myAccount)}`);
 
                 roomSocket.onopen = function() {
                     console.log("✅ 等待區 WebSocket 連線成功");

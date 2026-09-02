@@ -87,6 +87,7 @@
     <!-- ================= jQuery 互動邏輯 ================= -->
     <script>
         $(document).ready(function() {
+            const apiHost = 'http://' + window.location.hostname + ':8080';
             let availableGames = []; 
             let selectedGameId = null;
 
@@ -109,7 +110,7 @@
             // 2. 抓取遊戲總表並動態渲染
             function fetchGamesInfo() {
                 $.ajax({
-                    url: 'http://localhost:8080/api/lobby/games-info',
+                    url: apiHost + '/api/lobby/games-info',
                     type: 'GET',
                     success: function(res) {
                         if (res.success) {
@@ -205,7 +206,7 @@
                 $btn.prop('disabled', true).text('建立中...');
 
                 $.ajax({
-                    url: 'http://localhost:8080/api/lobby/create-room', 
+                    url: apiHost + '/api/lobby/create-room',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({ 
@@ -234,7 +235,7 @@
             // 5. 取得等待中的房間列表
             function fetchWaitingRooms() {
                 $.ajax({
-                    url: 'http://localhost:8080/api/lobby/rooms',
+                    url: apiHost + '/api/lobby/rooms',
                     type: 'GET',
                     success: function(response) {
                         const $container = $('#roomListContainer');
@@ -302,7 +303,7 @@
             window.joinRoom = function(roomId) {
                 const currentAccount = localStorage.getItem("account") || "test_account_02";
                 $.ajax({
-                    url: 'http://localhost:8080/api/lobby/join-room',
+                    url: apiHost + '/api/lobby/join-room',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({ roomId: roomId, playerAccount: currentAccount }),

@@ -57,7 +57,7 @@ UserApi.checkLogin().done(function (user) {
 - `DELETE /api/user/admin/users/{id}`
 - `GET /api/user/admin/operation-logs`
 
-後端位址使用前端 hostname 的 8080 埠。localhost 與 127.0.0.1 的 5173／5500 開發來源均可呼叫會員 API。
+後端位址使用目前前端 hostname 的 8080 埠，因此同一份前端可直接用於本機或區網測試。
 各頁面必須使用同一個前端 origin（協定、主機、埠），才能共用 localStorage 登入。
 
 ## 驗證

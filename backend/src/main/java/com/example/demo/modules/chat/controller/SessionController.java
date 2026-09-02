@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpSession;
 
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true") // 關鍵設定
+@CrossOrigin(originPatterns = "*", allowCredentials = "true")
 @RestController
 @RequestMapping("/api")
 public class SessionController {
