@@ -70,6 +70,6 @@ public class GameDataInitializer implements CommandLineRunner {
         mode.setMaxPlayers(maxPlayers);
         mode.setComputerPlayers(computerPlayers);
         mode.setEnabled(enabled);
-        gameModeRepository.save(mode);
+        mode = gameModeRepository.save(mode);
     }
 }
