@@ -1,5 +1,6 @@
 var backendHost=location.hostname+":8080";
 var api="http://"+backendHost+"/api/games/poker";
+var lobbyApi="http://"+backendHost+"/api/lobby";
 var pokerSocketPath="/ws/games/poker";
 var roomId="";
 var token="";
@@ -14,7 +15,7 @@ var saving=false;
 var saveAgain=false;
 var confirmAfterSave=false;
 var lastRound=0;
-var platformRoom=true;
+var platformRoom=false;
 var platformModeId=null;
 var platformJwt="";
 var boardPostId=null;
@@ -25,10 +26,12 @@ function element(id) {
 }
 
 $(document).ready(function() {
-    var roomParameter=getParameter("roomId");
-    var modeParameter=getParameter("modeCode");
+    var platformRoomParameter=getParameter("room");
+    var roomParameter=platformRoomParameter || getParameter("roomId");
+    var modeParameter=getParameter("modeCode") || "";
     modeParameter=modeParameter.toUpperCase();
     platformModeId=Number(getParameter("modeId"));
+    platformRoom=Boolean(platformRoomParameter || platformModeId);
     platformJwt=localStorage.getItem("token") || "";
     boardPostId=Number(getParameter("boardPostId"));
     boardMemberId=Number(getParameter("memberId"));
@@ -42,9 +45,49 @@ $(document).ready(function() {
     element("confirmButton").onclick=confirmRound;
     element("leaveButton").onclick=leave;
 
+    if(platformRoomParameter) {
+        loadPlatformRoom(platformRoomParameter);
+        return;
+    }
     if(modeParameter==="PLAYER" && roomParameter) join("PLAYER", roomParameter);
     if(modeParameter==="COMPUTER" && roomParameter) join("COMPUTER", roomParameter);
 });
+
+function loadPlatformRoom(id) {
+    if(!platformJwt) {
+        showMessage("請先登入平台再進入遊戲", true);
+        return;
+    }
+    showMessage("正在讀取平台房間資料...", true);
+    $.ajax({
+        method:"GET",
+        url:lobbyApi+"/room/"+encodeURIComponent(id),
+        dataType:"json",
+        success:function(response) {
+            if(!response.success || !response.room) {
+                showMessage(response.message || "找不到平台房間", true);
+                return;
+            }
+            if(response.room.status!=="PLAYING") {
+                showMessage("平台房間尚未開始遊戲", true);
+                return;
+            }
+            platformModeId=Number(response.room.modeId);
+            if(!platformModeId) {
+                showMessage("平台房間缺少遊戲模式資料", true);
+                return;
+            }
+            join("PLATFORM", id);
+        },
+        error:function(response) {
+            var message="無法取得平台房間資料";
+            if(response.responseJSON && response.responseJSON.message) {
+                message=response.responseJSON.message;
+            }
+            showMessage(message, true);
+        }
+    });
+}
 
 function getParameter(name) {
     var query=location.search;
@@ -120,6 +163,8 @@ function join(mode, id) {
         roomId=joined.roomId;
         token=joined.token;
         game=joined.game;
+        showMessage("", true);
+        showMessage("");
         syncDraft();
         document.body.classList.add("playing");
         element("lobby").classList.add("hidden");

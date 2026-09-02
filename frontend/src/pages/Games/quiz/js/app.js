@@ -1,4 +1,12 @@
-const API_BASE = "http://localhost:8080/api/quiz";
+// === 動態判斷主機與通訊協定 ===
+const isFileProtocol = location.protocol === "file:";
+const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+
+// 本地雙擊檔案 (file://) 或 本機開發伺服器直接導向 8080，線上環境則自動帶入當前 host
+const API_BASE = (isFileProtocol || isLocal)
+    ? "http://localhost:8080/api/quiz"
+    : location.protocol + "//" + location.hostname + "/api/quiz";
+
 
 // 建立 Quill 富文本編輯器
 const quillTitle = new Quill('#editor-title',{theme:'snow'});
@@ -13,12 +21,25 @@ let examTimer = null;
 let secondsLeft= 15;
 let currentUsername = "";
 
+
 // 頁面初始化
 document.addEventListener("DOMContentLoaded", ()=>{
 	addAdminOptionRow();
 	addAdminOptionRow();
 	loadAdminTable();
 	loadLeaderboard();
+
+	// 檢查網址參數是否需要自動參考(列如:index.html?user=Player1&auto=true)
+	const urlParams = new URLSearchParams(location.search);
+	const autoStart = urlParams.get('auto');
+	const userParam = urlParams.get('user');
+	if(autoStart === 'true'){
+		const nameInput = document.getElementById('player-name');
+		if(nameInput){
+			nameInput.value = userParam || ("Player_" + Math.floor(Math.random()* 1000));
+			startQuiz();
+		}	
+	}
 });
 
 // 分頁切換
