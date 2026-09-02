@@ -9,7 +9,7 @@ import com.example.demo.modules.user.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173", "http://10.10.1.171:5173" })
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5500" })
 @RequestMapping("/api/user/auth")
 public class AuthController {
 	private final UserService userService;
