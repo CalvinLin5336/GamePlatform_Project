@@ -58,7 +58,7 @@ public class LobbyController {
             gameMap.put("gameCode", game.getGameCode());
             gameMap.put("gameName", game.getGameName());
             gameMap.put("description", game.getDescription());
-            
+            gameMap.put("imagePath", game.getImagePath());
             // 抓出這款遊戲對應的所有「已啟用」模式
             List<GameMode> modes = gameModeRepository.findByGameIdAndEnabledTrueOrderByModeIdAsc(game.getGameId());
             

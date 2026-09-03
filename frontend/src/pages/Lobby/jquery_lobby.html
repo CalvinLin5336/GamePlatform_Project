@@ -134,8 +134,7 @@
                     }
                 });
             }
-
-            function renderGameCards() {
+function renderGameCards() {
                 const $grid = $('#gameGrid');
                 $grid.empty();
 
@@ -145,11 +144,20 @@
                 }
 
                 availableGames.forEach(game => {
+                    // 🌟 新增：動態判斷要顯示圖片還是預設圖示
+                    let imageHtml = '';
+                    if (game.imagePath) {
+                        // 使用 onerror 確保圖片失效時不會破圖，而是顯示原本的 🎮 符號
+                        imageHtml = `<img src="${game.imagePath}" alt="${game.gameName}" class="w-16 h-16 object-contain mb-4" onerror="this.outerHTML='<div class=\\'text-5xl mb-4\\'>🎮</div>'">`;
+                    } else {
+                        imageHtml = `<div class="text-5xl mb-4">🎮</div>`;
+                    }
+
                     const cardHtml = `
-                        <div data-game-id="${game.gameId}" class="game-card bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500 rounded-xl p-6 cursor-pointer transition transform hover:-translate-y-1 shadow-lg shadow-black/20">
-                            <div class="text-5xl mb-4">🎮</div>
+                        <div data-game-id="${game.gameId}" class="game-card flex flex-col items-center text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500 rounded-xl p-6 cursor-pointer transition transform hover:-translate-y-1 shadow-lg shadow-black/20">
+                            ${imageHtml}
                             <h3 class="font-bold text-xl text-slate-100">${game.gameName}</h3>
-                            <p class="text-slate-400 text-sm mt-2">${game.description || '經典對戰遊戲'}</p>
+                            <p class="text-slate-400 text-sm mt-2 line-clamp-2">${game.description || '經典對戰遊戲'}</p>
                         </div>
                     `;
                     $grid.append(cardHtml);

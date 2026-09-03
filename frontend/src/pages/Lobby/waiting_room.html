@@ -360,7 +360,10 @@
                     }
                     else if (message.type === 'ROOM_DISBANDED') {
                         hasLeftRoom = true;
-                        localStorage.setItem("kickNotification", "⚠️ 系統通知：" + message.message);
+                        const displayMessage = `[房號 ${roomId}] ${message.message}`;
+                        
+                        // 將組合後的訊息存入 LocalStorage，給大廳顯示用
+                        localStorage.setItem("kickNotification", "⚠️ 系統通知：" + displayMessage);
                         
                         if (window.parent && window.parent.RoomChatManager) {
                             window.parent.RoomChatManager.hideTab();
