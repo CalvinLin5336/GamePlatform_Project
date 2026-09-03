@@ -33,8 +33,13 @@ public class AuthController {
 
 	@PostMapping("/register")
 	public UserResponse register(@RequestBody RegisterRequest request) {
+		String avatar = request.avatar();
+		if (avatar == null || avatar.isBlank()) {
+			avatar = "/src/pages/User/Player/avatar/user.png";
+		}
+
 		UserRequest userRequest = new UserRequest(request.account(), request.password(), request.username(),
-				request.avatar(), request.description(), "PLAYER", "Active");
+				avatar, request.description(), "PLAYER", "Active");
 		return userService.create(userRequest, "SYSTEM");
 	}
 }

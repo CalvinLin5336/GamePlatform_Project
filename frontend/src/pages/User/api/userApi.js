@@ -129,6 +129,29 @@
         });
     }
 
+    function getPlayerProfile() {
+        return request({
+            url: '/api/user/player/me',
+            method: 'GET'
+        });
+    }
+
+    function updatePlayerProfile(data) {
+        return request({
+            url: '/api/user/player/me',
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data)
+        });
+    }
+
+    function deletePlayerAccount() {
+        return request({
+            url: '/api/user/player/me',
+            method: 'DELETE'
+        });
+    }
+
     function getDashboard() {
         return request({
             url: '/api/user/admin/dashboard',
@@ -203,6 +226,9 @@
         createUser: createUser,
         updateUser: updateUser,
         deleteUser: deleteUser,
-        getOperationLogs: getOperationLogs
+        getOperationLogs: getOperationLogs,
+        getPlayerProfile: getPlayerProfile,
+        updatePlayerProfile: updatePlayerProfile,
+        deletePlayerAccount: deletePlayerAccount
     };
 })(window, jQuery);

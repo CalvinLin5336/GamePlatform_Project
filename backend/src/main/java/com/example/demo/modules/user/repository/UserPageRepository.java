@@ -145,6 +145,23 @@ public class UserPageRepository {
         return user;
     }
 
+    public void updatePlayer(Long id, String account, String username,
+                             String avatar, String description, String updatedAt) {
+        jdbcTemplate.update("""
+                UPDATE users
+                SET account = ?, username = ?, avatar = ?, description = ?, updated_at = ?
+                WHERE id = ?
+                """, account, username, avatar, description, updatedAt, id);
+    }
+
+    public void updateStatus(Long id, String status, String updatedAt) {
+        jdbcTemplate.update("""
+                UPDATE users
+                SET status_id = (SELECT id FROM statuses WHERE status_name = ?), updated_at = ?
+                WHERE id = ?
+                """, status, updatedAt, id);
+    }
+
     private UserResponse toUserResponse(User user) {
         Role role = jdbcTemplate.queryForObject(
                 "SELECT id, role_name FROM roles WHERE id = ?",

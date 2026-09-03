@@ -7,6 +7,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -22,6 +27,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
+            // User API 啟用 CORS，讓前端 Live Server 可以呼叫 User API
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
             // REST API 不使用 CSRF
             .csrf(csrf -> csrf.disable())
 
@@ -42,6 +50,9 @@ public class SecurityConfig {
                 // Admin API 必須先放在 /api/** 前面
                 .requestMatchers("/api/user/admin/**").hasRole("ADMIN")
 
+                // Player 個人資料 API
+                .requestMatchers("/api/user/player/**").hasRole("PLAYER")
+
                 // 開發階段暫時允許其他 API
                 .requestMatchers("/**").permitAll()
 
@@ -56,5 +67,17 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/user/**", configuration);
+        return source;
     }
 }

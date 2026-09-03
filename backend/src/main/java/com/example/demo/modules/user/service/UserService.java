@@ -3,6 +3,7 @@ package com.example.demo.modules.user.service;
 import com.example.demo.modules.user.dto.LoginRequest;
 import com.example.demo.modules.user.dto.LoginResponse;
 import com.example.demo.modules.user.dto.UserRequest;
+import com.example.demo.modules.user.dto.PlayerUpdateRequest;
 import com.example.demo.modules.user.dto.UserResponse;
 import com.example.demo.modules.user.repository.UserPageRepository;
 import com.example.demo.modules.user.security.JwtService;
@@ -189,6 +190,77 @@ public class UserService {
         response.setToken(token);
 
         return response;
+    }
+
+    @Transactional
+    public LoginResponse updatePlayer(String currentAccount, PlayerUpdateRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+
+        UserResponse current = findByAccountForSession(currentAccount);
+
+        String account = normalizeRequired(request.account(), "Account");
+        String username = normalizeRequired(request.username(), "Username");
+
+        if (!account.matches(ALPHANUMERIC_REGEX)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Account can contain only English letters and numbers");
+        }
+
+        if (userPageRepository.existsByAccount(account, current.id())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Account already exists");
+        }
+
+        String avatar = request.avatar();
+        if (avatar != null) avatar = avatar.trim();
+        if (avatar == null || avatar.isBlank()) {
+            avatar = "/src/User/Player/avatar/user.png";
+        }
+
+        String now = now();
+        userPageRepository.updatePlayer(
+                current.id(), account, username, avatar, request.description(), now);
+
+        operationLogService.log(
+                account, "UPDATE", current.id(), current.role(),
+                "Player updated own profile");
+
+        UserResponse updated = findById(current.id());
+        String token = jwtService.generateToken(
+                updated.id(), updated.account(), updated.role());
+
+        LoginResponse response = new LoginResponse();
+        response.setUserId(updated.id());
+        response.setAccount(updated.account());
+        response.setUsername(updated.username());
+        response.setRole(updated.role());
+        response.setStatus(updated.status());
+        response.setToken(token);
+        return response;
+    }
+
+    @Transactional
+    public void disablePlayer(String currentAccount) {
+        UserResponse current = findByAccountForSession(currentAccount);
+        userPageRepository.updateStatus(current.id(), "Disabled", now());
+
+        operationLogService.log(
+                current.account(), "DELETE", current.id(), current.role(),
+                "Player disabled own account");
+    }
+
+    public UserResponse findByAccountForSession(String account) {
+        if (account == null || account.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "未登入");
+        }
+        UserResponse user = userPageRepository.findByAccount(account.trim());
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "登入已過期或使用者不存在");
+        }
+        return user;
     }
 
     public UserResponse findById(Long id) {

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Profile</title>
+    <link rel="stylesheet" href="css/player.css">
+</head>
+<body>
+<main class="profile-page">
+    <section class="profile-card">
+        <div class="profile-header">
+            <div>
+                <p class="eyebrow">PLAYER</p>
+                <h1>我的資料</h1>
+                <p class="subtitle">查看與管理你的會員資料</p>
+            </div>
+            <button id="logoutBtn" class="text-button" type="button">登出</button>
+        </div>
+
+        <div id="message" class="message" aria-live="polite"></div>
+
+        <form id="profileForm">
+            <div class="avatar-section">
+                <img id="avatarPreview" class="avatar" src="avatar/user.png" alt="Player avatar">
+                <div class="avatar-info">
+                    <label for="avatarFile">Avatar</label>
+                    <input id="avatarFile" name="avatarFile" type="file" accept="image/png,image/jpeg">
+                    <small>請上傳 PNG 或 JPG/JPEG，檔案大小上限 2 MB。</small>
+                </div>
+            </div>
+
+            <div class="field-grid">
+                <label>
+                    <span>Account</span>
+                    <input id="account" name="account" type="text" required>
+                </label>
+                <label>
+                    <span>Username</span>
+                    <input id="username" name="username" type="text" required>
+                </label>
+            </div>
+
+            <label>
+                <span>Description</span>
+                <textarea id="description" name="description" rows="4" placeholder="介紹一下自己"></textarea>
+            </label>
+
+            <div class="readonly-grid">
+                <div>
+                    <span>Last Login</span>
+                    <strong id="lastLogin">—</strong>
+                </div>
+                <div>
+                    <span>Status</span>
+                    <strong id="status">—</strong>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="primary-button" type="submit">儲存修改</button>
+                <button id="deleteBtn" class="danger-button" type="button">刪除我的帳號</button>
+            </div>
+        </form>
+    </section>
+</main>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="../api/userApi.js"></script>
+<script src="js/player.js"></script>
+</body>
+</html>

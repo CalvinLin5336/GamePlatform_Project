@@ -13,6 +13,17 @@ public class LoginSessionService {
     private final JwtService jwt;
     private final UserService users;
 
+    public UserResponse requireUserFromAuthentication(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            throw unauthorized();
+        }
+        UserResponse user = users.findByAccountForSession(authentication.getName());
+        if (!"Active".equalsIgnoreCase(user.status())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "此會員帳號已停用，請聯絡管理員");
+        }
+        return user;
+    }
+
     public UserResponse requireUser(String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) throw unauthorized();
         String token = authorization.substring(7).trim();
