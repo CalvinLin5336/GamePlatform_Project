@@ -490,4 +490,26 @@ public class LobbyController {
             RoomWebSocketHandler.broadcastToRoom(roomId, message);
         }
     }
+    
+ // =========================================================
+    // 取得指定玩家正在進行中的房間
+    // =========================================================
+    @GetMapping("/my-active-rooms")
+    public ResponseEntity<Map<String, Object>> getMyActiveRooms(@RequestParam String account) {
+        // 找出所有狀態為 PLAYING 的房間，並過濾出玩家名單包含此帳號的房間
+        List<Room> allPlayingRooms = roomRepository.findByStatus("PLAYING");
+        List<Room> myActiveRooms = new ArrayList<>();
+        
+        for (Room room : allPlayingRooms) {
+            if (room.getPlayers() != null && room.getPlayers().contains(account)) {
+                myActiveRooms.add(room);
+            }
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("rooms", myActiveRooms);
+        
+        return ResponseEntity.ok(response);
+    }
 }

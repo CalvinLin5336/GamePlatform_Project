@@ -10,6 +10,9 @@ window.onload = function () {
     var displayRoom = document.getElementById("messageDisplayRoom");
 
     var webSocket; // 專屬大廳的 WebSocket
+    var roomWebSocket = null; // 遊戲開始後仍由外層頁面持有的房間 WebSocket
+    var currentRoomId = null;
+    var roomChannelFinished = false;
     var isConnectSuccess = false;
     var currentUserName = "訪客";
     var activeTab = "lobby"; 
@@ -91,9 +94,13 @@ function switchTab(tabName) {
             displayRoom.innerHTML = ''; // 清空上一場的紀錄
             switchTab('room'); // 自動切過去
         },
+        startGameChannel: function(roomId, playerAccount) {
+            connectGameRoomChannel(roomId, playerAccount);
+        },
         hideTab: function() {
-            if (tabRoom) tabRoom.classList.add('hidden'); // 🌟 隱藏房間分頁
-            switchTab('lobby'); // 🌟 自動切回大廳
+            closeGameRoomChannel();
+            if (tabRoom) tabRoom.classList.add('hidden');
+            switchTab('lobby');
         },
         appendMessage: function(userName, messageText, isSystem) {
             if (!displayRoom) return;
@@ -126,6 +133,85 @@ function switchTab(tabName) {
             updateInputState();
         }
     };
+
+    // 遊戲開始後，房間聊天室改由外層 chatclient 持有 WebSocket。
+    // 因為外層頁面不會隨遊戲 iframe 換頁而消失，所以聊天連線能跨越等待區與遊戲頁。
+    function connectGameRoomChannel(roomId, playerAccount) {
+        if (!roomId || !playerAccount) return;
+
+        if (roomWebSocket && roomWebSocket.readyState === WebSocket.OPEN && currentRoomId === roomId) {
+            return;
+        }
+
+        closeGameRoomChannel();
+
+        currentRoomId = roomId;
+        roomChannelFinished = false;
+        window.roomDisbandedFlag = false;
+
+        var wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        roomWebSocket = new WebSocket(
+            wsProtocol + '://' + window.location.hostname + ':8080/ws/room/'
+            + encodeURIComponent(roomId) + '?player=' + encodeURIComponent(playerAccount)
+        );
+
+        roomWebSocket.onopen = function () {
+            console.log('✅ 遊戲中的房間聊天 WebSocket 連線成功: ' + roomId);
+        };
+
+        roomWebSocket.onmessage = function (event) {
+            var data;
+            try {
+                data = JSON.parse(event.data);
+            } catch (e) {
+                console.error('房間 WebSocket 訊息解析失敗', e);
+                return;
+            }
+
+            if (data.type === 'ROOM_CHAT' || (data.userName && data.message)) {
+                window.RoomChatManager.appendMessage(
+                    data.userName || '系統',
+                    data.message || '',
+                    data.userName === '系統'
+                );
+                return;
+            }
+
+            if (data.type === 'ROOM_FINISHED') {
+                roomChannelFinished = true;
+                window.RoomChatManager.systemAlert(
+                    data.message || '遊戲已結束，房間頻道已關閉'
+                );
+
+                if (roomWebSocket && roomWebSocket.readyState === WebSocket.OPEN) {
+                    roomWebSocket.close();
+                }
+            }
+        };
+
+        roomWebSocket.onerror = function () {
+            console.error('房間聊天 WebSocket 發生錯誤');
+        };
+
+        roomWebSocket.onclose = function () {
+            if (!roomChannelFinished && currentRoomId) {
+                console.log('❌ 房間聊天 WebSocket 已斷線: ' + currentRoomId);
+            }
+            roomWebSocket = null;
+        };
+    }
+
+    function closeGameRoomChannel() {
+        if (roomWebSocket) {
+            roomWebSocket.onclose = null;
+            if (roomWebSocket.readyState === WebSocket.OPEN || roomWebSocket.readyState === WebSocket.CONNECTING) {
+                roomWebSocket.close();
+            }
+        }
+        roomWebSocket = null;
+        currentRoomId = null;
+        roomChannelFinished = false;
+    }
 
     // 🌟 3. 大廳聊天室的基礎連線邏輯
     function checkAndConnect() {
@@ -180,10 +266,20 @@ function switchTab(tabName) {
                         }));
                     }
                 } else if (activeTab === 'room') {
-                    // 呼叫內部 iframe 的發送功能
-                    var iframe = document.getElementById("mainFrame");
-                    if (iframe && iframe.contentWindow && typeof iframe.contentWindow.sendRoomChatMessage === 'function') {
-                        iframe.contentWindow.sendRoomChatMessage(text);
+                    // 遊戲開始後優先使用外層持有的房間 WebSocket。
+                    if (roomWebSocket && roomWebSocket.readyState === WebSocket.OPEN && currentRoomId) {
+                        roomWebSocket.send(JSON.stringify({
+                            type: "ROOM_CHAT",
+                            roomId: currentRoomId,
+                            userName: currentUserName,
+                            message: text
+                        }));
+                    } else {
+                        // 尚在等待區時維持原本流程，由 iframe 的 roomSocket 發送。
+                        var iframe = document.getElementById("mainFrame");
+                        if (iframe && iframe.contentWindow && typeof iframe.contentWindow.sendRoomChatMessage === 'function') {
+                            iframe.contentWindow.sendRoomChatMessage(text);
+                        }
                     }
                 }
                 userinput.value = "";

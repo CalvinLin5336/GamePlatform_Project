@@ -363,10 +363,16 @@
                     else if (message.action === 'START_GAME') {
                         if (boardPostId) { checkBoardGame(); return; }
                         alert('🚀 房主已開始遊戲，即將進入牌桌！');
-                       // 🌟 補上這一行：告訴防呆機制「現在是正常跳轉，不要把房間刪掉！」
+
+                        // 正常進入遊戲，不執行等待區的離房 API。
                         hasLeftRoom = true;
-                       
-                        window.location.href = message.url; 
+
+                        // 遊戲開始後，把房間聊天 WebSocket 交給不會換頁的父層 chatclient 持有。
+                        if (window.parent && window.parent.RoomChatManager) {
+                            window.parent.RoomChatManager.startGameChannel(roomId, myAccount);
+                        }
+
+                        window.location.href = message.url;
                     }
                     else if (message.type === 'ROOM_DISBANDED') {
                         hasLeftRoom = true;
@@ -395,7 +401,9 @@
 
                 window.roomSocket.onclose = function() {
                     console.log("❌ 房間 WebSocket 連線斷開");
-                    if (window.parent && window.parent.RoomChatManager) {
+
+                    // 正常開始遊戲時，房間聊天已交給父層 WebSocket 接手，不能把房間聊天分頁關掉。
+                    if (!hasLeftRoom && window.parent && window.parent.RoomChatManager) {
                         window.parent.RoomChatManager.hideTab();
                     }
                 };
@@ -447,7 +455,7 @@
                 }
             });
 
-$('#startGameBtn').on('click', function() {
+            $('#startGameBtn').on('click', function() {
                 if (!hasRoomSession()) return;
                 if (boardPostId) {
                     const button=$(this).prop('disabled',true);
@@ -456,25 +464,11 @@ $('#startGameBtn').on('click', function() {
                         .fail(roomError).always(function(){button.prop('disabled',false);});
                     return;
                 }
-
                 $.ajax({
                     url: `${apiHost}/api/lobby/room/${roomId}/start`,
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ hostAccount: myAccount }),
-                    success: function(res) {
-                        // 如果後端回傳 success 為 false（例如人數不足）
-                        if (!res.success) {
-                            alert(res.message || '無法開始遊戲！');
-                            $('#roomMessage').removeClass('hidden').text(res.message);
-                        }
-                    },
-                    error: function(xhr) {
-                        // 攔截後端回傳的錯誤訊息並跳出通知
-                        const errorMsg = xhr.responseJSON?.message || '人數不足，無法開始遊戲！';
-                        alert(errorMsg);
-                        $('#roomMessage').removeClass('hidden').text(errorMsg);
-                    }
+                    data: JSON.stringify({ hostAccount: myAccount })
                 });
             });
 
