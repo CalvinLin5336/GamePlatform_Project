@@ -10,6 +10,8 @@ button:disabled { opacity:1; cursor:not-allowed; background:#aab7b1; color:#5c69
 .app-shell { width:94%; max-width:1240px; margin:auto; padding:22px 0 34px; }
 .game-header { width:92%; min-height:54px; margin:0 auto; padding:8px 16px; display:flex; justify-content:space-between; align-items:center; background:rgba(4,46,35,.92); color:#fff; border-color:#b99b43; }
 .game-header h1 { margin:0; font-size:23px; letter-spacing:2px; }
+.game-brand { display:flex; align-items:flex-end; gap:15px; }
+.room-subtitle { margin-bottom:2px; padding-left:15px; border-left:1px solid rgba(255,255,255,.35); color:#dce9e4; font-size:13px; font-weight:bold; letter-spacing:.4px; }
 .eyebrow,.round-kicker,.result-caption { margin:0; color:#b5963b; font-size:11px; letter-spacing:1.4px; }
 .header-meta { width:62%; display:flex; justify-content:space-between; align-items:center; gap:18px; }
 .round-key { flex:1; color:#e8ece9; font-size:12px; text-align:center; }
@@ -22,12 +24,11 @@ button:disabled { opacity:1; cursor:not-allowed; background:#aab7b1; color:#5c69
 .mode-card:hover { border-color:var(--blue); transform:translateY(-2px); }
 .mode-card>span { font-size:38px; }.room-card input { display:block; margin-top:4px; padding:7px; }
 .message { min-height:18px; margin:4px 0; color:#285da8; font-weight:bold; }
-.status-grid { width:84%; max-width:900px; display:grid; grid-template-columns:1fr auto 1fr; gap:18px; margin:18px auto; }
-.seat-card,.round-status { min-height:42px; padding:6px 11px; background:rgba(255,255,255,.94); border:1px solid var(--line); border-radius:9px; box-shadow:var(--shadow); }
+.status-grid { width:68%; max-width:760px; display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:18px auto; }
+.seat-card { min-height:42px; padding:6px 11px; background:rgba(255,255,255,.94); border:1px solid var(--line); border-radius:9px; box-shadow:var(--shadow); }
 .seat-card { display:flex; justify-content:flex-start; align-items:center; gap:12px; border-left:5px solid #9eb3d8; }
 #player2Seat { justify-content:flex-end; }
 .seat-card span { font-size:15px; font-weight:bold; }.seat-card strong { padding:3px 8px; border-radius:12px; background:#edf1f7; font-size:12px; color:#62728d; }.seat-card.confirmed { border-left-color:var(--green); background:#eef9f3; }.seat-card.confirmed strong { background:#d8f0e2; color:#176b45; }
-.round-status { min-width:210px; display:flex; flex-direction:row; justify-content:center; align-items:center; gap:12px; text-align:center; }.round-status span { font-size:13px; color:#63738c; }
 .table-layout { position:relative; display:block; padding:0; border:0; background:transparent; }
 .play-area { min-width:0; }.round-title { position:relative; width:68%; max-width:760px; min-height:58px; margin:0 auto 18px; padding:8px 26px; display:flex; justify-content:center; align-items:center; gap:16px; text-align:center; background:rgba(255,253,245,.96); border-color:#c9a84b; }
 .round-title h2 { margin:0; font-size:21px; }.round-title p { margin:0; font-size:13px; font-weight:bold; }.round-title .message { min-height:0; margin:0; font-size:12px; }.round-kicker { margin:0; }

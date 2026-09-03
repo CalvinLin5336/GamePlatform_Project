@@ -11,9 +11,12 @@
 <body>
   <main class="app-shell">
     <header class="game-header panel">
-      <div>
-        <p class="eyebrow">簡易遊戲平台</p>
-        <h1>田忌撲克</h1>
+      <div class="game-brand">
+        <div>
+          <p class="eyebrow">簡易遊戲平台</p>
+          <h1>田忌撲克</h1>
+        </div>
+        <span id="roomLabel" class="room-subtitle">房間ID:--</span>
       </div>
       <div class="header-meta"><span class="round-key"><i class="key-one"></i>第1輪 <i class="key-two"></i>第2輪 <i class="key-three"></i>第3輪</span><div id="connectionBadge" class="badge">尚未加入</div></div>
     </header>
@@ -35,10 +38,6 @@
     <section id="game" class="hidden">
       <div class="status-grid">
         <article id="player1Seat" class="seat-card"><span id="player1Name">玩家一</span><strong id="player1Status">等待加入</strong></article>
-        <article class="round-status">
-          <strong id="roomLabel">房間</strong>
-          <span id="gameMessage">等待玩家</span>
-        </article>
         <article id="player2Seat" class="seat-card"><span id="player2Name">玩家二</span><strong id="player2Status">等待加入</strong></article>
       </div>
 

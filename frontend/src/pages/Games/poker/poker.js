@@ -228,7 +228,7 @@ function syncDraft() {
 
 function render() {
     if(!game) return;
-    element("roomLabel").textContent=game.mode==="COMPUTER" ? "電腦對戰" : "房間 "+game.roomId;
+    element("roomLabel").textContent="房間ID:"+game.roomId;
     element("player1Name").textContent=game.player1Name || "玩家一";
     element("player2Name").textContent=game.player2Name || "玩家二";
     element("player1PreviewName").textContent=game.player1Name || "玩家一";
@@ -242,23 +242,18 @@ function render() {
     element("player2Seat").classList.toggle("confirmed", game.player2Confirmed);
 
     if(isResultPause()) {
-        element("gameMessage").textContent="結果已公布";
         renderCountdown();
     }
     else if(game.status==="WAITING") {
-        element("gameMessage").textContent="等待對手";
         element("roundHint").textContent="另一位玩家加入後自動開始";
     }
     else if(game.status==="PLAYING" && ownConfirmed()) {
-        element("gameMessage").textContent="已鎖定";
         element("roundHint").textContent="等待對手確認";
     }
     else if(game.status==="PLAYING") {
-        element("gameMessage").textContent="選牌中";
         element("roundHint").textContent="選擇 "+cardsNeeded()+" 張牌";
     }
     else {
-        element("gameMessage").textContent="本局結束";
         element("roundHint").textContent="查看最終結果";
     }
 
