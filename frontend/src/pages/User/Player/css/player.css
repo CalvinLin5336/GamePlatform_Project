@@ -350,3 +350,30 @@ textarea::placeholder {
         width: 100%;
     }
 }
+
+.avatar-info input[type="file"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font-size: 14px;
+}
+
+.avatar-info input[type="file"]::file-selector-button {
+    margin-right: 12px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #8b7cff, #38d6ff);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.avatar-info input[type="file"]::file-selector-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
