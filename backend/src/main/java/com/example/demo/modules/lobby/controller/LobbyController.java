@@ -310,12 +310,23 @@ public class LobbyController {
 
         Room room = optionalRoom.get();
 
+        
+        
+        
         if (!room.getHostAccount().equals(hostAccount)) {
             response.put("success", false);
             response.put("message", "權限不足，只有房主可以修改設定！");
             return ResponseEntity.status(403).body(response);
         }
 
+        
+        Optional<GameMode> optionalMode = gameModeRepository.findById(modeId);
+        if (optionalMode.isPresent()) {
+            GameMode modeConfig = optionalMode.get();
+            room.setMinPlayers(modeConfig.getMinPlayers());
+            room.setComputerPlayers(modeConfig.getComputerPlayers());
+        }
+        
         room.setModeId(modeId);
         room.setMaxPlayers(maxPlayers);
         roomRepository.save(room);

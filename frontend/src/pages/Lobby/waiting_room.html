@@ -138,7 +138,9 @@
                 if (!boardPostId || checkingBoard || !boardMemberId || !hasRoomSession()) return;
                 checkingBoard = true;
                 boardRequest('/game?memberId='+boardMemberId).done(function(entry) {
-                    if (entry.gameUrl) window.location.href = entry.gameUrl;
+                    if (entry.gameUrl){
+                        hasLeftRoom = true;
+                         window.location.href = entry.gameUrl;}
                 }).fail(function(xhr) {
                     roomError(xhr);
                     if (xhr.status === 400) window.location.href = '../Board/index.html#applications';
@@ -301,7 +303,7 @@
                 });
             }
 
-            function syncRoomSettings() {
+                function syncRoomSettings() {
                 if (!hasRoomSession()) return;
                 const newModeId = parseInt($('#waitModeSelect').val());
                 const newMaxPlayers = parseInt($('#waitPlayerCountSelect').val());
@@ -314,7 +316,12 @@
                         hostAccount: myAccount,
                         modeId: newModeId,
                         maxPlayers: newMaxPlayers
-                    })
+                    }),
+                    // 🌟 加入錯誤處理，若後端拒絕更新，自動跳出提示並還原畫面
+                    error: function(xhr) {
+                        alert('設定更新失敗：' + (xhr.responseJSON?.message || '伺服器發生錯誤'));
+                        fetchRoomDetail(); 
+                    }
                 });
             }
 
@@ -356,6 +363,9 @@
                     else if (message.action === 'START_GAME') {
                         if (boardPostId) { checkBoardGame(); return; }
                         alert('🚀 房主已開始遊戲，即將進入牌桌！');
+                       // 🌟 補上這一行：告訴防呆機制「現在是正常跳轉，不要把房間刪掉！」
+                        hasLeftRoom = true;
+                       
                         window.location.href = message.url; 
                     }
                     else if (message.type === 'ROOM_DISBANDED') {
