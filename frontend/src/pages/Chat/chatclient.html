@@ -40,6 +40,11 @@
                             class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="member">
                         ⚙️ 會員中心
                     </button>
+                    <!-- 🌟 新增：只有 Admin 看得到的管理後台按鈕 (預設 hidden) -->
+                    <button id="adminTabBtn" onclick="switchTab('admin', '../User/Admin/admin.html')"
+                            class="nav-btn hidden px-4 py-1.5 rounded-lg text-sm font-medium text-red-300 hover:text-white hover:bg-red-900/50 transition active:scale-95 border border-red-500/30" data-target="admin">
+                        🛡️ 後台管理
+                    </button>
                 </nav>
 
                 <!-- 使用者狀態區 -->
@@ -108,11 +113,8 @@
             const navButtons = document.querySelectorAll('.nav-btn');
 
             function switchTab(tabName, url) {
-                // 🌟 如果當前 iframe 有 forceLeaveRoom 函數，就主動呼叫要求離開
-
                 try {
                     if (mainFrame.contentWindow && typeof mainFrame.contentWindow.forceLeaveRoom === 'function') {
-                        // 傳入 false，觸發上方的「情況 A」
                         mainFrame.contentWindow.forceLeaveRoom(false);
                     }
                 } catch (e) {
@@ -152,20 +154,35 @@
             const loggedInView = document.getElementById('loggedInView');
             const displayUserName = document.getElementById('displayUserName');
             const logoutBtn = document.getElementById('logoutBtn');
+            const adminTabBtn = document.getElementById('adminTabBtn'); // 🌟 取得管理員按鈕元素
 
             function checkLoginStatus() {
                 const currentAccount = localStorage.getItem("account");
                 const currentUsername = localStorage.getItem("username") || currentAccount;
+                
+                // 🌟 檢查角色是否為 Admin (支援 role 字串或 roleId 等多種常見登入儲存方式)
+                const userRole = (localStorage.getItem("role") || "").toUpperCase();
+                const roleId = localStorage.getItem("roleId");
+                const isAdmin = (userRole === "ADMIN" || roleId === "2" || roleId === 2);
 
                 if (currentAccount) {
                     displayUserName.textContent = currentUsername;
                     loggedOutView.classList.add('hidden');
                     loggedInView.classList.remove('hidden');
                     loggedInView.classList.add('flex');
+
+                    // 🌟 如果是管理員，顯示管理後台分頁按鈕
+                    if (isAdmin) {
+                        adminTabBtn.classList.remove('hidden');
+                    } else {
+                        adminTabBtn.classList.add('hidden');
+                    }
                 } else {
                     loggedInView.classList.add('hidden');
                     loggedInView.classList.remove('flex');
                     loggedOutView.classList.remove('hidden');
+                    // 🌟 未登入時隱藏管理後台按鈕
+                    adminTabBtn.classList.add('hidden');
                 }
             }
 
@@ -179,6 +196,7 @@
                         localStorage.removeItem("userId");
                         localStorage.removeItem("username");
                         localStorage.removeItem("role");
+                        localStorage.removeItem("roleId"); // 記得順便清除 roleId
                         localStorage.removeItem("status");
                     }
                     
@@ -191,7 +209,7 @@
             checkLoginStatus();
 
             window.addEventListener('storage', (event) => {
-                if (event.key === 'account' || event.key === 'username') {
+                if (event.key === 'account' || event.key === 'username' || event.key === 'role' || event.key === 'roleId') {
                     checkLoginStatus();
                 }
             });
