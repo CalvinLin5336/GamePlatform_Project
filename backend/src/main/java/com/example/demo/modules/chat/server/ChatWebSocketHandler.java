@@ -53,6 +53,28 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    // 🌟 新增：由 RoomLifecycleListener 觸發，用來關閉並清理指定房間的聊天頻道
+    public void closeRoom(String roomId, String reason) {
+        var sessions = roomSessions.remove(roomId);
+
+        if (sessions == null) {
+            return;
+        }
+
+        for (WebSocketSession session : sessions) {
+            if (session.isOpen()) {
+                try {
+                    // 選擇性：可先送出結束訊息給前端，再關閉連線
+                    // session.sendMessage(new TextMessage("{\"type\":\"ROOM_FINISHED\",\"reason\":\"" + reason + "\"}"));
+                    session.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            sessionRoomMap.remove(session.getId());
+        }
+    }
+
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         // 斷線時，從對應的房間中移除該玩家的連線

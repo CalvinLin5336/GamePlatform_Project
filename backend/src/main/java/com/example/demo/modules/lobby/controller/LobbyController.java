@@ -3,6 +3,7 @@ package com.example.demo.modules.lobby.controller;
 import com.example.demo.modules.lobby.entity.Room;
 import com.example.demo.modules.lobby.repository.RoomRepository;
 import com.example.demo.modules.lobby.server.RoomWebSocketHandler;
+import com.example.demo.modules.lobby.service.RoomLifecycleService;
 import com.example.demo.modules.game.management.repository.GameModeRepository;
 import com.example.demo.modules.game.management.repository.GameRepository;
 import com.example.demo.modules.game.management.model.GameMode;
@@ -39,6 +40,9 @@ public class LobbyController {
 
     @Autowired
     private GameModeRepository gameModeRepository;
+
+    @Autowired
+    private RoomLifecycleService roomLifecycleService;
 
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -448,9 +452,8 @@ public class LobbyController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        // 4. 更改房間狀態並存檔
-        room.setStatus("PLAYING");
-        roomRepository.save(room);
+        // 4. 更改房間狀態、記錄開始時間與 1 小時逾時時間
+        roomLifecycleService.startRoom(room);
 
         // 5. 找出這款遊戲的前端網址 (假設在 games 表格中有存 frontendPath，例如 "poker.html")
         Optional<Game> optionalGame = gameRepository.findById(room.getGameId());

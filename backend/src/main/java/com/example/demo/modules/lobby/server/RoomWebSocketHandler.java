@@ -1,4 +1,4 @@
-package com.example.demo.modules.lobby.server; 
+package com.example.demo.modules.lobby.server;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,48 +8,57 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class RoomWebSocketHandler extends TextWebSocketHandler {
 
-    // 用來記錄「哪個房間」有哪些「玩家連線 (Session)」
+    // roomId -> playerAccount -> WebSocketSession
     private static final Map<String, Map<String, WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
-    
-    // 用來解析 JSON 格式的工具
+
+    // sessionId -> 房間與玩家資訊，供斷線時精準清理
+    private static final Map<String, ConnectionInfo> sessionInfoMap = new ConcurrentHashMap<>();
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        // 1. 從網址抓出房號 (例如 /ws/room/95F35EF8)
+    public void afterConnectionEstablished(WebSocketSession session) {
         String path = session.getUri().getPath();
         String roomId = path.substring(path.lastIndexOf('/') + 1);
+        String playerAccount = getQueryParameter(session, "player");
 
-        // 2. 假設你有從 query 抓到 playerAccount (前端傳的 ?player=...)
-        String query = session.getUri().getQuery();
-        String playerAccount = query != null ? query.split("=")[1] : session.getId();
+        if (playerAccount == null || playerAccount.isBlank()) {
+            playerAccount = session.getId();
+        }
 
-        // 3. 把這個玩家的連線存入對應的房間中
-        roomSessions.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>()).put(playerAccount, session);
+        roomSessions
+                .computeIfAbsent(roomId, key -> new ConcurrentHashMap<>())
+                .put(playerAccount, session);
+
+        sessionInfoMap.put(
+                session.getId(),
+                new ConnectionInfo(roomId, playerAccount)
+        );
 
         System.out.println("✅ 玩家 [" + playerAccount + "] 成功連線到房間 [" + roomId + "]");
     }
 
-    // 🌟 這是補上的核心方法：接收玩家訊息並原封不動廣播給同房所有人
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         String payload = message.getPayload();
-        
+
         try {
-            // 解析前端傳來的 JSON 訊息
             JsonNode node = objectMapper.readTree(payload);
-            
-            // 確認這是一則房間聊天訊息，並且有帶上房號
-            if (node.has("type") && "ROOM_CHAT".equals(node.get("type").asText()) && node.has("roomId")) {
+
+            if (node.has("type")
+                    && "ROOM_CHAT".equals(node.get("type").asText())
+                    && node.has("roomId")) {
+
                 String roomId = node.get("roomId").asText();
-                
-                // 呼叫下方的靜態廣播方法，把訊息分發給該房間
                 broadcastToRoom(roomId, payload);
             }
         } catch (Exception e) {
@@ -58,25 +67,103 @@ public class RoomWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        System.out.println("❌ 玩家斷開連線: " + session.getId());
-        
-        // 進階建議：這裡其實可以加上從 roomSessions 移除斷線 Session 的清理邏輯
-        // 避免房間解散後，記憶體裡還卡著無效的連線物件
-    }
-    
-    public static void broadcastToRoom(String roomId, String message) {
-        Map<String, WebSocketSession> sessions = roomSessions.get(roomId);
-        if (sessions != null) {
-            for (WebSocketSession session : sessions.values()) {
-                if (session.isOpen()) {
-                    try {
-                        session.sendMessage(new TextMessage(message));
-                    } catch (Exception e) {
-                        System.err.println("廣播訊息失敗：" + e.getMessage());
-                    }
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+        ConnectionInfo info = sessionInfoMap.remove(session.getId());
+
+        if (info != null) {
+            Map<String, WebSocketSession> sessions = roomSessions.get(info.roomId());
+
+            if (sessions != null) {
+                // 只有當 Map 裡現在仍是「這一條 session」時才刪除。
+                // 遊戲開始時父頁面可能會用同帳號建立新連線，避免舊連線關閉時誤刪新連線。
+                sessions.computeIfPresent(info.playerAccount(), (key, currentSession) ->
+                        currentSession.getId().equals(session.getId()) ? null : currentSession
+                );
+
+                if (sessions.isEmpty()) {
+                    roomSessions.remove(info.roomId(), sessions);
                 }
             }
         }
+
+        System.out.println("❌ 玩家斷開房間 WebSocket: " + session.getId());
+    }
+
+    public static void broadcastToRoom(String roomId, String message) {
+        Map<String, WebSocketSession> sessions = roomSessions.get(roomId);
+
+        if (sessions == null) {
+            return;
+        }
+
+        for (WebSocketSession session : sessions.values()) {
+            if (session.isOpen()) {
+                try {
+                    session.sendMessage(new TextMessage(message));
+                } catch (Exception e) {
+                    System.err.println("廣播訊息失敗：" + e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Room 結束時由 Chat 的 RoomFinishedEventListener 呼叫。
+     * 先通知前端，再關閉並清除該房間的所有 WebSocket。
+     */
+    public void closeRoomChannel(String roomId, String reason) {
+        Map<String, WebSocketSession> sessions = roomSessions.remove(roomId);
+
+        if (sessions == null || sessions.isEmpty()) {
+            return;
+        }
+
+        try {
+            Map<String, Object> message = new HashMap<>();
+            message.put("type", "ROOM_FINISHED");
+            message.put("roomId", roomId);
+            message.put("reason", reason);
+            message.put("message", "遊戲已結束，房間頻道已關閉");
+
+            String json = objectMapper.writeValueAsString(message);
+
+            for (WebSocketSession session : sessions.values()) {
+                sessionInfoMap.remove(session.getId());
+
+                if (!session.isOpen()) {
+                    continue;
+                }
+
+                try {
+                    session.sendMessage(new TextMessage(json));
+                    session.close(CloseStatus.NORMAL);
+                } catch (Exception e) {
+                    System.err.println("關閉房間頻道失敗：" + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("建立 ROOM_FINISHED 訊息失敗：" + e.getMessage());
+        }
+    }
+
+    private String getQueryParameter(WebSocketSession session, String parameterName) {
+        if (session.getUri() == null || session.getUri().getQuery() == null) {
+            return null;
+        }
+
+        String[] pairs = session.getUri().getQuery().split("&");
+
+        for (String pair : pairs) {
+            String[] parts = pair.split("=", 2);
+
+            if (parts.length == 2 && parameterName.equals(parts[0])) {
+                return URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
+            }
+        }
+
+        return null;
+    }
+
+    private record ConnectionInfo(String roomId, String playerAccount) {
     }
 }

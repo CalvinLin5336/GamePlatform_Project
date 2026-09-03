@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商城施工中</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 jQuery 核心 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-full flex flex-col items-center justify-center font-sans relative overflow-hidden">
+
+    <!-- 🚧 施工中主卡片 -->
+    <div class="w-full max-w-lg bg-slate-900 border border-indigo-500/50 rounded-2xl p-8 shadow-2xl shadow-indigo-900/20 text-center z-10 mx-4">
+        
+        <!-- 圖示與標題 -->
+        <div class="flex flex-col items-center mb-6">
+            <span class="text-6xl mb-4 animate-bounce">🚧</span>
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                商城系統施工中
+            </h1>
+            <p class="text-slate-400 text-sm mt-2">Shopping Mall Under Maintenance</p>
+        </div>
+
+        <!-- 說明文字 -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 mb-8 text-slate-300 text-sm leading-relaxed">
+            <p>為了提供更優質的交易體驗與豐富的道具內容，商城目前正在進行系統升級與維護。</p>
+            <p class="mt-2 text-indigo-400 font-medium">請稍候片刻，我們將盡快重新開放！</p>
+        </div>
+
+        <!-- 返回按鈕 -->
+        <div>
+            <a href="../lobby/jquery_lobby.html" class="inline-block px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-900/50 transition transform hover:scale-105 active:scale-95">
+                🏠 返回遊戲大廳
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

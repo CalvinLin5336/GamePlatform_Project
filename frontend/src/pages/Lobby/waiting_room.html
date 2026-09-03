@@ -447,7 +447,7 @@
                 }
             });
 
-            $('#startGameBtn').on('click', function() {
+$('#startGameBtn').on('click', function() {
                 if (!hasRoomSession()) return;
                 if (boardPostId) {
                     const button=$(this).prop('disabled',true);
@@ -456,11 +456,25 @@
                         .fail(roomError).always(function(){button.prop('disabled',false);});
                     return;
                 }
+
                 $.ajax({
                     url: `${apiHost}/api/lobby/room/${roomId}/start`,
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ hostAccount: myAccount })
+                    data: JSON.stringify({ hostAccount: myAccount }),
+                    success: function(res) {
+                        // 如果後端回傳 success 為 false（例如人數不足）
+                        if (!res.success) {
+                            alert(res.message || '無法開始遊戲！');
+                            $('#roomMessage').removeClass('hidden').text(res.message);
+                        }
+                    },
+                    error: function(xhr) {
+                        // 攔截後端回傳的錯誤訊息並跳出通知
+                        const errorMsg = xhr.responseJSON?.message || '人數不足，無法開始遊戲！';
+                        alert(errorMsg);
+                        $('#roomMessage').removeClass('hidden').text(errorMsg);
+                    }
                 });
             });
 
