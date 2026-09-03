@@ -325,6 +325,7 @@ class BoardRoomIntegrationTests {
         request.setModeId(game.getModes().stream().filter(m -> code.equals(m.getModeCode())).findFirst().orElseThrow().getModeId());
         request.setTitle(captain.getAccount() + " " + code);
         request.setDescription("測試組隊");
+        request.setStartTime(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Taipei")).plusDays(1));
         return request;
     }
 

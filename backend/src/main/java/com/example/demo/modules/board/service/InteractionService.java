@@ -16,7 +16,8 @@ public class InteractionService {
 	private final JoinRequestRepository joins;
 	private final CommentRepository comments;
 	private final FavoriteRepository favorites;
-	private final NotificationRepository notices;
+	private final BoardNotificationService notices;
+    private final BoardEvents events;
 	private final TeamPostRepository posts;
 	private final MemberRepository members;
 	private final BoardRoomService rooms;
@@ -38,7 +39,9 @@ public class InteractionService {
 		j.setApplicant(m);
 		j.setMessage(f.getMessage());
 		joins.save(j);
-		notice(p.getCaptain(), "收到加入申請", m.getNickname() + " 想加入「" + p.getTitle() + "」", j);
+		notice(p.getCaptain(), "收到加入申請", m.getNickname() + " 想加入「" + p.getTitle() + "」"
+                + (f.getMessage() == null || f.getMessage().isBlank() ? "" : "\n申請留言：" + f.getMessage()), j);
+		events.postChanged(p.getId());
 		return j;
 	}
 
@@ -71,23 +74,38 @@ public class InteractionService {
 		}
 		j.setStatus(status);
 		notice(j.getApplicant(), "申請結果", status == ApplicationStatus.APPROVED ? "隊長已同意你的申請" : "隊長已拒絕你的申請", j);
+		events.postChanged(j.getPost().getId());
 		return joins.save(j);
 	}
 
-	public List<Comment> comments(Long postId) {
+	public com.example.demo.modules.board.dto.BoardPage<Comment> commentPage(Long postId, int page) {
+        if (page < 0) throw new IllegalArgumentException("頁碼不可小於 0");
+        post(postId);
+        return com.example.demo.modules.board.dto.BoardPage.from(comments.findByPostIdOrderByCreatedAtAscIdAsc(postId, org.springframework.data.domain.PageRequest.of(page, 10)));
+    }
+
+    public List<Comment> comments(Long postId) {
 		return comments.findByPostIdOrderByCreatedAtAsc(postId);
 	}
 
+	@Transactional
 	public Comment addComment(Long postId, CommentRequest f) {
 		Comment c = new Comment();
 		c.setPost(post(postId));
 		c.setMember(member(f.getMemberId()));
 		c.setContent(f.getContent());
-		return comments.save(c);
+		comments.save(c);
+        notices.commentAdded(c);
+        events.commentsChanged(postId);
+        return c;
 	}
 
-	public void deleteComment(Long id) {
-		comments.deleteById(id);
+	@Transactional
+    public void deleteComment(Long id, Long memberId) {
+        Comment comment = comments.findById(id).orElseThrow(() -> new IllegalArgumentException("找不到留言"));
+        if (!comment.getMember().getId().equals(memberId)) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "只能刪除自己的留言");
+        comments.delete(comment);
+        events.commentsChanged(comment.getPost().getId());
 	}
 
 	@Transactional
@@ -108,9 +126,6 @@ public class InteractionService {
 		return favorites.findByMemberId(memberId);
 	}
 
-	public List<Notification> notifications(Long memberId) {
-		return notices.findByMemberIdOrderByCreatedAtDesc(memberId);
-	}
 
 	private TeamPost post(Long id) {
 		return posts.findById(id).orElseThrow(() -> new IllegalArgumentException("找不到公告"));
@@ -123,12 +138,7 @@ public class InteractionService {
 	}
 
 	private void notice(Member m, String title, String message, JoinRequest application) {
-		Notification n = new Notification();
-		n.setMember(m);
-		n.setTitle(title);
-		n.setMessage(message);
-		n.setPostId(application.getPost().getId());
-		n.setApplicationId(application.getId());
-		notices.save(n);
+        notices.send(m, application.getPost(), m.getId().equals(application.getPost().getCaptain().getId()) ? "CAPTAIN" : "APPLICANT",
+                title, message, application.getId(), null);
 	}
 }

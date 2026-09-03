@@ -8,7 +8,7 @@ function jwt(id = 7, account = 'player', exp = Date.now() / 1000 + 3600) {
     return 'header.' + Buffer.from(JSON.stringify({userId:id, sub:account, exp})).toString('base64url') + '.signature';
 }
 
-function setup(href = 'http://127.0.0.1:5500/src/pages/Board/index.html#form/new') {
+function setup(href = 'http://127.0.0.1:5500/src/pages/Board/index.html#form/new', scriptSrc) {
     const values = new Map(), calls = [], events = [];
     const localStorage = {getItem:key => values.get(key) ?? null, setItem:(key,value) => values.set(key,String(value)), removeItem:key => values.delete(key)};
     const url = new URL(href);
@@ -24,7 +24,7 @@ function setup(href = 'http://127.0.0.1:5500/src/pages/Board/index.html#form/new
             return promise;
         }
     };
-    const window = {location, atob:value => Buffer.from(value,'base64').toString('binary'), dispatchEvent:event => events.push(event.type)};
+    const window = {location, document:{currentScript:scriptSrc ? {src:scriptSrc} : null}, atob:value => Buffer.from(value,'base64').toString('binary'), dispatchEvent:event => events.push(event.type)};
     vm.runInNewContext(source, {window, jQuery:$, localStorage, URL, CustomEvent:class {constructor(type){this.type=type;}}});
     return {api:window.UserApi, values, calls, events, location};
 }
@@ -108,4 +108,30 @@ test('login return target keeps Board route and rejects external redirects', () 
     assert.equal(valid.api.getLoginReturnUrl(),s.location.href);
     const external=setup('http://127.0.0.1:5500/src/pages/User/Login/login.html?returnTo=https://example.com');
     assert.equal(external.api.getLoginReturnUrl(),'http://127.0.0.1:5500/src/pages/Lobby/jquery_lobby.html');
+});
+
+test('login URL follows the actual User API script under different Live Server roots', () => {
+    for (const pages of ['/src/pages/', '/frontend/src/pages/', '/GamePlatform_Project/frontend/src/pages/', '/']) {
+        const origin = 'http://10.10.2.151:5500';
+        const board = origin + pages + 'Board/index.html#form/new';
+        const script = origin + pages + 'User/api/userApi.js';
+        const s = setup(board, script);
+        s.api.redirectToLogin(board);
+        const loginUrl = new URL(s.location.assigned);
+        assert.equal(loginUrl.pathname, pages + 'User/Login/login.html');
+        assert.equal(loginUrl.searchParams.get('returnTo'), board);
+        assert.equal(setup(loginUrl.href, script).api.getLoginReturnUrl(), board);
+        assert.equal(setup(origin + pages + 'User/Login/login.html', script).api.getLoginReturnUrl(), origin + pages + 'Lobby/jquery_lobby.html');
+    }
+});
+
+test('script location remains authoritative for nested pages and self-login redirects are rejected', () => {
+    const script = 'http://localhost:5500/frontend/src/pages/User/api/userApi.js';
+    const s = setup('http://localhost:5500/custom/wrapper.html', script);
+    s.api.redirectToLogin(undefined, 'register');
+    const url = new URL(s.location.assigned);
+    assert.equal(url.pathname, '/frontend/src/pages/User/Login/login.html');
+    assert.equal(url.searchParams.get('mode'), 'register');
+    const self = setup('http://localhost:5500/frontend/src/pages/User/Login/login.html?returnTo=/frontend/src/pages/user/login/login.html', script);
+    assert.equal(self.api.getLoginReturnUrl(), 'http://localhost:5500/frontend/src/pages/Lobby/jquery_lobby.html');
 });

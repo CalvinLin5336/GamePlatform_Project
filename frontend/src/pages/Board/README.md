@@ -12,6 +12,7 @@ Board 是獨立 HTML／jQuery 頁面，不需要 React 或 npm build。後端保
 ## 操作流程
 
 - Board 只保留黃色功能列，合併重複導覽；會員名稱與登出由平台上方導覽列顯示。
+- 「我的通知」入口一直顯示，未登入時會前往平台登入頁。訪客的「公開公告更新：已連線」僅代表公開訊息連線，不代表會員已登入。
 - 隊長建立隊伍：從遊戲下拉選單選擇遊戲，再選擇資料庫提供的模式。
 - 表單的「遊玩人數（含隊長）」可在模式的 `minPlayers`～`maxPlayers` 範圍內選擇；電腦人數由模式設定。
 - 段位條件為選填，留空代表不限段位，後端儲存為 `null`。
@@ -22,7 +23,28 @@ Board 是獨立 HTML／jQuery 頁面，不需要 React 或 npm build。後端保
 - 隊長從通知或管理頁，隊員從「我的申請」，或雙方從公告詳情按「進入房間」。已開始的隊伍會顯示「進入遊戲」。
 - 等待頁沿用 `../Lobby/waiting_room.html?room=房號&boardPostId=公告ID`。Board 會同步 Lobby 使用的 `localStorage.account`。
 - Board 等待頁的開始／踢人會同步處理隊伍與房間；返回公告不會退出隊伍。已開始的房間會自動導向遊戲。
-- 審核完成後，隊員重新開啟「我的申請」即可看到房間入口；目前未加入即時推播更新 Board 畫面。
+- 留言、申請審核、隊伍人數與開始狀態透過 Board WebSocket 即時更新；我的申請與收藏也會更新房間入口。
+
+### 開始時間、搜尋與分頁
+
+- 公告卡片及詳情明確顯示預定開始時間；建立時必填，前端日期選擇器及後端都拒絕過去時間。
+- 已過期的舊公告可保留原開始時間修改說明；若變更時間，須改選未來時間。結束時間不可早於開始時間。
+- 後端以台灣時間（Asia/Taipei）檢查，部署時可由 `app.board.time-zone` 調整；輸入時間應與此時區一致。
+- 公告左側可依開始時間的「從／至」搜尋，可只填其中一端，並可搭配遊戲、模式、狀態及關鍵字。
+- 公告、公告內留言及通知皆每頁 10 筆，提供上一頁／下一頁與總筆數；公告保留搜尋條件及目前頁碼。
+
+### 我的通知與即時更新
+
+- 上方「我的通知」顯示未讀數字；通知頁另顯示未讀留言數量，可將單則或本頁通知標記已讀。
+- 「我的隊伍」：擔任隊長的公告之加入申請、隊員狀態與新留言。
+- 「我申請加入」：申請中或已加入隊伍的審核結果、開始通知與新留言。
+- 「我關注的公告」：收藏或曾留言、尚未申請加入的公告之後續留言。
+- 同時具有多種關係時，隊長優先，其次申請／加入者，再來是關注者；同一則留言只通知每位相關會員一次，不通知留言者本人。分類以收到通知時的身分為準。
+- 舊通知沿用現有資料並補以關係判斷分類，不會自動產生舊留言的通知。
+- 使用 `/ws/board`：訪客僅接收公開公告／留言更新；會員以第一個 AUTH 訊息傳送 User JWT，token 不放在網址。
+- 私人通知由伺服器依已驗證的 Board 會員 ID 分送；失效、停用帳號會斷線。事件在資料庫交易提交成功後才送出。
+- 前端自動重連並重新讀取未讀數字及目前頁面；新訊息更新不清除留言草稿或建立隊伍表單。
+- 目前事件分送使用單一後端程序的連線記憶體；若部署多台後端，需再串接共用訊息服務。
 
 ### 日後新增遊戲的人數設定
 
@@ -37,6 +59,11 @@ Board 是獨立 HTML／jQuery 頁面，不需要 React 或 npm build。後端保
 | 用途 | API |
 |---|---|
 | 遊戲及其啟用模式 | `GET /api/game-management/games` |
+| 公告分頁與時間篩選 | `GET /board/team-posts/page?page=0&startFrom=2026-09-10T18:00&startTo=2026-09-10T23:59`（可搭配下列篩選參數） |
+| 留言分頁 | `GET /board/team-posts/{id}/comments/page?page=0` |
+| 個人通知分頁 | `GET /board/notifications?category=CAPTAIN&page=0`（`CAPTAIN`／`APPLICANT`／`WATCHING`） |
+| 未讀數字 | `GET /board/notifications/summary` |
+| 標記已讀 | `PUT /board/notifications/read`，JSON：`[通知ID]` |
 | 公告篩選 | `GET /board/team-posts?gameId=1&modeId=2&status=RECRUITING&keyword=...` |
 | 建立公告 | `POST /board/team-posts` |
 | 更新公告 | `PUT /board/team-posts/{id}` |
@@ -123,3 +150,7 @@ sh ./mvnw -Dtest=BoardRoomIntegrationTests test
 瀏覽器使用獨立暫存 SQLite 驗證了通知審核／踢人、2～4 人選單、段位留空建立三人隊伍，
 以及通知頁開始對戰電腦後實際進入牌局並取得手牌。
 若環境禁止 Mockito 動態附加 agent，可透過 Maven 的 `argLine` 指定已安裝的 `mockito-core` jar 為 `-javaagent`。
+
+通知分頁、摘要與已讀 API 必須帶入 User Bearer token，會員 ID 由後端判定。分頁頁碼從 0 起，回傳 `content`、`page`、`totalPages`、`totalElements`。
+
+新增 `BoardUpdatesIntegrationTests`、`BoardWebSocketTests` 與 `frontend/tests/boardUpdates.test.cjs`，涵蓋時間限制、分頁邊界、通知分類／去重／已讀、交易回滾、WebSocket 身分隔離及前端重連。所有測試資料均使用獨立暫存 SQLite。

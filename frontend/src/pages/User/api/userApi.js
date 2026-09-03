@@ -4,6 +4,11 @@
     // API 一律連到目前提供前端頁面的主機，方便本機與區網共用。
     const API_BASE = 'http://' + window.location.hostname + ':8080';
     const sessionKeys = ['token', 'userId', 'account', 'username', 'role', 'status'];
+    // Live Server 可從 frontend、專案根目錄或 pages 啟動，頁面網址不可寫死在網站根目錄。
+    const pagesPath = window.location.pathname.match(/^(.*\/)(?:Board|Lobby|Chat|User)(?:\/|$)/i)?.[1] || '/src/pages/';
+    const apiScriptUrl = window.document?.currentScript?.src
+        || new URL('User/api/userApi.js', new URL(pagesPath, window.location.origin)).href;
+    const userModuleUrl = new URL('../', apiScriptUrl);
 
     function getToken() {
         return localStorage.getItem('token') || '';
@@ -68,18 +73,19 @@
     }
 
     function redirectToLogin(returnTo, mode) {
-        const url = new URL('/src/pages/User/Login/login.html', window.location.origin);
+        const url = new URL('Login/login.html', userModuleUrl);
         url.searchParams.set('returnTo', returnTo || window.location.href);
         if (mode === 'register') url.searchParams.set('mode', 'register');
         window.location.assign(url.href);
     }
 
     function getLoginReturnUrl() {
-        const fallback = new URL('/src/pages/Lobby/jquery_lobby.html', window.location.origin);
+        const fallback = new URL('../Lobby/jquery_lobby.html', userModuleUrl);
+        const loginPath = new URL('Login/login.html', userModuleUrl).pathname.toLowerCase();
         try {
             const value = new URL(window.location.href).searchParams.get('returnTo');
             const target = value ? new URL(value, window.location.origin) : fallback;
-            if (target.origin === window.location.origin && target.pathname !== window.location.pathname) return target.href;
+            if (target.origin === window.location.origin && target.pathname.toLowerCase() !== loginPath) return target.href;
         } catch (_) { /* 非本站網址使用預設大廳。 */ }
         return fallback.href;
     }

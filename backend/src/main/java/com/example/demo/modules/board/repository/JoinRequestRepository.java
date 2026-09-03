@@ -9,6 +9,7 @@ import java.util.List;
 public interface JoinRequestRepository extends JpaRepository<JoinRequest, Long> {
 	java.util.Optional<JoinRequest> findByPostIdAndApplicantAccountAndStatus(Long postId, String account, ApplicationStatus status);
 	boolean existsByPostId(Long postId);
+    List<JoinRequest> findByPostId(Long postId);
 
 	boolean existsByPostIdAndApplicantIdAndStatus(Long postId, Long memberId, ApplicationStatus status);
 	boolean existsByPostIdAndApplicantId(Long postId, Long memberId);

@@ -18,6 +18,13 @@ public class BoardSessionService {
     private final MemberRepository members;
     private final PasswordEncoder encoder;
 
+    @Transactional(readOnly = true)
+    public Member requireMember(String authorization) {
+        var user = sessions.requireUser(authorization);
+        return members.findByPlatformUserId(user.id()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.CONFLICT, "請先重新整理 Board，完成會員連結"));
+    }
+
     @Transactional
     public Member currentMember(String authorization) {
         var user = sessions.requireUser(authorization);

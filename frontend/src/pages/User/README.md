@@ -68,6 +68,8 @@ UserApi.checkLogin().done(function (user) {
 後端位址使用目前前端 hostname 的 8080 埠，因此同一份前端可直接用於本機或區網測試。
 各頁面必須使用同一個前端 origin（協定、主機、埠），才能共用 localStorage 登入。
 
+登入頁與預設大廳網址會依實際載入的 `User/api/userApi.js` 位置解析；Live Server 從 `frontend`、專案根目錄或 `src/pages` 啟動都可使用，不再固定導向網站根目錄的 `/src/pages/...`。由建立公告入口登入後，會返回建立隊伍表單。
+
 ## 驗證
 
 `node --test frontend/tests/userApi.test.cjs`：登入狀態、過期 token、401／403、舊請求與跨頁返回網址。

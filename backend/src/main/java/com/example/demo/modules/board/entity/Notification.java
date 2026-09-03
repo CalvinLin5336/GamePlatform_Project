@@ -19,9 +19,12 @@ public class Notification {
 	@JoinColumn(name = "member_id")
 	private Member member;
 	private String title;
+	@Column(length = 2000)
 	private String message;
 	private Long postId;
 	private Long applicationId;
+	private Long commentId;
+	private String category;
 	private Boolean readFlag = false;
 	private LocalDateTime createdAt;
 

@@ -20,7 +20,8 @@ public class BoardTeamService {
     private final TeamPostRepository posts;
     private final JoinRequestRepository joins;
     private final MemberRepository members;
-    private final NotificationRepository notices;
+    private final BoardNotificationService notices;
+    private final BoardEvents events;
     private final BoardRoomService rooms;
     private final GameManagementService games;
     private final PokerGameService poker;
@@ -38,13 +39,9 @@ public class BoardTeamService {
         application.setStatus(ApplicationStatus.CANCELLED);
         posts.saveAndFlush(post);
         rooms.removePlayer(post, account);
-        Notification notice = new Notification();
-        notice.setMember(application.getApplicant());
-        notice.setPostId(postId);
-        notice.setApplicationId(application.getId());
-        notice.setTitle("已被移出隊伍");
-        notice.setMessage("隊長已將你移出「" + post.getTitle() + "」，可以尋找其他隊伍。");
-        notices.save(notice);
+        notices.send(application.getApplicant(), post, "APPLICANT", "已被移出隊伍",
+                "隊長已將你移出「" + post.getTitle() + "」，可以尋找其他隊伍。", application.getId(), null);
+        events.postChanged(postId);
         return post;
     }
 
@@ -59,6 +56,7 @@ public class BoardTeamService {
         posts.saveAndFlush(post);
         rooms.start(post);
         rooms.notifyRoster(post, "遊戲已開始", "「" + post.getTitle() + "」已開始，請按進入遊戲。");
+        events.postChanged(postId);
         return access(post, captainId);
     }
 

@@ -10,7 +10,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Comment {
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(generator = "board_comments")
+	@org.hibernate.annotations.GenericGenerator(name = "board_comments",
+			type = com.example.demo.modules.board.config.BoardSequenceGenerator.class,
+			parameters = @org.hibernate.annotations.Parameter(name = "sequence_name", value = "comments_seq"))
 	private Long id;
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "post_id")

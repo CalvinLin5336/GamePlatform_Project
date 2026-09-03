@@ -24,7 +24,16 @@ public class TeamPostController {
 		return ResponseEntity.ok(service.list(keyword, status, gameId, modeId));
 	}
 
-	@GetMapping("/{id}")
+	@GetMapping("/page")
+    public com.example.demo.modules.board.dto.BoardPage<TeamPost> page(@RequestParam(defaultValue="") String keyword,
+            @RequestParam(required=false) PostStatus status, @RequestParam(required=false) Long gameId, @RequestParam(required=false) Long modeId,
+            @RequestParam(required=false) @org.springframework.format.annotation.DateTimeFormat(iso=org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startFrom,
+            @RequestParam(required=false) @org.springframework.format.annotation.DateTimeFormat(iso=org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startTo,
+            @RequestParam(defaultValue="0") int page) {
+        return service.page(keyword, status, gameId, modeId, startFrom, startTo, page);
+    }
+
+    @GetMapping("/{id}")
 	public ResponseEntity<TeamPost> one(@PathVariable Long id) {
 		return ResponseEntity.ok(service.get(id));
 	}

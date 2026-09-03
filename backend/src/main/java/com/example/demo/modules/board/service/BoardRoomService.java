@@ -25,7 +25,7 @@ public class BoardRoomService {
     private final LobbyController lobby;
     private final GameManagementService games;
     private final JoinRequestRepository joins;
-    private final NotificationRepository notices;
+    private final BoardNotificationService notices;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createWhenFull(TeamPost post) {
@@ -129,12 +129,7 @@ public class BoardRoomService {
 
     public void notifyRoster(TeamPost post, String title, String message) {
         for (Member member : roster(post)) {
-            Notification notice = new Notification();
-            notice.setMember(member);
-            notice.setPostId(post.getId());
-            notice.setTitle(title);
-            notice.setMessage(message);
-            notices.save(notice);
+            notices.send(member, post, member.getId().equals(post.getCaptain().getId()) ? "CAPTAIN" : "APPLICANT", title, message, null, null);
         }
     }
 

@@ -16,6 +16,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class InteractionController {
 	private final InteractionService service;
+    private final com.example.demo.modules.board.service.BoardSessionService sessions;
+    private final com.example.demo.modules.board.repository.NotificationRepository notices;
 
 	@PostMapping("/team-posts/{id}/join")
 	ResponseEntity<JoinRequest> join(@PathVariable Long id, @RequestBody JoinRequestForm f) {
@@ -43,14 +45,20 @@ public class InteractionController {
 		return ResponseEntity.ok(service.comments(id));
 	}
 
-	@PostMapping("/team-posts/{id}/comments")
-	ResponseEntity<Comment> comment(@PathVariable Long id, @Valid @RequestBody CommentRequest f) {
+	@GetMapping("/team-posts/{id}/comments/page")
+    public BoardPage<Comment> commentPage(@PathVariable Long id, @RequestParam(defaultValue="0") int page) {
+        return service.commentPage(id, page);
+    }
+
+    @PostMapping("/team-posts/{id}/comments")
+	ResponseEntity<Comment> comment(@PathVariable Long id, @Valid @RequestBody CommentRequest f, @RequestHeader(value="Authorization", required=false) String token) {
+        f.setMemberId(sessions.requireMember(token).getId());
 		return ResponseEntity.ok(service.addComment(id, f));
 	}
 
 	@DeleteMapping("/comments/{id}")
-	ResponseEntity<Void> deleteComment(@PathVariable Long id) {
-		service.deleteComment(id);
+	ResponseEntity<Void> deleteComment(@PathVariable Long id, @RequestHeader(value="Authorization", required=false) String token) {
+		service.deleteComment(id, sessions.requireMember(token).getId());
 		return ResponseEntity.noContent().build();
 	}
 
@@ -65,7 +73,8 @@ public class InteractionController {
 	}
 
 	@GetMapping("/notifications/member/{id}")
-	ResponseEntity<List<Notification>> notices(@PathVariable Long id) {
-		return ResponseEntity.ok(service.notifications(id));
+	ResponseEntity<List<Notification>> notices(@PathVariable Long id, @RequestHeader(value="Authorization", required=false) String token) {
+        if (!sessions.requireMember(token).getId().equals(id)) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "只能查看自己的通知");
+		return ResponseEntity.ok(notices.findByMemberIdOrderByCreatedAtDesc(id));
 	}
 }

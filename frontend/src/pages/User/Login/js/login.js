@@ -1,6 +1,6 @@
 $(function () {
     const returnUrl = UserApi.getLoginReturnUrl();
-    $('.back-note strong').text(new URL(returnUrl).pathname.includes('/Board/') ? '組隊公告' : 'Lobby');
+    $('.back-note strong').text(/\/Board\//i.test(new URL(returnUrl).pathname) ? '組隊公告' : 'Lobby');
 
     const $loginTab = $('#loginTab');
     const $registerTab = $('#registerTab');

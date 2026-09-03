@@ -22,6 +22,15 @@ public class TeamPostService {
 	private final JoinRequestRepository joins;
 	private final GameManagementService games;
 	private final BoardRoomService rooms;
+    private final java.time.Clock boardClock;
+    private final BoardEvents events;
+
+    public com.example.demo.modules.board.dto.BoardPage<TeamPost> page(String keyword, PostStatus status, Long gameId, Long modeId,
+            java.time.LocalDateTime startFrom, java.time.LocalDateTime startTo, int page) {
+        if (page < 0) throw new IllegalArgumentException("頁碼不可小於 0");
+        if (startFrom != null && startTo != null && startTo.isBefore(startFrom)) throw new IllegalArgumentException("時間範圍的結束不能早於開始");
+        return com.example.demo.modules.board.dto.BoardPage.from(posts.searchPage(keyword == null ? "" : keyword.trim(), status, gameId, modeId, startFrom, startTo, org.springframework.data.domain.PageRequest.of(page, 10)));
+    }
 
 	public List<TeamPost> list(String keyword, PostStatus status, Long gameId, Long modeId) {
 		return posts.search(keyword == null ? "" : keyword.trim(), status, gameId, modeId);
@@ -43,6 +52,7 @@ public class TeamPostService {
 		p.setCaptain(members.findById(f.getCaptainId()).orElseThrow(() -> new IllegalArgumentException("找不到會員")));
 		posts.save(p);
 		rooms.createWhenFull(p);
+		events.postChanged(p.getId());
 		return posts.save(p);
 	}
 
@@ -61,6 +71,7 @@ public class TeamPostService {
 		apply(p, f);
 		if (p.getStatus() == PostStatus.RECRUITING || p.getStatus() == PostStatus.FULL)
 			rooms.createWhenFull(p);
+		events.postChanged(p.getId());
 		return posts.save(p);
 	}
 
@@ -76,11 +87,17 @@ public class TeamPostService {
 		return p.getRoomId();
 	}
 
+	@Transactional
 	public void delete(Long id) {
 		posts.deleteById(id);
+        events.postChanged(id);
 	}
 
 	private void apply(TeamPost p, TeamPostRequest f) {
+        if (f.getStartTime() == null) throw new IllegalArgumentException("請選擇開始時間");
+        // 已開始的舊公告仍可修改說明，但不能把時間改成另一個過去的時間。
+        if (f.getStartTime().isBefore(java.time.LocalDateTime.now(boardClock)) && !Objects.equals(f.getStartTime(), p.getStartTime()))
+            throw new IllegalArgumentException("開始時間不能選擇過去的時間");
 		if (f.getStartTime() != null && f.getEndTime() != null && f.getEndTime().isBefore(f.getStartTime()))
 			throw new IllegalArgumentException("結束時間不能早於開始時間");
 		p.setTitle(f.getTitle());
