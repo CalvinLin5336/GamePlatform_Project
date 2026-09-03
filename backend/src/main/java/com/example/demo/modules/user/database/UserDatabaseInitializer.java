@@ -3,13 +3,19 @@ package com.example.demo.modules.user.database;
 import jakarta.annotation.PostConstruct;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import com.example.demo.modules.user.service.PasswordService;
 
 @Component
 public class UserDatabaseInitializer {
 
     private final JdbcTemplate jdbcTemplate;
-    public UserDatabaseInitializer(JdbcTemplate jdbcTemplate) {
+    private final PasswordService passwordService;
+
+    public UserDatabaseInitializer(
+            JdbcTemplate jdbcTemplate,
+            PasswordService passwordService) {
         this.jdbcTemplate = jdbcTemplate;
+        this.passwordService = passwordService;
     }
 
     @PostConstruct
@@ -60,9 +66,43 @@ public class UserDatabaseInitializer {
                 )
                 """);
 
-        jdbcTemplate.update("INSERT OR IGNORE INTO roles(id, role_name) VALUES(1, 'PLAYER')");
-        jdbcTemplate.update("INSERT OR IGNORE INTO roles(id, role_name) VALUES(2, 'ADMIN')");
-        jdbcTemplate.update("INSERT OR IGNORE INTO statuses(id, status_name) VALUES(1, 'Active')");
-        jdbcTemplate.update("INSERT OR IGNORE INTO statuses(id, status_name) VALUES(2, 'Disabled')");
+        jdbcTemplate.update(
+                "INSERT OR IGNORE INTO roles(id, role_name) VALUES(1, 'PLAYER')");
+
+        jdbcTemplate.update(
+                "INSERT OR IGNORE INTO roles(id, role_name) VALUES(2, 'ADMIN')");
+
+        jdbcTemplate.update(
+                "INSERT OR IGNORE INTO statuses(id, status_name) VALUES(1, 'Active')");
+
+        jdbcTemplate.update(
+                "INSERT OR IGNORE INTO statuses(id, status_name) VALUES(2, 'Disabled')");
+
+        // 建立預設管理員帳號
+        String adminPassword = passwordService.encode("admin123");
+
+        jdbcTemplate.update("""
+                INSERT OR IGNORE INTO users (
+                    account,
+                    password,
+                    username,
+                    avatar,
+                    description,
+                    role_id,
+                    status_id,
+                    last_login,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+                """,
+                "admin",
+                adminPassword,
+                "Administrator",
+                null,
+                "System administrator",
+                2,
+                1,
+                null);
     }
 }
