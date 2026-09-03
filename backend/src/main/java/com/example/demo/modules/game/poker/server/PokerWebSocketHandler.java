@@ -36,12 +36,9 @@ public class PokerWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        Object roomId = session.getAttributes().get("roomId");
-        Object token = session.getAttributes().get("token");
-        if (roomId != null && token != null
-                && service.tokenIsValid(roomId.toString(), token.toString())) {
-            service.leave(roomId.toString(), token.toString());
-        }
+        // WebSocket 中斷不等於玩家主動離開遊戲。
+        // Poker 前端仍會使用 HTTP 請求同步遊戲狀態，因此不能在這裡讓 token 失效。
+        // 真正的主動離開由 DELETE /api/games/poker/rooms/{roomId}/leave 處理。
     }
 
     private Map<String, String> query(URI uri) {

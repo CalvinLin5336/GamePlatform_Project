@@ -27,6 +27,7 @@ import com.example.demo.modules.game.poker.model.RoundSlot;
 import com.example.demo.modules.game.poker.service.PokerGameService;
 import com.example.demo.modules.game.poker.service.PokerRuleService;
 import com.example.demo.modules.game.poker.util.GameTool;
+import com.example.demo.modules.lobby.service.RoomLifecycleService;
 
 @Service
 public class PokerGameServiceImpl implements PokerGameService {
@@ -34,6 +35,9 @@ public class PokerGameServiceImpl implements PokerGameService {
     private Map<String, GameRoom> rooms = new HashMap<String, GameRoom>();
     @Autowired
     private PokerRuleService pokerRuleService;
+
+    @Autowired
+    private RoomLifecycleService roomLifecycleService;
 
     @Override
     public synchronized JoinResult join(
@@ -102,8 +106,16 @@ public class PokerGameServiceImpl implements PokerGameService {
     public synchronized void leave(String roomId, String token) {
         GameRoom room=requireRoom(roomId);
         int seat=requireSeat(room, token);
+        boolean alreadyFinished=GameRoom.STATUS_FINISHED.equals(room.getStatus());
+
         room.getConnected()[seat]=false;
         room.getSeatTokens()[seat]=null;
+
+        if(!alreadyFinished) {
+            roomLifecycleService.finishRoom(
+                    room.getId(),
+                    RoomLifecycleService.END_ABANDONED);
+        }
     }
 
     @Override
@@ -295,6 +307,10 @@ public class PokerGameServiceImpl implements PokerGameService {
         else throw new GameException("RESULT_ERROR", "勝場相同，整局勝負計算異常");
         room.setRoundResultEndsAt(null);
         room.setStatus(GameRoom.STATUS_FINISHED);
+
+        roomLifecycleService.finishRoom(
+                room.getId(),
+                RoomLifecycleService.END_NORMAL);
     }
 
     private void advanceRoundIfReady(GameRoom room) {
