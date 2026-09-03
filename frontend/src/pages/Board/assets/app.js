@@ -74,11 +74,7 @@
 
     function renderMember() {
         const user = currentUser();
-        const session = UserApi.getLoginSession();
         $('[data-login-only]').toggleClass('hidden', !user);
-        $('#memberArea').html(session
-            ? `<span class="nickname">👤 ${escapeHtml(session.username || session.account)}</span><button id="logoutButton" class="secondary" type="button">登出</button>`
-            : '<a class="primary" href="#login">登入</a>');
     }
 
     function requireLogin() {
@@ -356,7 +352,6 @@
         else if(parts[0]==='notifications')notificationsPage();
         else if(parts[0]==='captain')captainPage();
         else notFoundPage();
-        $('#mainNav').removeClass('open');
     }
 
     function loadSession() {
@@ -386,7 +381,6 @@
     }
 
     $(document).on('click','.retry-session',loadSession);
-    $(document).on('click','#logoutButton',function(){location.hash='#home';UserApi.clearLoginSession();notify('已登出');});
     $(document).on('click','.protected-link',function(event){if(!currentUser()){event.preventDefault();requireLogin();}});
     $(document).on('click','.review',function(){const button=$(this).prop('disabled',true);api.review(button.data('id'),button.data('status')).done(result=>{if(result.post?.roomId)notify('隊伍已滿，可以選擇開始遊戲');refreshTeamPage();}).fail(e=>notify(e.message,true)).always(()=>button.prop('disabled',false));});
     $(document).on('click','.refresh-team',refreshTeamPage);
@@ -406,7 +400,6 @@
     });
     $(document).on('click','.enter-room',function(){enterRoom($(this).data('id'),$(this));});
     $(document).on('click','.delete-post',function(){if(confirm('確定刪除公告？'))api.deletePost($(this).data('id')).done(captainPage).fail(e=>notify(e.message,true));});
-    $('#menuButton').on('click',()=>$('#mainNav').toggleClass('open'));
     $('#quickBattle').on('click',function(){api.posts('','RECRUITING').done(function(posts){if(posts?.length){const post=posts[Math.floor(Math.random()*posts.length)];location.hash=`#post/${post.id}`;}else notify('目前沒有招募中的公告',true);}).fail(e=>notify(e.message,true));});
     $(window).on('hashchange',route);
     $(window).on('user-session-changed',function(){

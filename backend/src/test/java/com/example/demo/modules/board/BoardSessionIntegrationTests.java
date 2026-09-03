@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = {"app.demo-data.enabled=false", "spring.jpa.show-sql=false"})
+@SpringBootTest(properties = "spring.jpa.show-sql=false")
 class BoardSessionIntegrationTests {
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry properties) throws Exception {
@@ -43,7 +43,7 @@ class BoardSessionIntegrationTests {
     @BeforeEach void setup() { mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(security).build(); }
 
     UserResponse user() {
-        return users.create(new UserRequest("u" + UUID.randomUUID(), "Session-test-123", "平台會員", null, null, "PLAYER", "Active"), "TEST");
+        return users.create(new UserRequest("u" + UUID.randomUUID().toString().replace("-", ""), "SessionTest123", "平台會員", null, null, "PLAYER", "Active"), "TEST");
     }
 
     String bearer(UserResponse user) { return "Bearer " + jwt.generateToken(user.id(), user.account(), user.role()); }
@@ -107,7 +107,7 @@ class BoardSessionIntegrationTests {
         var user = user();
         String oldToken = bearer(user);
         Member before = sessions.currentMember(oldToken);
-        var updated = users.update(user.id(), new UserRequest("renamed-" + UUID.randomUUID(), null, "新暱稱", null, null, "PLAYER", "Active"), "TEST");
+        var updated = users.update(user.id(), new UserRequest("renamed" + UUID.randomUUID().toString().replace("-", ""), null, "新暱稱", null, null, "PLAYER", "Active"), "TEST");
         mvc.perform(get("/api/user/auth/me").header("Authorization", oldToken)).andExpect(status().isUnauthorized());
         Member after = sessions.currentMember(bearer(updated));
         assertEquals(before.getId(), after.getId());

@@ -130,12 +130,6 @@
 		</dependency>
 
 		<!-- 測試相關套件 (合併了原本的 test 依賴) -->
-		<!-- 測試使用的 H2 記憶體資料庫 -->
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>test</scope>
-		</dependency>
 		<!-- Spring Boot 單元測試 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

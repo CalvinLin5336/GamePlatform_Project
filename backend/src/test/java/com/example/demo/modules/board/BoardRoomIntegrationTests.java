@@ -33,7 +33,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.doReturn;
 
 /** 使用獨立 SQLite 驗證真正的 Board → Lobby → rooms / room_players 交易。 */
-@SpringBootTest(properties = {"app.demo-data.enabled=false", "spring.jpa.show-sql=false"})
+@SpringBootTest(properties = "spring.jpa.show-sql=false")
 class BoardRoomIntegrationTests {
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry properties) throws IOException, java.sql.SQLException {

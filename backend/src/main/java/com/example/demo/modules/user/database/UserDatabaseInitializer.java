@@ -4,20 +4,12 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import com.example.demo.modules.user.service.PasswordService;
-
 @Component
 public class UserDatabaseInitializer {
 
     private final JdbcTemplate jdbcTemplate;
-    private final PasswordService passwordService;
-
-
-    public UserDatabaseInitializer(
-    		JdbcTemplate jdbcTemplate,
-    		PasswordService passwordService) {
+    public UserDatabaseInitializer(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.passwordService = passwordService;
     }
 
     @PostConstruct
@@ -72,32 +64,5 @@ public class UserDatabaseInitializer {
         jdbcTemplate.update("INSERT OR IGNORE INTO roles(id, role_name) VALUES(2, 'ADMIN')");
         jdbcTemplate.update("INSERT OR IGNORE INTO statuses(id, status_name) VALUES(1, 'Active')");
         jdbcTemplate.update("INSERT OR IGNORE INTO statuses(id, status_name) VALUES(2, 'Disabled')");
-        
-        insertDefaultAdmin();
-    }
-    
-    //新增admin 測試資料
-    private void insertDefaultAdmin() {
-
-        String passwordHash = passwordService.encode("admin123");
-
-        jdbcTemplate.update("""
-                INSERT INTO users (
-                    account,
-                    password,
-                    username,
-                    role_id,
-                    status_id,
-                    created_at,
-                    updated_at
-                )
-                VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
-                """,
-                "admin",
-                passwordHash,
-                "Admin",
-                2,
-                1
-        );
     }
 }

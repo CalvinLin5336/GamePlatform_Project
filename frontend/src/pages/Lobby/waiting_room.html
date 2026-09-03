@@ -81,22 +81,27 @@
             // 1. 從網址取得房號與個人帳號
             const urlParams = new URLSearchParams(window.location.search);
             const roomId = urlParams.get('room');
-            let myAccount = localStorage.getItem("account") || "test_account_01";
+            let myAccount = null;
             const apiHost = UserApi.API_BASE;
             const boardPostId = Number(urlParams.get('boardPostId'));
             let boardMemberId = null;
-            const boardSessionToken = UserApi.getToken();
+            const roomSessionToken = UserApi.getToken();
             let checkingBoard = false;
             $('#waitRoomId').parent().after('<p id="roomMessage" class="hidden text-red-300 mt-2" role="alert"></p>');
             function roomError(xhr) { $('#roomMessage').removeClass('hidden').text(xhr.responseJSON?.message || '房間操作失敗，請稍後再試'); }
+            function hasRoomSession() {
+                if (!UserApi.isLoggedIn() || roomSessionToken !== UserApi.getToken()) {
+                    UserApi.redirectToLogin();
+                    return false;
+                }
+                return myAccount !== null;
+            }
             function boardRequest(path, method = 'GET', data) {
                 return UserApi.request({url:'/board/team-posts/'+boardPostId+path, method,
                     contentType:'application/json', dataType:'json', data:data === undefined ? undefined : JSON.stringify(data)});
             }
             function checkBoardGame() {
-                if (!boardPostId || checkingBoard) return;
-                if (!UserApi.isLoggedIn() || boardSessionToken !== UserApi.getToken()) { UserApi.redirectToLogin(); return; }
-                if (!boardMemberId) { $('#roomMessage').removeClass('hidden').text('請先回到 Board 登入相同帳號。'); return; }
+                if (!boardPostId || checkingBoard || !boardMemberId || !hasRoomSession()) return;
                 checkingBoard = true;
                 boardRequest('/game?memberId='+boardMemberId).done(function(entry) {
                     if (entry.gameUrl) window.location.href = entry.gameUrl;
@@ -142,6 +147,8 @@
                         if (res.success) {
                             currentRoomData = res.room;
                             isHost = (myAccount === currentRoomData.hostAccount);
+                            $('#leaveRoomBtn').prop('disabled', false);
+                            if (!boardPostId) $('#startGameBtn').prop('disabled', !isHost);
                             
                             updateWaitingRoomUI(currentRoomData); // 渲染畫面
                             connectWebSocket(); // 建立 WebSocket 連線
@@ -259,6 +266,7 @@
 
                 // 模式切換時
                 $('#waitModeSelect').on('change', function() {
+                    if (!hasRoomSession()) return;
                     const selectedModeId = parseInt($(this).val());
                     const gameData = availableGames.find(g => g.gameId === currentRoomData.gameId);
                     
@@ -289,6 +297,7 @@
 
             // 🌟 將新設定送給後端
             function syncRoomSettings() {
+                if (!hasRoomSession()) return;
                 const newModeId = parseInt($('#waitModeSelect').val());
                 const newMaxPlayers = parseInt($('#waitPlayerCountSelect').val());
 
@@ -347,6 +356,7 @@
 
             // 7. 房主踢人動作
             window.kickPlayer = function(targetAccount) {
+                if (!hasRoomSession()) return;
                 if (confirm(`確定要將玩家 ${targetAccount} 踢出房間嗎？`)) {
                     if (boardPostId) {
                         boardRequest('/kick?captainId='+boardMemberId, 'POST', {account:targetAccount}).fail(roomError);
@@ -370,6 +380,7 @@
             if (boardPostId) $('#leaveRoomBtn').text('返回組隊公告');
             $('#leaveRoomBtn').on('click', function() {
                 if (boardPostId) { window.location.href='../Board/index.html#notifications'; return; }
+                if (!hasRoomSession()) return;
                 if (confirm('確定要離開房間嗎？')) {
                     $.ajax({
                         url: `${apiHost}/api/lobby/room/${roomId}/leave`,
@@ -386,6 +397,7 @@
 
             // 9. 房主點擊開始遊戲
             $('#startGameBtn').on('click', function() {
+                if (!hasRoomSession()) return;
                 if (boardPostId) {
                     const button=$(this).prop('disabled',true);
                     boardRequest('/start?captainId='+boardMemberId, 'POST')
@@ -406,19 +418,22 @@
                 });
             });
 
-            // 啟動載入
-            if (!boardPostId) fetchInitialData();
+            // 先確認平台會員，通過後才讀取房間；不再使用測試帳號。
+            $('#startGameBtn, #leaveRoomBtn').prop('disabled',true);
+            UserApi.checkLogin().then(function(user) {
+                if (!user) return $.Deferred().reject({status:401}).promise();
+                return boardPostId ? UserApi.getBoardSession() : user;
+            }).done(function(member) {
+                if (roomSessionToken !== UserApi.getToken()) { UserApi.redirectToLogin(); return; }
+                boardMemberId = boardPostId ? member.id : null;
+                myAccount = member.account;
+                fetchInitialData();
+            }).fail(function(xhr) {
+                if (xhr.status === 401 || xhr.status === 403) UserApi.redirectToLogin();
+                else roomError(xhr);
+            });
             // 接收開始通知，也處理晚進房／WebSocket 暫時斷線的情況。
             if (boardPostId) {
-                $('#startGameBtn').prop('disabled',true);
-                UserApi.checkLogin().then(() => UserApi.getBoardSession()).done(function(member) {
-                    boardMemberId = member.id;
-                    myAccount = member.account;
-                    fetchInitialData();
-                }).fail(function(xhr) {
-                    if (xhr.status === 401 || xhr.status === 403) UserApi.redirectToLogin();
-                    else roomError(xhr);
-                });
                 const boardTimer=setInterval(checkBoardGame,3000);
                 $(window).on('pagehide',function(){clearInterval(boardTimer);if(roomSocket)roomSocket.close();});
             }

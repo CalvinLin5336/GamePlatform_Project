@@ -9,26 +9,16 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 </head>
 <body>
-    <header class="topbar">
-        <a class="brand" href="#home"><span>SGP</span> 簡易遊戲平台</a>
-        <button id="menuButton" class="menu-button" type="button" aria-label="開啟選單">☰</button>
-        <nav id="mainNav">
-            <a href="#home">遊戲大廳</a>
-            <a href="#posts">組隊公告</a>
-            <a data-login-only href="#applications">我的申請</a>
-            <a data-login-only href="#favorites">收藏</a>
-            <a data-login-only href="#notifications">通知</a>
-            <a data-login-only href="#captain">隊長管理</a>
-        </nav>
-        <div id="memberArea" class="member-area"></div>
-    </header>
-
-    <div class="quick-nav">
+    <nav class="quick-nav" aria-label="組隊功能">
         <a href="#home">⌂ 組隊大廳</a>
         <a href="#posts">⌕ 尋找夥伴</a>
         <a href="#form/new">＋ 建立隊伍</a>
         <button id="quickBattle" type="button">⚔ 即刻開戰</button>
-    </div>
+        <a class="hidden" data-login-only href="#applications">我的申請</a>
+        <a class="hidden" data-login-only href="#favorites">收藏</a>
+        <a class="hidden" data-login-only href="#notifications">通知</a>
+        <a class="hidden" data-login-only href="#captain">隊長管理</a>
+    </nav>
 
     <main id="app" class="container" aria-live="polite"></main>
 
