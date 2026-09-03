@@ -8,3 +8,8 @@
 # Eclipse 編譯輸出
 bin/
 **/bin/
+
+# PPT相關資料
+PPT/_work/
+~$*.pptx
+*.inspect.ndjson

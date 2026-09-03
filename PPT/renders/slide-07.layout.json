@@ -1,0 +1,2406 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/de02b1",
+    "id": "de02b1",
+    "slide": 7,
+    "layoutId": "fb5d6cf8-52d9-48c2-a05a-083568ebd5e1",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "87945d4c-77ce-4eb7-bcd9-c31824f3b1b3",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#060914",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Microsoft JhengHei"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "fb5d6cf8-52d9-48c2-a05a-083568ebd5e1",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "87945d4c-77ce-4eb7-bcd9-c31824f3b1b3",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "87945d4c-77ce-4eb7-bcd9-c31824f3b1b3",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m1wni1cb",
+      "id": "1",
+      "bbox": [
+        64,
+        40,
+        600,
+        20
+      ],
+      "geometry": "rect",
+      "text": "CORE DATA MODEL",
+      "textPreview": "CORE DATA MODEL",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Microsoft JhengHei",
+        "color": "#F2B84B",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "CORE DATA MODEL"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "CORE DATA MODEL",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Microsoft JhengHei",
+            "color": "#F2B84B",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "CORE DATA MODEL",
+              "fontSize": 15,
+              "typeface": "Microsoft JhengHei",
+              "color": "#F2B84B",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9476dgv2",
+      "id": "2",
+      "bbox": [
+        64,
+        70,
+        1152,
+        72
+      ],
+      "geometry": "rect",
+      "text": "核心資料關係支援會員、組隊、房間與多款遊戲",
+      "textPreview": "核心資料關係支援會員、組隊、房間與多款遊戲",
+      "resolvedFontSize": 46,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 46,
+        "typeface": "Microsoft JhengHei",
+        "color": "#F7F9FF",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "核心資料關係支援會員、組隊、房間與多款遊戲"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "核心資料關係支援會員、組隊、房間與多款遊戲",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 46,
+            "typeface": "Microsoft JhengHei",
+            "color": "#F7F9FF",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "核心資料關係支援會員、組隊、房間與多款遊戲",
+              "fontSize": 46,
+              "typeface": "Microsoft JhengHei",
+              "color": "#F7F9FF",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83y5kbuh",
+      "id": "3",
+      "bbox": [
+        64,
+        143,
+        82,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#F2B84B",
+      "lineColor": "#F2B84B",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vqpofqds",
+      "id": "4",
+      "bbox": [
+        64,
+        686,
+        1152,
+        1
+      ],
+      "geometry": "rect",
+      "fillColor": "#202D47",
+      "lineColor": "#202D47",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/apgnmlc7",
+      "id": "5",
+      "bbox": [
+        64,
+        692,
+        430,
+        18
+      ],
+      "geometry": "rect",
+      "text": "GAMEPLATFORM · 小組專題成果報告",
+      "textPreview": "GAMEPLATFORM · 小組專題成果報告",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "GAMEPLATFORM · 小組專題成果報告"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "GAMEPLATFORM · 小組專題成果報告",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "GAMEPLATFORM · 小組專題成果報告",
+              "fontSize": 13,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xs76h0vy",
+      "id": "6",
+      "bbox": [
+        1170,
+        692,
+        46,
+        18
+      ],
+      "geometry": "rect",
+      "text": "07",
+      "textPreview": "07",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "bold": true,
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "07"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "07",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "bold": true,
+            "alignment": "right",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "07",
+              "fontSize": 13,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "bold": true,
+              "alignment": "right",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wry5ovud",
+      "id": "7",
+      "bbox": [
+        236,
+        245,
+        30,
+        16
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#202D47",
+      "lineColor": "#202D47",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rul43mdo",
+      "id": "8",
+      "bbox": [
+        446,
+        245,
+        30,
+        16
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#202D47",
+      "lineColor": "#202D47",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qtcnahc3",
+      "id": "9",
+      "bbox": [
+        670,
+        245,
+        30,
+        16
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#202D47",
+      "lineColor": "#202D47",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8n2l47y5",
+      "id": "10",
+      "bbox": [
+        954,
+        245,
+        30,
+        16
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#202D47",
+      "lineColor": "#202D47",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9obmxczq",
+      "id": "11",
+      "bbox": [
+        342,
+        500,
+        36,
+        16
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#202D47",
+      "lineColor": "#202D47",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mlk32x0f",
+      "id": "12",
+      "bbox": [
+        652,
+        500,
+        36,
+        16
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#202D47",
+      "lineColor": "#202D47",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7mt4v2h0",
+      "id": "13",
+      "bbox": [
+        958,
+        500,
+        36,
+        16
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#202D47",
+      "lineColor": "#202D47",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wbml8ryh",
+      "id": "14",
+      "bbox": [
+        810,
+        324,
+        28,
+        76
+      ],
+      "geometry": "downArrow",
+      "fillColor": "#F2B84B",
+      "lineColor": "#F2B84B",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcvm1wz2",
+      "id": "15",
+      "bbox": [
+        64,
+        164,
+        220,
+        22
+      ],
+      "geometry": "rect",
+      "text": "身分與組隊流程",
+      "textPreview": "身分與組隊流程",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Microsoft JhengHei",
+        "color": "#3CC7F4",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "身分與組隊流程"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "身分與組隊流程",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Microsoft JhengHei",
+            "color": "#3CC7F4",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "身分與組隊流程",
+              "fontSize": 15,
+              "typeface": "Microsoft JhengHei",
+              "color": "#3CC7F4",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/upk36hgb",
+      "id": "16",
+      "bbox": [
+        64,
+        196,
+        166,
+        112
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#11182A",
+      "lineColor": "#3CC7F4",
+      "lineWidth": 2
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vat4zmhw",
+      "id": "17",
+      "bbox": [
+        78,
+        208,
+        138,
+        28
+      ],
+      "geometry": "rect",
+      "text": "roles / statuses",
+      "textPreview": "roles / statuses",
+      "resolvedFontSize": 19.06,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Microsoft JhengHei",
+        "color": "#3CC7F4",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.95,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "roles / statuses"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "roles / statuses",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Microsoft JhengHei",
+            "color": "#3CC7F4",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "roles / statuses",
+              "fontSize": 20,
+              "typeface": "Microsoft JhengHei",
+              "color": "#3CC7F4",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cfilwnid",
+      "id": "18",
+      "bbox": [
+        78,
+        244,
+        138,
+        48
+      ],
+      "geometry": "rect",
+      "text": "id · name",
+      "textPreview": "id · name",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "id · name"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "id · name",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "id · name",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xgr2pszi",
+      "id": "19",
+      "bbox": [
+        272,
+        196,
+        168,
+        112
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#11182A",
+      "lineColor": "#3CC7F4",
+      "lineWidth": 2
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t0zadkna",
+      "id": "20",
+      "bbox": [
+        286,
+        208,
+        140,
+        28
+      ],
+      "geometry": "rect",
+      "text": "users",
+      "textPreview": "users",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Microsoft JhengHei",
+        "color": "#3CC7F4",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "users"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "users",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Microsoft JhengHei",
+            "color": "#3CC7F4",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "users",
+              "fontSize": 20,
+              "typeface": "Microsoft JhengHei",
+              "color": "#3CC7F4",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/szqt4f6p",
+      "id": "21",
+      "bbox": [
+        286,
+        244,
+        140,
+        48
+      ],
+      "geometry": "rect",
+      "text": "id · role_id · status_id\naccount · username",
+      "textPreview": "id · role_id · status_id | account · username",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "id · role_id · status_id"
+          },
+          {
+            "index": 2,
+            "text": "account · username"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "id · role_id · status_id",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "id · role_id · status_id",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "account · username",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "account · username",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ryhsba54",
+      "id": "22",
+      "bbox": [
+        482,
+        196,
+        182,
+        112
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#11182A",
+      "lineColor": "#F2B84B",
+      "lineWidth": 2
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6x8r2poj",
+      "id": "23",
+      "bbox": [
+        496,
+        208,
+        154,
+        28
+      ],
+      "geometry": "rect",
+      "text": "members",
+      "textPreview": "members",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Microsoft JhengHei",
+        "color": "#F2B84B",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "members"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "members",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Microsoft JhengHei",
+            "color": "#F2B84B",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "members",
+              "fontSize": 20,
+              "typeface": "Microsoft JhengHei",
+              "color": "#F2B84B",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/14jah4n6",
+      "id": "24",
+      "bbox": [
+        496,
+        244,
+        154,
+        48
+      ],
+      "geometry": "rect",
+      "text": "platform_user_id\naccount · nickname",
+      "textPreview": "platform_user_id | account · nickname",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "platform_user_id"
+          },
+          {
+            "index": 2,
+            "text": "account · nickname"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "platform_user_id",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "platform_user_id",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "account · nickname",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "account · nickname",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/03at8z61",
+      "id": "25",
+      "bbox": [
+        706,
+        196,
+        242,
+        112
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#11182A",
+      "lineColor": "#F2B84B",
+      "lineWidth": 2
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/f2hsfu5g",
+      "id": "26",
+      "bbox": [
+        720,
+        208,
+        214,
+        28
+      ],
+      "geometry": "rect",
+      "text": "team_posts",
+      "textPreview": "team_posts",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Microsoft JhengHei",
+        "color": "#F2B84B",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "team_posts"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "team_posts",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Microsoft JhengHei",
+            "color": "#F2B84B",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "team_posts",
+              "fontSize": 20,
+              "typeface": "Microsoft JhengHei",
+              "color": "#F2B84B",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e18b6pov",
+      "id": "27",
+      "bbox": [
+        720,
+        244,
+        214,
+        48
+      ],
+      "geometry": "rect",
+      "text": "member_id · game_id · mode_id\nroom_id · status",
+      "textPreview": "member_id · game_id · mode_id | room_id · status",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "member_id · game_id · mode_id"
+          },
+          {
+            "index": 2,
+            "text": "room_id · status"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "member_id · game_id · mode_id",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "member_id · game_id · mode_id",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "room_id · status",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "room_id · status",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/psjal4ni",
+      "id": "28",
+      "bbox": [
+        990,
+        196,
+        226,
+        112
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#11182A",
+      "lineColor": "#FB7185",
+      "lineWidth": 2
+    },
+    {
+      "order": 29,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/oratcz6x",
+      "id": "29",
+      "bbox": [
+        1004,
+        208,
+        198,
+        28
+      ],
+      "geometry": "rect",
+      "text": "join_requests",
+      "textPreview": "join_requests",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Microsoft JhengHei",
+        "color": "#FB7185",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "join_requests"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "join_requests",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Microsoft JhengHei",
+            "color": "#FB7185",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "join_requests",
+              "fontSize": 20,
+              "typeface": "Microsoft JhengHei",
+              "color": "#FB7185",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 30,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/md47614f",
+      "id": "30",
+      "bbox": [
+        1004,
+        244,
+        198,
+        48
+      ],
+      "geometry": "rect",
+      "text": "post_id · member_id\nstatus · message",
+      "textPreview": "post_id · member_id | status · message",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "post_id · member_id"
+          },
+          {
+            "index": 2,
+            "text": "status · message"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "post_id · member_id",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "post_id · member_id",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "status · message",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "status · message",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 31,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7ed8z6l0",
+      "id": "31",
+      "bbox": [
+        654,
+        340,
+        340,
+        48
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#201A10",
+      "lineColor": "#F2B84B",
+      "lineWidth": 1
+    },
+    {
+      "order": 32,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8fmp8bml",
+      "id": "32",
+      "bbox": [
+        670,
+        352,
+        308,
+        24
+      ],
+      "geometry": "rect",
+      "text": "game_id · mode_id · room_id 串接兩條資料鏈",
+      "textPreview": "game_id · mode_id · room_id 串接兩條資料鏈",
+      "resolvedFontSize": 14.66,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 16,
+        "typeface": "Microsoft JhengHei",
+        "color": "#F2B84B",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.92,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "game_id · mode_id · room_id"
+          },
+          {
+            "index": 2,
+            "text": "串接兩條資料鏈"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "game_id · mode_id · room_id 串接兩條資料鏈",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "typeface": "Microsoft JhengHei",
+            "color": "#F2B84B",
+            "bold": true,
+            "alignment": "center",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "game_id · mode_id · room_id 串接兩條資料鏈",
+              "fontSize": 16,
+              "typeface": "Microsoft JhengHei",
+              "color": "#F2B84B",
+              "bold": true,
+              "alignment": "center",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 33,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9gvq1g3q",
+      "id": "33",
+      "bbox": [
+        112,
+        420,
+        240,
+        22
+      ],
+      "geometry": "rect",
+      "text": "遊戲目錄與房間流程",
+      "textPreview": "遊戲目錄與房間流程",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Microsoft JhengHei",
+        "color": "#9B7CFF",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "遊戲目錄與房間流程"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "遊戲目錄與房間流程",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Microsoft JhengHei",
+            "color": "#9B7CFF",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "遊戲目錄與房間流程",
+              "fontSize": 15,
+              "typeface": "Microsoft JhengHei",
+              "color": "#9B7CFF",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 34,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/uh47al4b",
+      "id": "34",
+      "bbox": [
+        112,
+        450,
+        224,
+        112
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#11182A",
+      "lineColor": "#9B7CFF",
+      "lineWidth": 2
+    },
+    {
+      "order": 35,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/v2d83qlw",
+      "id": "35",
+      "bbox": [
+        126,
+        462,
+        196,
+        28
+      ],
+      "geometry": "rect",
+      "text": "games",
+      "textPreview": "games",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Microsoft JhengHei",
+        "color": "#9B7CFF",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "games"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "games",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Microsoft JhengHei",
+            "color": "#9B7CFF",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "games",
+              "fontSize": 20,
+              "typeface": "Microsoft JhengHei",
+              "color": "#9B7CFF",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 36,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w3mpcbmh",
+      "id": "36",
+      "bbox": [
+        126,
+        498,
+        196,
+        48
+      ],
+      "geometry": "rect",
+      "text": "game_id · game_code\nfrontend_path · enabled",
+      "textPreview": "game_id · game_code | frontend_path · enabled",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "game_id · game_code"
+          },
+          {
+            "index": 2,
+            "text": "frontend_path · enabled"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "game_id · game_code",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "game_id · game_code",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "frontend_path · enabled",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "frontend_path · enabled",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 37,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/h4fq5g32",
+      "id": "37",
+      "bbox": [
+        384,
+        450,
+        262,
+        112
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#11182A",
+      "lineColor": "#9B7CFF",
+      "lineWidth": 2
+    },
+    {
+      "order": 38,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/i5o7el4n",
+      "id": "38",
+      "bbox": [
+        398,
+        462,
+        234,
+        28
+      ],
+      "geometry": "rect",
+      "text": "game_modes",
+      "textPreview": "game_modes",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Microsoft JhengHei",
+        "color": "#9B7CFF",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "game_modes"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "game_modes",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Microsoft JhengHei",
+            "color": "#9B7CFF",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "game_modes",
+              "fontSize": 20,
+              "typeface": "Microsoft JhengHei",
+              "color": "#9B7CFF",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 39,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/j6x87ql8",
+      "id": "39",
+      "bbox": [
+        398,
+        498,
+        234,
+        48
+      ],
+      "geometry": "rect",
+      "text": "mode_id · game_id\nmin/max · computer_players",
+      "textPreview": "mode_id · game_id | min/max · computer_players",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "mode_id · game_id"
+          },
+          {
+            "index": 2,
+            "text": "min/max · computer_players"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "mode_id · game_id",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "mode_id · game_id",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "min/max · computer_players",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "min/max · computer_players",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 40,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rmt8rqdc",
+      "id": "40",
+      "bbox": [
+        694,
+        450,
+        258,
+        112
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#11182A",
+      "lineColor": "#31D0AA",
+      "lineWidth": 2
+    },
+    {
+      "order": 41,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q1k7ylwr",
+      "id": "41",
+      "bbox": [
+        708,
+        462,
+        230,
+        28
+      ],
+      "geometry": "rect",
+      "text": "rooms",
+      "textPreview": "rooms",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Microsoft JhengHei",
+        "color": "#31D0AA",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "rooms"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "rooms",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Microsoft JhengHei",
+            "color": "#31D0AA",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "rooms",
+              "fontSize": 20,
+              "typeface": "Microsoft JhengHei",
+              "color": "#31D0AA",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 42,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dobqt0v2",
+      "id": "42",
+      "bbox": [
+        708,
+        498,
+        230,
+        48
+      ],
+      "geometry": "rect",
+      "text": "id · game_id · mode_id\nhost_account · status",
+      "textPreview": "id · game_id · mode_id | host_account · status",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "id · game_id · mode_id"
+          },
+          {
+            "index": 2,
+            "text": "host_account · status"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "id · game_id · mode_id",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "id · game_id · mode_id",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "host_account · status",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "host_account · status",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 43,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sn2p0vex",
+      "id": "43",
+      "bbox": [
+        1000,
+        450,
+        216,
+        112
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#11182A",
+      "lineColor": "#31D0AA",
+      "lineWidth": 2
+    },
+    {
+      "order": 44,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fqd8vqd8",
+      "id": "44",
+      "bbox": [
+        1014,
+        462,
+        188,
+        28
+      ],
+      "geometry": "rect",
+      "text": "room_players",
+      "textPreview": "room_players",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Microsoft JhengHei",
+        "color": "#31D0AA",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "room_players"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "room_players",
+          "lineSpacingPercent": 108000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Microsoft JhengHei",
+            "color": "#31D0AA",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.08
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "room_players",
+              "fontSize": 20,
+              "typeface": "Microsoft JhengHei",
+              "color": "#31D0AA",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.08
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 45,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/epk725wn",
+      "id": "45",
+      "bbox": [
+        1014,
+        498,
+        188,
+        48
+      ],
+      "geometry": "rect",
+      "text": "room_id\nplayer_account",
+      "textPreview": "room_id | player_account",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Microsoft JhengHei",
+        "color": "#A9B3CC",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "room_id"
+          },
+          {
+            "index": 2,
+            "text": "player_account"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "room_id",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "room_id",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "player_account",
+          "lineSpacingPercent": 114000,
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Microsoft JhengHei",
+            "color": "#A9B3CC",
+            "alignment": "left",
+            "lineSpacing": 1.14
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "player_account",
+              "fontSize": 14,
+              "typeface": "Microsoft JhengHei",
+              "color": "#A9B3CC",
+              "alignment": "left",
+              "lineSpacing": 1.14
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}
