@@ -9,18 +9,18 @@
     <!-- 載入 jQuery 核心 -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 h-screen w-full flex flex-col items-center justify-center font-sans">
+<body class="bg-slate-950 text-slate-100 h-screen w-full flex flex-col items-center justify-center font-sans relative overflow-hidden">
 
     <!-- 🚀 房間等待區主卡片 -->
-    <div class="w-full max-w-4xl bg-slate-900 border border-indigo-500/50 rounded-2xl p-8 shadow-2xl shadow-indigo-900/20">
+    <div class="w-full max-w-4xl bg-slate-900 border border-indigo-500/50 rounded-2xl p-8 shadow-2xl shadow-indigo-900/20 z-10">
         
-        <!-- 頂部標題與房號 -->
         <div class="flex justify-between items-end mb-8 border-b border-slate-700 pb-4">
             <div>
                 <h2 class="text-3xl font-bold text-white flex items-center gap-3">
                     <span class="text-4xl">🚀</span> <span id="waitGameName">載入中...</span>
                 </h2>
                 <p class="text-slate-400 mt-2 text-sm">房號: <span id="waitRoomId" class="text-indigo-400 font-mono text-lg tracking-wider"></span></p>
+                <p id="roomMessage" class="hidden text-red-300 mt-2" role="alert"></p>
             </div>
             <div class="text-right">
                 <span id="waitRoleBadge" class="bg-slate-600 text-white px-3 py-1 rounded-full text-sm shadow-md">驗證身分中...</span>
@@ -28,13 +28,11 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- 左側：遊戲設定 -->
             <div class="col-span-1 bg-slate-950 rounded-xl p-5 border border-slate-800">
                 <h3 class="text-lg font-bold text-slate-200 mb-4 border-b border-slate-800 pb-2">⚙️ 房間設定</h3>
                 
                 <div class="mb-4">
                     <label class="block text-sm text-slate-400 mb-2">模式</label>
-                    <!-- 房主顯示 select，一般玩家顯示純文字 -->
                     <select id="waitModeSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm host-only transition focus:border-indigo-500 focus:outline-none"></select>
                     <div id="waitModeDisplay" class="text-white font-medium guest-only hidden p-2 bg-slate-900 rounded-lg"></div>
                 </div>
@@ -46,26 +44,23 @@
                 </div>
             </div>
 
-            <!-- 右側：玩家名單 -->
             <div class="col-span-2 bg-slate-950 rounded-xl p-5 border border-slate-800 flex flex-col">
                 <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
                     <h3 class="text-lg font-bold text-slate-200">👥 玩家名單</h3>
                     <span class="text-cyan-400 text-sm font-medium"><span id="waitCurrentPlayers">1</span> / <span id="waitMaxPlayers">?</span> 人</span>
                 </div>
                 
-                <!-- 玩家列表容器 -->
                 <ul id="waitPlayerList" class="space-y-2 overflow-y-auto max-h-48 pr-1">
                     <li class="text-center text-slate-500 py-4">載入名單中...</li>
                 </ul>
             </div>
         </div>
 
-        <!-- 底部按鈕區 -->
         <div class="flex justify-between items-center mt-8 pt-6 border-t border-slate-800">
-            <button id="leaveRoomBtn" class="px-6 py-2.5 bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white rounded-lg transition active:scale-95">
+            <button id="leaveRoomBtn" class="px-6 py-2.5 bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white rounded-lg transition active:scale-95" disabled>
                 🚪 離開房間
             </button>
-            <button id="startGameBtn" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/50 transition transform hover:scale-105 active:scale-95 host-only">
+            <button id="startGameBtn" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/50 transition transform hover:scale-105 active:scale-95 host-only" disabled>
                 開始遊戲
             </button>
             <div class="text-slate-400 text-sm guest-only hidden">
@@ -77,29 +72,68 @@
     <!-- ================= 等待區互動邏輯 ================= -->
     <script src="../User/api/userApi.js"></script>
     <script>
+        window.sendRoomChatMessage = function(text) {
+            if (window.roomSocket && window.roomSocket.readyState === WebSocket.OPEN) {
+                const currentUsername = localStorage.getItem("username") || localStorage.getItem("account") || "訪客";
+                
+                window.roomSocket.send(JSON.stringify({
+                    type: "ROOM_CHAT",
+                    roomId: window.globalRoomId,
+                    userName: currentUsername,
+                    message: text
+                }));
+            }
+        };
+
         $(document).ready(function() {
-            // 1. 從網址取得房號與個人帳號
             const urlParams = new URLSearchParams(window.location.search);
             const roomId = urlParams.get('room');
-            let myAccount = null;
-            const apiHost = UserApi.API_BASE;
+            window.globalRoomId = roomId; 
+            
+            const apiHost = (typeof UserApi !== 'undefined' && UserApi.API_BASE) ? UserApi.API_BASE : 'http://' + window.location.hostname + ':8080';
+            let myAccount = localStorage.getItem("account") || "訪客";
+            window.globalAccount = myAccount;
+            
             const boardPostId = Number(urlParams.get('boardPostId'));
             let boardMemberId = null;
-            const roomSessionToken = UserApi.getToken();
+            const roomSessionToken = (typeof UserApi !== 'undefined') ? UserApi.getToken() : null;
             let checkingBoard = false;
-            $('#waitRoomId').parent().after('<p id="roomMessage" class="hidden text-red-300 mt-2" role="alert"></p>');
-            function roomError(xhr) { $('#roomMessage').removeClass('hidden').text(xhr.responseJSON?.message || '房間操作失敗，請稍後再試'); }
+            
+            window.roomSocket = null;
+            let currentRoomData = null;
+            let isHost = false;
+            let availableGames = [];
+            
+            // 🌟 記錄離開狀態防呆
+            let hasLeftRoom = false; 
+
+            if (!roomId) {
+                alert('找不到房號！');
+                window.location.href = 'jquery_lobby.html';
+                return;
+            }
+
+            $('#waitRoomId').text(roomId);
+
+            function roomError(xhr) { 
+                $('#roomMessage').removeClass('hidden').text(xhr.responseJSON?.message || '房間操作失敗，請稍後再試'); 
+            }
+            
             function hasRoomSession() {
+                if (typeof UserApi === 'undefined') return myAccount !== null;
                 if (!UserApi.isLoggedIn() || roomSessionToken !== UserApi.getToken()) {
                     UserApi.redirectToLogin();
                     return false;
                 }
                 return myAccount !== null;
             }
+            
             function boardRequest(path, method = 'GET', data) {
+                if (typeof UserApi === 'undefined') return $.Deferred().reject().promise();
                 return UserApi.request({url:'/board/team-posts/'+boardPostId+path, method,
                     contentType:'application/json', dataType:'json', data:data === undefined ? undefined : JSON.stringify(data)});
             }
+            
             function checkBoardGame() {
                 if (!boardPostId || checkingBoard || !boardMemberId || !hasRoomSession()) return;
                 checkingBoard = true;
@@ -110,21 +144,7 @@
                     if (xhr.status === 400) window.location.href = '../Board/index.html#applications';
                 }).always(function(){checkingBoard=false;});
             }
-            
-            let roomSocket = null;
-            let currentRoomData = null;
-            let isHost = false;
-            let availableGames = []; // 用來存放遊戲字典
 
-            if (!roomId) {
-                alert('找不到房號！');
-                window.location.href = 'jquery_lobby.html';
-                return;
-            }
-
-            $('#waitRoomId').text(roomId);
-
-            // 2. 初始化：先取得遊戲字典，再去取得房間資料
             function fetchInitialData() {
                 $.ajax({
                     url: apiHost + '/api/lobby/games-info',
@@ -132,13 +152,15 @@
                     success: function(res) {
                         if (res.success) {
                             availableGames = res.games;
-                            fetchRoomDetail(); // 字典拿到了，接著去拿房間詳細資料
+                            fetchRoomDetail();
                         }
+                    },
+                    error: function() {
+                        alert('無法連線到伺服器取得遊戲資訊！');
                     }
                 });
             }
 
-            // 3. 取得單一房間資料
             function fetchRoomDetail() {
                 $.ajax({
                     url: `${apiHost}/api/lobby/room/${roomId}`,
@@ -150,8 +172,8 @@
                             $('#leaveRoomBtn').prop('disabled', false);
                             if (!boardPostId) $('#startGameBtn').prop('disabled', !isHost);
                             
-                            updateWaitingRoomUI(currentRoomData); // 渲染畫面
-                            connectWebSocket(); // 建立 WebSocket 連線
+                            updateWaitingRoomUI(currentRoomData);
+                            connectWebSocket(); 
                             if (boardPostId) checkBoardGame();
                         } else {
                             alert(res.message);
@@ -165,14 +187,11 @@
                 });
             }
 
-            // 4. 畫面渲染邏輯
             function updateWaitingRoomUI(room) {
-                // 查字典：找出遊戲名稱
                 const gameData = availableGames.find(g => g.gameId === room.gameId);
                 const displayGameName = gameData ? gameData.gameName : '未知遊戲';
                 $('#waitGameName').text(displayGameName); 
 
-                // 身分調整
                 if (isHost) {
                     $('#waitRoleBadge').text('👑 房主').removeClass('bg-slate-600').addClass('bg-amber-500');
                     $('.host-only').removeClass('hidden');
@@ -183,10 +202,8 @@
                     $('.guest-only').removeClass('hidden');
                 }
 
-                // 動態產生下拉選單選項
                 if (gameData && gameData.modes) {
                     const $modeSelect = $('#waitModeSelect');
-                    // 暫停監聽，避免渲染時觸發 change 事件一直發送 API
                     $modeSelect.off('change');
                     $modeSelect.empty();
                     
@@ -198,7 +215,7 @@
                     let displayModeName = currentModeInfo ? currentModeInfo.modeName : '未知模式';
 
                     const $playerSelect = $('#waitPlayerCountSelect');
-                    $playerSelect.off('change'); // 暫停監聽
+                    $playerSelect.off('change'); 
                     $playerSelect.empty();
                     
                     if (currentModeInfo) {
@@ -211,15 +228,11 @@
                         }
                     }
 
-                    // 把選單的值設定成房間目前儲存的值
                     $modeSelect.val(room.modeId);
                     $playerSelect.val(room.maxPlayers);
-
-                    // 如果是一般玩家，更新純文字顯示區塊
                     $('#waitModeDisplay').text(displayModeName);
                     $('#waitPlayerCountDisplay').text(room.maxPlayers + ' 人');
 
-                    // 重新綁定事件
                     bindHostSettingsEvents();
                     if (boardPostId) {
                         $modeSelect.prop('disabled', true);
@@ -227,12 +240,10 @@
                     }
                 }
 
-                // 人數狀態更新
                 $('#waitCurrentPlayers').text(room.players.length);
                 $('#waitMaxPlayers').text(room.maxPlayers);
                 if (boardPostId) $('#startGameBtn').prop('disabled', room.players.length !== room.maxPlayers || room.status !== 'WAITING');
 
-                // 渲染右側玩家名單
                 const $list = $('#waitPlayerList');
                 $list.empty();
                 
@@ -260,11 +271,8 @@
                 });
             }
 
-            // 🌟 5. 綁定房主設定變更事件 (連動UI並送出API)
             function bindHostSettingsEvents() {
                 if (!isHost || boardPostId) return;
-
-                // 模式切換時
                 $('#waitModeSelect').on('change', function() {
                     if (!hasRoomSession()) return;
                     const selectedModeId = parseInt($(this).val());
@@ -285,17 +293,14 @@
                             }
                         }
                     }
-                    // 呼叫 API 同步給後端
                     syncRoomSettings();
                 });
 
-                // 人數切換時
                 $('#waitPlayerCountSelect').on('change', function() {
                     syncRoomSettings();
                 });
             }
 
-            // 🌟 將新設定送給後端
             function syncRoomSettings() {
                 if (!hasRoomSession()) return;
                 const newModeId = parseInt($('#waitModeSelect').val());
@@ -309,36 +314,42 @@
                         hostAccount: myAccount,
                         modeId: newModeId,
                         maxPlayers: newMaxPlayers
-                    }),
-                    success: function(res) {
-                        if (!res.success) {
-                            alert('設定更新失敗：' + res.message);
-                        }
-                        // 成功的話，後端會觸發 WebSocket 廣播，重新觸發 updateWaitingRoomUI，所以這邊不用額外寫
-                    }
+                    })
                 });
             }
 
-            // 6. WebSocket 即時連線
             function connectWebSocket() {
                 const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
-                roomSocket = new WebSocket(`${wsProtocol}://${location.hostname}:8080/ws/room/${roomId}?player=${encodeURIComponent(myAccount)}`);
+                window.roomSocket = new WebSocket(`${wsProtocol}://${location.hostname}:8080/ws/room/${roomId}?player=${encodeURIComponent(myAccount)}`);
 
-                roomSocket.onopen = function() {
+                window.roomSocket.onopen = function() {
                     console.log("✅ 等待區 WebSocket 連線成功");
+                    if (window.parent && window.parent.RoomChatManager) {
+                        window.parent.RoomChatManager.showTab();
+                    }
+                    const currentUsername = localStorage.getItem("username") || localStorage.getItem("account") || "訪客";
+                    window.roomSocket.send(JSON.stringify({
+                        type: "ROOM_CHAT",
+                        roomId: roomId,
+                        userName: "系統",
+                        message: currentUsername + " 進入了房間"
+                    }));
                 };
 
-                roomSocket.onmessage = function(event) {
+                window.roomSocket.onmessage = function(event) {
                     const message = JSON.parse(event.data);
                     
                     if (message.action === 'SYNC_ROOM') {
-                        // 有人加入、離開、或房主改設定，同步更新畫面
                         currentRoomData = message.roomData;
                         updateWaitingRoomUI(currentRoomData);
                     } 
                     else if (message.action === 'KICKED') {
                         if (message.targetAccount === myAccount) {
+                            hasLeftRoom = true;
                             alert('您已被房主請出房間！');
+                            if (window.parent && window.parent.RoomChatManager) {
+                                window.parent.RoomChatManager.hideTab();
+                            }
                             window.location.href = boardPostId ? '../Board/index.html#applications' : 'jquery_lobby.html';
                         }
                     } 
@@ -347,14 +358,36 @@
                         alert('🚀 房主已開始遊戲，即將進入牌桌！');
                         window.location.href = message.url; 
                     }
+                    else if (message.type === 'ROOM_DISBANDED') {
+                        hasLeftRoom = true;
+                        localStorage.setItem("kickNotification", "⚠️ 系統通知：" + message.message);
+                        
+                        if (window.parent && window.parent.RoomChatManager) {
+                            window.parent.RoomChatManager.hideTab();
+                        }
+                        
+                        $('#startGameBtn').prop('disabled', true).addClass('opacity-50 cursor-not-allowed');
+                        $('#leaveRoomBtn').prop('disabled', true).addClass('opacity-50 cursor-not-allowed');
+                        
+                        window.roomSocket.close();
+                        alert('房主已解散房間！');
+                        window.location.href = boardPostId ? '../Board/index.html#applications' : 'jquery_lobby.html';
+                    }
+                    else if (message.type === 'ROOM_CHAT' || (message.userName && message.message)) {
+                         if (window.parent && window.parent.RoomChatManager) {
+                             window.parent.RoomChatManager.appendMessage(message.userName, message.message, message.userName === '系統');
+                         }
+                    }
                 };
 
-                roomSocket.onclose = function() {
+                window.roomSocket.onclose = function() {
                     console.log("❌ 房間 WebSocket 連線斷開");
+                    if (window.parent && window.parent.RoomChatManager) {
+                        window.parent.RoomChatManager.hideTab();
+                    }
                 };
             }
 
-            // 7. 房主踢人動作
             window.kickPlayer = function(targetAccount) {
                 if (!hasRoomSession()) return;
                 if (confirm(`確定要將玩家 ${targetAccount} 踢出房間嗎？`)) {
@@ -366,36 +399,41 @@
                         url: `${apiHost}/api/lobby/room/${roomId}/kick`,
                         type: 'POST',
                         contentType: 'application/json',
-                        data: JSON.stringify({ hostAccount: myAccount, targetAccount: targetAccount }),
-                        success: function(res) {
-                            if (!res.success) {
-                                alert('踢除失敗：' + res.message);
-                            }
-                        }
+                        data: JSON.stringify({ hostAccount: myAccount, targetAccount: targetAccount })
                     });
                 }
             };
 
-            // 8. 離開房間按鈕
             if (boardPostId) $('#leaveRoomBtn').text('返回組隊公告');
+            
+            // 🌟 原有離開按鈕邏輯
             $('#leaveRoomBtn').on('click', function() {
-                if (boardPostId) { window.location.href='../Board/index.html#notifications'; return; }
-                if (!hasRoomSession()) return;
                 if (confirm('確定要離開房間嗎？')) {
+                    hasLeftRoom = true; 
+                    if (window.parent && window.parent.RoomChatManager) {
+                        window.parent.RoomChatManager.hideTab();
+                    }
+
+                    if (boardPostId) { 
+                        window.location.href = '../Board/index.html#notifications'; 
+                        return; 
+                    }
+
+                    if (!hasRoomSession()) return;
+
                     $.ajax({
                         url: `${apiHost}/api/lobby/room/${roomId}/leave`,
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify({ playerAccount: myAccount }),
                         complete: function() {
-                            if (roomSocket) roomSocket.close();
+                            if (window.roomSocket) window.roomSocket.close();
                             window.location.href = 'jquery_lobby.html';
                         }
                     });
                 }
             });
 
-            // 9. 房主點擊開始遊戲
             $('#startGameBtn').on('click', function() {
                 if (!hasRoomSession()) return;
                 if (boardPostId) {
@@ -409,35 +447,80 @@
                     url: `${apiHost}/api/lobby/room/${roomId}/start`,
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ hostAccount: myAccount }),
-                    success: function(res) {
-                        if (!res.success) {
-                            alert('無法開始遊戲：' + res.message);
-                        }
-                    }
+                    data: JSON.stringify({ hostAccount: myAccount })
                 });
             });
 
-            // 先確認平台會員，通過後才讀取房間；不再使用測試帳號。
-            $('#startGameBtn, #leaveRoomBtn').prop('disabled',true);
-            UserApi.checkLogin().then(function(user) {
-                if (!user) return $.Deferred().reject({status:401}).promise();
-                return boardPostId ? UserApi.getBoardSession() : user;
-            }).done(function(member) {
-                if (roomSessionToken !== UserApi.getToken()) { UserApi.redirectToLogin(); return; }
-                boardMemberId = boardPostId ? member.id : null;
-                myAccount = member.account;
+            // 啟動驗證與連線
+            if (typeof UserApi !== 'undefined') {
+                UserApi.checkLogin().then(function(user) {
+                    if (!user) return $.Deferred().reject({status:401}).promise();
+                    return boardPostId ? UserApi.getBoardSession() : user;
+                }).done(function(member) {
+                    if (roomSessionToken !== UserApi.getToken()) { UserApi.redirectToLogin(); return; }
+                    boardMemberId = boardPostId ? member.id : null;
+                    myAccount = member.account;
+                    window.globalAccount = myAccount;
+                    fetchInitialData();
+                }).fail(function(xhr) {
+                    if (xhr.status === 401 || xhr.status === 403) UserApi.redirectToLogin();
+                    else roomError(xhr);
+                });
+            } else {
                 fetchInitialData();
-            }).fail(function(xhr) {
-                if (xhr.status === 401 || xhr.status === 403) UserApi.redirectToLogin();
-                else roomError(xhr);
-            });
-            // 接收開始通知，也處理晚進房／WebSocket 暫時斷線的情況。
+            }
+            
             if (boardPostId) {
                 const boardTimer=setInterval(checkBoardGame,3000);
-                $(window).on('pagehide',function(){clearInterval(boardTimer);if(roomSocket)roomSocket.close();});
+                $(window).on('pagehide',function(){
+                    clearInterval(boardTimer);
+                    if(window.roomSocket) window.roomSocket.close();
+                });
             }
-        });
+
+            // 🌟 離開邏輯打包，提供外層網頁強制呼叫 & 頁面關閉時觸發
+      // 🌟 離開邏輯打包，提供外層網頁強制呼叫 & 頁面關閉時觸發
+            window.forceLeaveRoom = function(isPageUnload = false) {
+                if (boardPostId || !roomId || !myAccount || hasLeftRoom) return;
+                
+                hasLeftRoom = true; 
+                
+                if (window.parent && window.parent.RoomChatManager) {
+                    window.parent.RoomChatManager.hideTab();
+                }
+
+                if (window.roomSocket) window.roomSocket.close();
+
+                const leaveUrl = `${apiHost}/api/lobby/room/${roomId}/leave`;
+                const data = JSON.stringify({ playerAccount: myAccount });
+
+                // 情況 A：如果是網站內切換分頁，交給「一直存活著的父視窗」來代發 API，保證 100% 不會被中斷
+                if (!isPageUnload && window.parent && window.parent.fetch) {
+                    window.parent.fetch(leaveUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: data
+                    }).catch(e => console.error(e));
+                } 
+                // 情況 B：如果是直接關閉整個瀏覽器分頁，使用 keepalive 讓瀏覽器在背景完成請求
+                else {
+                    fetch(leaveUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: data,
+                        keepalive: true
+                    }).catch(e => console.error(e));
+                }
+            };
+
+            // 當真的關閉瀏覽器或重新整理時，傳入 true
+            window.addEventListener('pagehide', function() { window.forceLeaveRoom(true); });
+            window.addEventListener('unload', function() { window.forceLeaveRoom(true); });
+
+            window.addEventListener('pagehide', window.forceLeaveRoom);
+            window.addEventListener('unload', window.forceLeaveRoom);
+            
+        }); 
     </script>
 </body>
 </html>

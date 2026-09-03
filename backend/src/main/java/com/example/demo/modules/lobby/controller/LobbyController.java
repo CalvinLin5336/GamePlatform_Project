@@ -239,8 +239,8 @@ public class LobbyController {
         return ResponseEntity.ok(response);
     }
     
-    // =========================================================
-    // 6. 離開房間
+ // =========================================================
+    // 6. 離開房間 (升級版：支援廣播解散指令)
     // =========================================================
     @PostMapping("/room/{roomId}/leave")
     public ResponseEntity<Map<String, Object>> leaveRoom(
@@ -261,11 +261,24 @@ public class LobbyController {
         room.getPlayers().remove(playerAccount);
 
         if (room.getHostAccount().equals(playerAccount) || room.getPlayers().isEmpty()) {
+            // ⭐ 1. 準備解散指令的 JSON
+            try {
+                Map<String, Object> disbandMsg = new HashMap<>();
+                disbandMsg.put("type", "ROOM_DISBANDED");
+                disbandMsg.put("message", "房主已離開，房間解散");
+                
+                // ⭐ 2. 廣播給房間內還在等待的所有人 (利用你寫好的廣播方法)
+                broadcastAfterCommit(roomId, objectMapper.writeValueAsString(disbandMsg));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // ⭐ 3. 廣播完畢後，將房間從資料庫刪除
             roomRepository.delete(room);
             response.put("message", "房間已解散");
         } else {
             roomRepository.save(room);
-            // 🌟 有人離開，廣播給全場更新名單
+            // 🌟 一般玩家離開，廣播給全場更新名單
             broadcastRoomSync(roomId, room);
             response.put("message", "成功離開房間");
         }

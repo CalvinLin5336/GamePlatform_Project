@@ -90,6 +90,9 @@
             const apiHost = 'http://' + window.location.hostname + ':8080';
             let availableGames = []; 
             let selectedGameId = null;
+            
+            // 🌟 新增：用來存放自動更新計時器的變數
+            let autoRefreshInterval = null;
 
             // 1. 分頁切換邏輯
             $('#tabCreateBtn').on('click', function() {
@@ -97,6 +100,9 @@
                 $('#tabListBtn').removeClass('bg-indigo-600 text-white shadow-lg').addClass('bg-transparent text-slate-400');
                 $('#createRoomSection').removeClass('hidden');
                 $('#roomListSection').addClass('hidden');
+                
+                // 🌟 切換回「新建房間」時，停止自動更新，節省伺服器資源
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             });
 
             $('#tabListBtn').on('click', function() {
@@ -104,7 +110,12 @@
                 $('#tabCreateBtn').removeClass('bg-indigo-600 text-white shadow-lg').addClass('bg-transparent text-slate-400');
                 $('#roomListSection').removeClass('hidden');
                 $('#createRoomSection').addClass('hidden');
+                
                 fetchWaitingRooms(); 
+                
+                // 🌟 切換到「現有房間」時，啟動每 3 秒自動更新一次
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+                autoRefreshInterval = setInterval(fetchWaitingRooms, 3000);
             });
 
             // 2. 抓取遊戲總表並動態渲染
@@ -191,7 +202,7 @@
                 selectedGameId = null;
             });
 
-            // 4. 建立房間 API 串接 (成功後跳轉至 waiting_room.html)
+            // 4. 建立房間 API 串接
             $('#confirmCreateBtn').on('click', function() {
                 const currentAccount = localStorage.getItem("account") || "test_account_01";
                 const modeCode = $('#roomModeSelect').val(); 
@@ -217,7 +228,6 @@
                     }),
                     success: function(response) {
                         if (response.success) {
-                            // 🌟 核心修改：直接跳轉到獨立的等待區頁面
                             window.location.href = `waiting_room.html?room=${response.roomId}`;
                         } else {
                             alert('建立失敗：' + response.message);
@@ -232,7 +242,7 @@
                 });
             });
 
-            // 5. 取得等待中的房間列表
+            // 5. 取得等待中的房間列表 (保留過濾條件，並供計時器重複呼叫)
             function fetchWaitingRooms() {
                 $.ajax({
                     url: apiHost + '/api/lobby/rooms',
@@ -241,12 +251,18 @@
                         const $container = $('#roomListContainer');
                         $container.empty();
                         
-                        if (response.rooms.length === 0) {
-                            $container.append('<div class="text-center text-slate-500 py-4">目前沒有等待中的房間，自己開一局吧！</div>');
+                        // 過濾房間：只保留 WAITING 且人數未滿的房間
+                        const availableRooms = response.rooms.filter(room => {
+                            const currentPlayers = room.players ? room.players.length : 0;
+                            return room.status === 'WAITING' && currentPlayers < room.maxPlayers;
+                        });
+                        
+                        if (availableRooms.length === 0) {
+                            $container.append('<div class="text-center text-slate-500 py-4">目前沒有可以加入的房間，自己開一局吧！</div>');
                             return;
                         }
                         
-                        response.rooms.forEach(room => {
+                        availableRooms.forEach(room => {
                             const gameData = availableGames.find(g => g.gameId === room.gameId);
                             const displayGameName = gameData ? gameData.gameName : '未知遊戲';
                             
@@ -259,22 +275,12 @@
                             }
                             
                             const currentPlayers = room.players ? room.players.length : 0;
-                            const isFull = currentPlayers >= room.maxPlayers;
 
-                            let buttonHtml = '';
-                            if (isFull) {
-                                buttonHtml = `
-                                    <button disabled class="bg-slate-700 text-slate-400 px-5 py-2 rounded-lg text-sm font-medium cursor-not-allowed border border-slate-600">
-                                        房間已滿
-                                    </button>
-                                `;
-                            } else {
-                                buttonHtml = `
-                                    <button onclick="joinRoom('${room.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition active:scale-95 shadow-md shadow-emerald-900/50">
-                                        加入遊戲
-                                    </button>
-                                `;
-                            }
+                            const buttonHtml = `
+                                <button onclick="joinRoom('${room.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition active:scale-95 shadow-md shadow-emerald-900/50">
+                                    加入遊戲
+                                </button>
+                            `;
 
                             const roomHtml = `
                                 <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 flex justify-between items-center hover:border-indigo-500 transition">
@@ -297,9 +303,17 @@
                 });
             }
 
-            $('#refreshRoomsBtn').on('click', fetchWaitingRooms);
+            // 支援手動重新整理按鈕
+            $('#refreshRoomsBtn').on('click', function() {
+                fetchWaitingRooms();
+                // 若手動點擊，可重置計時器避免馬上又觸發一次
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = setInterval(fetchWaitingRooms, 3000);
+                }
+            });
 
-            // 6. 加入房間 API 串接 (成功後也跳轉至 waiting_room.html)
+            // 6. 加入房間 API 串接
             window.joinRoom = function(roomId) {
                 const currentAccount = localStorage.getItem("account") || "test_account_02";
                 $.ajax({
@@ -309,7 +323,6 @@
                     data: JSON.stringify({ roomId: roomId, playerAccount: currentAccount }),
                     success: function(res) {
                         if (res.success) {
-                            // 🌟 核心修改：成功加入後直接跳轉進等待區
                             window.location.href = `waiting_room.html?room=${roomId}`;
                         } else {
                             alert('加入失敗：' + res.message);
