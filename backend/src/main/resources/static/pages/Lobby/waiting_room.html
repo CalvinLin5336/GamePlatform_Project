@@ -550,10 +550,10 @@ $('#startGameBtn').on('click', function() {
 
             // 當真的關閉瀏覽器或重新整理時，傳入 true
             window.addEventListener('pagehide', function() { window.forceLeaveRoom(true); });
-            window.addEventListener('unload', function() { window.forceLeaveRoom(true); });
+            
 
             window.addEventListener('pagehide', window.forceLeaveRoom);
-            window.addEventListener('unload', window.forceLeaveRoom);
+            
             
         }); 
     </script>

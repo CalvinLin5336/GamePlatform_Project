@@ -36,11 +36,11 @@
                             class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="shop">
                         🛒 商城
                     </button>
-                    <button onclick="switchTab('member', '../User/Login/login.html')"
+                    <button onclick="switchTab('member', '../User/player/player.html')"
                             class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="member">
                         ⚙️ 會員中心
                     </button>
-                    <!-- 🌟 新增：只有 Admin 看得到的管理後台按鈕 (預設 hidden) -->
+                    <!-- 🌟 只有 Admin 看得到的管理後台按鈕 (預設 hidden) -->
                     <button id="adminTabBtn" onclick="switchTab('admin', '../User/Admin/admin.html')"
                             class="nav-btn hidden px-4 py-1.5 rounded-lg text-sm font-medium text-red-300 hover:text-white hover:bg-red-900/50 transition active:scale-95 border border-red-500/30" data-target="admin">
                         🛡️ 後台管理
@@ -58,7 +58,7 @@
                     </div>
 
                     <div id="loggedInView" class="hidden items-center gap-3">
-                        <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" title="前往會員中心" onclick="switchTab('member', '../User/Login/login.html')">
+                        <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" title="前往會員中心" onclick="switchTab('member', '../User/player/player.html')">
                             <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-white text-sm shadow-md">
                                 👤
                             </div>
@@ -74,8 +74,8 @@
 
         <!-- ================= 2. 內容主畫面區 (載入其他網頁的 iframe) ================= -->
         <main class="relative flex-1 w-full h-full overflow-hidden z-0">
-            <!-- 預設載入大廳 -->
-            <iframe id="mainFrame" src="../User/Login/login.html" class="w-full h-full border-0"></iframe>
+            <!-- 預設載入畫面 -->
+            <iframe id="mainFrame" class="w-full h-full border-0"></iframe>
         </main>
 
         <!-- ================= 3. 右下角懸浮聊天室 (大廳 + 房間 整合版) ================= -->
@@ -112,6 +112,26 @@
             const mainFrame = document.getElementById('mainFrame');
             const navButtons = document.querySelectorAll('.nav-btn');
 
+            // 🌟 1. 提供給子頁面呼叫的方法：當子頁面載入時，把網址記在 localStorage
+            window.updateCurrentPage = function(pageUrl) {
+                if (pageUrl && !pageUrl.includes('login.html')) {
+                    localStorage.setItem('current_iframe_page', pageUrl);
+                }
+            };
+
+            // 🌟 2. 在頁面載入時，自動決定 iframe 要顯示什麼網頁（支援重新整理後的記憶）
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect');
+            const savedPage = localStorage.getItem('current_iframe_page');
+
+            if (redirectUrl) {
+                mainFrame.src = decodeURIComponent(redirectUrl);
+            } else if (savedPage) {
+                mainFrame.src = savedPage;
+            } else {
+                mainFrame.src = "../User/Login/login.html";
+            }
+
             function switchTab(tabName, url) {
                 try {
                     if (mainFrame.contentWindow && typeof mainFrame.contentWindow.forceLeaveRoom === 'function') {
@@ -122,6 +142,7 @@
                 }
 
                 mainFrame.src = url;
+                window.updateCurrentPage(url); // 手動點擊分頁時也同步記憶
 
                 navButtons.forEach(btn => {
                     if (btn.getAttribute('data-target') === tabName) {
@@ -154,13 +175,12 @@
             const loggedInView = document.getElementById('loggedInView');
             const displayUserName = document.getElementById('displayUserName');
             const logoutBtn = document.getElementById('logoutBtn');
-            const adminTabBtn = document.getElementById('adminTabBtn'); // 🌟 取得管理員按鈕元素
+            const adminTabBtn = document.getElementById('adminTabBtn');
 
             function checkLoginStatus() {
                 const currentAccount = localStorage.getItem("account");
                 const currentUsername = localStorage.getItem("username") || currentAccount;
                 
-                // 🌟 檢查角色是否為 Admin (支援 role 字串或 roleId 等多種常見登入儲存方式)
                 const userRole = (localStorage.getItem("role") || "").toUpperCase();
                 const roleId = localStorage.getItem("roleId");
                 const isAdmin = (userRole === "ADMIN" || roleId === "2" || roleId === 2);
@@ -171,7 +191,6 @@
                     loggedInView.classList.remove('hidden');
                     loggedInView.classList.add('flex');
 
-                    // 🌟 如果是管理員，顯示管理後台分頁按鈕
                     if (isAdmin) {
                         adminTabBtn.classList.remove('hidden');
                     } else {
@@ -181,7 +200,6 @@
                     loggedInView.classList.add('hidden');
                     loggedInView.classList.remove('flex');
                     loggedOutView.classList.remove('hidden');
-                    // 🌟 未登入時隱藏管理後台按鈕
                     adminTabBtn.classList.add('hidden');
                 }
             }
@@ -196,9 +214,12 @@
                         localStorage.removeItem("userId");
                         localStorage.removeItem("username");
                         localStorage.removeItem("role");
-                        localStorage.removeItem("roleId"); // 記得順便清除 roleId
+                        localStorage.removeItem("roleId");
                         localStorage.removeItem("status");
                     }
+                    
+                    // 🌟 登出時清空上次記憶的分頁，讓下次登入能正常回到預設頁面
+                    localStorage.removeItem('current_iframe_page');
                     
                     checkLoginStatus();
                     alert('已成功登出！');

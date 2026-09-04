@@ -108,6 +108,16 @@
 
     <!-- ================= jQuery 互動邏輯 ================= -->
     <script>
+        // 檢查：如果這頁不是在 iframe 裡面運行（即 window === top），代表它是被單獨重新整理開起來的
+    if (window === top && !window.location.pathname.includes('chatclient')) {
+        const fullSearch = window.location.search;
+        const currentPath = window.location.pathname;
+        
+        // 自動把它包回最外層的主框架內，並把原本要看的頁面與參數帶進去
+        // 請依你的專案資料夾結構調整 chatclient_2.html 的相對路徑
+        window.location.href = `../../chatclient_2.html?redirect=${encodeURIComponent(currentPath + fullSearch)}`;
+    }
+
         $(document).ready(function() {
             const apiHost = 'http://' + window.location.hostname + ':8080';
             let availableGames = []; 
