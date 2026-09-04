@@ -24,24 +24,24 @@
             <div class="flex items-center">
                 
                 <nav class="flex items-center gap-2 pr-4 border-r border-slate-700 mr-4">
-                    <button onclick="switchTab('lobby', '../Lobby/jquery_lobby.html')" 
+                    <button onclick="switchTab(event, 'lobby', '../Lobby/jquery_lobby.html')" 
                             class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95 bg-slate-800 text-white" data-target="lobby">
                         🏠 遊戲大廳
                     </button>
-                    <button onclick="switchTab('party', '../Board/index.html')" 
+                    <button onclick="switchTab(event, 'party', '../Board/index.html')" 
                             class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="party">
                         👥 組隊布告欄
                     </button>
-                    <button onclick="switchTab('shop', '../Shop/wait.html')" 
+                    <button onclick="switchTab(event, 'shop', '../Shop/wait.html')" 
                             class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="shop">
                         🛒 商城
                     </button>
-                    <button onclick="switchTab('member', '../User/Player/player.html')"
+                    <button onclick="switchTab(event, 'member', '../User/Player/player.html')"
                             class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="member">
                         ⚙️ 會員中心
                     </button>
                     <!-- 🌟 只有 Admin 看得到的管理後台按鈕 (預設 hidden) -->
-                    <button id="adminTabBtn" onclick="switchTab('admin', '../User/Admin/admin.html')"
+                    <button id="adminTabBtn" onclick="switchTab(event, 'admin', '../User/Admin/admin.html')"
                             class="nav-btn hidden px-4 py-1.5 rounded-lg text-sm font-medium text-red-300 hover:text-white hover:bg-red-900/50 transition active:scale-95 border border-red-500/30" data-target="admin">
                         🛡️ 後台管理
                     </button>
@@ -52,13 +52,13 @@
                     
                     <div id="loggedOutView" class="flex items-center gap-3">
                         <span class="text-sm text-slate-400">尚未登入</span>
-                        <button onclick="switchTab('member', '../User/Login/login.html')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded transition shadow-lg shadow-indigo-500/20">
+                        <button onclick="switchTab(event, 'member', '../User/Login/login.html')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded transition shadow-lg shadow-indigo-500/20">
                             前往登入
                         </button>
                     </div>
 
                     <div id="loggedInView" class="hidden items-center gap-3">
-                        <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" title="前往會員中心" onclick="switchTab('member', '../User/Player/player.html')">
+                        <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" title="前往會員中心" onclick="switchTab(event, 'member', '../User/Player/player.html')">
                             <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-white text-sm shadow-md">
                                 👤
                             </div>
@@ -132,7 +132,20 @@
                 mainFrame.src = "../User/Login/login.html";
             }
 
-            function switchTab(tabName, url) {
+            function switchTab(event, tabName, url) {
+                if (event) {
+                    event.preventDefault();
+                }
+
+                const restrictedTabs = ['member', 'admin']; 
+                const currentAccount = localStorage.getItem("account");
+
+                // 如果未登入，但點擊了受保護的分頁，我們讓 iframe 直接載入登入頁，而不是整頁跳轉
+                let targetUrl = url;
+                if ((restrictedTabs.includes(tabName) || (url && (url.includes('player.html') || url.includes('admin.html')))) && !currentAccount) {
+                    targetUrl = '../User/Login/login.html'; // 重新導向到 iframe 內的登入頁面
+                }
+
                 try {
                     if (mainFrame.contentWindow && typeof mainFrame.contentWindow.forceLeaveRoom === 'function') {
                         mainFrame.contentWindow.forceLeaveRoom(false);
@@ -141,8 +154,10 @@
                     // 忽略跨域錯誤
                 }
 
-                mainFrame.src = url;
-                window.updateCurrentPage(url); // 手動點擊分頁時也同步記憶
+                if (targetUrl) {
+                    mainFrame.src = targetUrl;
+                    window.updateCurrentPage(targetUrl);
+                }
 
                 navButtons.forEach(btn => {
                     if (btn.getAttribute('data-target') === tabName) {
@@ -243,7 +258,6 @@
                 const IDLE_LIMIT = 30 * 60 * 1000; // 30 分鐘（毫秒）
 
                 function logoutDueToIdle() {
-                    // 只有在已經登入的狀態下才觸發自動登出
                     if (!localStorage.getItem("account")) return;
 
                     alert("您已長時間未進行任何操作，將自動登出。");
@@ -266,19 +280,16 @@
 
                 function resetIdleTimer() {
                     clearTimeout(idleTimeout);
-                    // 只有登入時才啟動倒數
                     if (localStorage.getItem("account")) {
                         idleTimeout = setTimeout(logoutDueToIdle, IDLE_LIMIT);
                     }
                 }
 
-                // 監聽各種使用者活動事件（包含滑鼠、鍵盤、點擊、捲動、觸控）
                 const userEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
                 userEvents.forEach(eventType => {
                     window.addEventListener(eventType, resetIdleTimer, true);
                 });
 
-                // 初始化啟動
                 resetIdleTimer();
             })();
         </script>
