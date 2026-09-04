@@ -57,7 +57,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/user/admin/**").hasRole("ADMIN")
 
                 // Player 個人資料 API
-                .requestMatchers("/api/user/player/**").hasRole("PLAYER","ADMIN")
+                .requestMatchers("/api/user/player/**").hasAnyRole("PLAYER","ADMIN")
 
                 // 開發階段暫時允許其他 API
                 .requestMatchers("/**").permitAll()
