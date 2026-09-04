@@ -1,0 +1,6 @@
+GAME / MODE / ROOM 內文將欄位名改成用中文敘述欄位
+新增 ER MODEL ·Lobby加入Lobby敘述
+AUTHENTICATION FLOW 順序提前
+WORKING PRODUCT 畫面不符合實際狀況 應為雙向
+
+
