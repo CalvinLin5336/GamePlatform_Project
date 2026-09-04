@@ -234,6 +234,53 @@
                     checkLoginStatus();
                 }
             });
+
+            // ==========================================
+            // 🌟 5. 30分鐘閒置自動登出機制
+            // ==========================================
+            (function() {
+                let idleTimeout;
+                const IDLE_LIMIT = 30 * 60 * 1000; // 30 分鐘（毫秒）
+
+                function logoutDueToIdle() {
+                    // 只有在已經登入的狀態下才觸發自動登出
+                    if (!localStorage.getItem("account")) return;
+
+                    alert("您已長時間未進行任何操作，將自動登出。");
+                    
+                    if (typeof UserApi !== 'undefined' && UserApi.clearLoginSession) {
+                        UserApi.clearLoginSession();
+                    } else {
+                        localStorage.removeItem("token");
+                        localStorage.removeItem("account");
+                        localStorage.removeItem("userId");
+                        localStorage.removeItem("username");
+                        localStorage.removeItem("role");
+                        localStorage.removeItem("roleId");
+                        localStorage.removeItem("status");
+                    }
+                    
+                    localStorage.removeItem('current_iframe_page');
+                    window.location.href = '../User/Login/login.html';
+                }
+
+                function resetIdleTimer() {
+                    clearTimeout(idleTimeout);
+                    // 只有登入時才啟動倒數
+                    if (localStorage.getItem("account")) {
+                        idleTimeout = setTimeout(logoutDueToIdle, IDLE_LIMIT);
+                    }
+                }
+
+                // 監聽各種使用者活動事件（包含滑鼠、鍵盤、點擊、捲動、觸控）
+                const userEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+                userEvents.forEach(eventType => {
+                    window.addEventListener(eventType, resetIdleTimer, true);
+                });
+
+                // 初始化啟動
+                resetIdleTimer();
+            })();
         </script>
         
        <script src="./js/client.js"></script>
