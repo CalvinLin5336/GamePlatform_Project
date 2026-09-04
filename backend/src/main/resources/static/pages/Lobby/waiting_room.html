@@ -331,9 +331,21 @@
 
                 window.roomSocket.onopen = function() {
                     console.log("✅ 等待區 WebSocket 連線成功");
-                    if (window.parent && window.parent.RoomChatManager) {
-                        window.parent.RoomChatManager.showTab();
+                    
+                    // 🌟 確保跨層級呼叫外層父視窗的聊天室管理員（支援組隊區與大廳）
+                    function tryShowChatTab(retries = 5) {
+                        if (window.parent && window.parent.RoomChatManager && typeof window.parent.RoomChatManager.showTab === 'function') {
+                            window.parent.RoomChatManager.showTab();
+                            // 如果是在遊戲中/等待區，同時指定要把聊天室切換到「房間」分頁
+                            if (typeof window.parent.RoomChatManager.switchToRoomChat === 'function') {
+                                window.parent.RoomChatManager.switchToRoomChat(roomId);
+                            }
+                        } else if (retries > 0) {
+                            setTimeout(() => tryShowChatTab(retries - 1), 200);
+                        }
                     }
+                    tryShowChatTab();
+
                     const currentUsername = localStorage.getItem("username") || localStorage.getItem("account") || "訪客";
                     window.roomSocket.send(JSON.stringify({
                         type: "ROOM_CHAT",
