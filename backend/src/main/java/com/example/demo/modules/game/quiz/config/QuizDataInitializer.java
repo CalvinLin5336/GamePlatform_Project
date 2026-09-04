@@ -32,7 +32,10 @@ public class QuizDataInitializer implements CommandLineRunner {
         createPlayerIfMissing("QuizMaster", 90);
         createPlayerIfMissing("LuckyGuy", 75);
         
-        //2. 初始化 77題試卷題庫(含詳細解說與選項)
+        //2. 強制清空就題目(依賴 Question 實體上的 Cascade 設置級聯刪除 Option)
+        questionRepository.deleteAll();
+        
+        //3. 強制重新寫入 77題試卷題庫(含詳細解說與選項)
         initQuestionsIfEmpty(); 
 		
 	}
@@ -54,9 +57,10 @@ public class QuizDataInitializer implements CommandLineRunner {
 	 * 若資料庫沒有題目則建立 SQL 題庫內容
 	 */
 	private void initQuestionsIfEmpty() {
+		/*
 		if (questionRepository.count() > 0) {
 			return;
-		}
+		}*/
 
 		// Q1
 		createQuestion(
