@@ -1,0 +1,8 @@
+瀏覽器
+   ↓ 同一個網址
+Spring Boot : 8080
+   ├── 靜態前端頁面
+   ├── REST API
+   ├── WebSocket
+   ├── JWT 驗證
+   └── SQLite
