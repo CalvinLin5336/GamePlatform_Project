@@ -24,7 +24,7 @@ public class GameDataInitializer implements CommandLineRunner {
             poker = new Game();
             poker.setGameCode("POKER");
             poker.setGameName("田忌撲克");
-            poker.setDescription("第一輪選 3 張牌，第二、三輪各選 5 張牌的三輪撲克遊戲。");
+            poker.setDescription("三輪撲克策略對戰");
             poker.setFrontendPath("/pages/Games/poker/poker_client.html");
             poker.setBackendPath("/api/games/poker");
             poker.setImagePath("/assets/Games/poker/poker_game_icon.png");
@@ -38,6 +38,7 @@ public class GameDataInitializer implements CommandLineRunner {
                 "/pages/Games/poker/poker_client.html",
                 "/src/assets/Games/poker/poker_game_icon.png",
                 "/assets/Games/poker/poker_game_icon.png");
+        migratePokerDescription(poker);
 
         createModeIfMissing(poker.getGameId(), "COMPUTER", "對戰電腦", 1, 1, 1, true);
         createModeIfMissing(poker.getGameId(), "PLAYER", "玩家對戰", 2, 2, 0, true);
@@ -104,6 +105,14 @@ public class GameDataInitializer implements CommandLineRunner {
             changed = true;
         }
         if (changed) gameRepository.save(game);
+    }
+
+    private void migratePokerDescription(Game poker) {
+        String oldDescription = "第一輪選 3 張牌，第二、三輪各選 5 張牌的三輪撲克遊戲。";
+        if (oldDescription.equals(poker.getDescription())) {
+            poker.setDescription("三輪撲克策略對戰");
+            gameRepository.save(poker);
+        }
     }
 
     private void createModeIfMissing(
