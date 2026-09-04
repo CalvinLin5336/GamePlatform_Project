@@ -252,7 +252,7 @@ function displayReportCard(report){
 	report.details.forEach((detail, idx) =>{
 		const q = detail.question;
 		const card = document.createElement('div');
-		card.className = `card ${detail.isCorrect ? 'correct-answer' : 'wrong-answer'}`;
+		card.className = `card ${detail.correct ? 'correct-answer' : 'wrong-answer'}`;
 	
 		let optionsHtml ='';
 		q.options.forEach(opt=>{
@@ -266,7 +266,7 @@ function displayReportCard(report){
 		});
 		
 		card.innerHTML = `
-			<h4>第 ${idx + 1} 題:${detail.isCorrect ? '✅ 答對' : '❌ 答錯'}</h4>
+			<h4>第 ${idx + 1} 題:${detail.correct ? '✅ 答對' : '❌ 答錯'}</h4>
 			<div><b>題目:</b><div class="card-box">${q.title}</div></div>
 			<div style="margin-top:10px;"><b>選擇列表:</b>${optionsHtml}</div>
 			<div class="explanation-box">
