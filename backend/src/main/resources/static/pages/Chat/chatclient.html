@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
     <head>
-        <title>遊戲主畫面與系統選單</title>
+        <title>簡易遊戲平台</title>
         <meta charset="UTF-8">      
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -25,7 +25,7 @@
                 
                 <nav class="flex items-center gap-2 pr-4 border-r border-slate-700 mr-4">
                     <button onclick="switchTab(event, 'lobby', '../Lobby/jquery_lobby.html')" 
-                            class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95 bg-slate-800 text-white" data-target="lobby">
+                            class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95" data-target="lobby">
                         🏠 遊戲大廳
                     </button>
                     <button onclick="switchTab(event, 'party', '../Board/index.html')" 
@@ -59,8 +59,9 @@
 
                     <div id="loggedInView" class="hidden items-center gap-3">
                         <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" title="前往會員中心" onclick="switchTab(event, 'member', '../User/Player/player.html')">
-                            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-white text-sm shadow-md">
-                                👤
+                            <!-- 🌟 頭貼容器 -->
+                            <div id="userAvatarContainer" class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-white text-sm shadow-md overflow-hidden">
+                                <span>👤</span>
                             </div>
                             <span id="displayUserName" class="text-sm font-bold text-slate-200"></span>
                         </div>
@@ -119,18 +120,39 @@
                 }
             };
 
-            // 🌟 2. 在頁面載入時，自動決定 iframe 要顯示什麼網頁（支援重新整理後的記憶）
+            // 🌟 2. 根據網址自動對應並高亮頂部導覽列按鈕
+            function updateActiveNavButton(url) {
+                let targetTab = 'lobby'; 
+                if (url.includes('index.html') && !url.includes('Login')) targetTab = 'party';
+                else if (url.includes('wait.html')) targetTab = 'shop';
+                else if (url.includes('player.html') || url.includes('login.html')) targetTab = 'member';
+                else if (url.includes('admin.html')) targetTab = 'admin';
+
+                navButtons.forEach(btn => {
+                    if (btn.getAttribute('data-target') === targetTab) {
+                        btn.classList.add('bg-slate-800', 'text-white');
+                        btn.classList.remove('text-slate-300');
+                    } else {
+                        btn.classList.remove('bg-slate-800', 'text-white');
+                        btn.classList.add('text-slate-300');
+                    }
+                });
+            }
+
+            // 🌟 3. 在頁面載入時，自動決定 iframe 要顯示什麼網頁並同步導覽列高亮
             const urlParams = new URLSearchParams(window.location.search);
             const redirectUrl = urlParams.get('redirect');
             const savedPage = localStorage.getItem('current_iframe_page');
 
+            let initialPage = "../User/Login/login.html";
             if (redirectUrl) {
-                mainFrame.src = decodeURIComponent(redirectUrl);
+                initialPage = decodeURIComponent(redirectUrl);
             } else if (savedPage) {
-                mainFrame.src = savedPage;
-            } else {
-                mainFrame.src = "../User/Login/login.html";
+                initialPage = savedPage;
             }
+
+            mainFrame.src = initialPage;
+            updateActiveNavButton(initialPage);
 
             function switchTab(event, tabName, url) {
                 if (event) {
@@ -140,10 +162,9 @@
                 const restrictedTabs = ['member', 'admin']; 
                 const currentAccount = localStorage.getItem("account");
 
-                // 如果未登入，但點擊了受保護的分頁，我們讓 iframe 直接載入登入頁，而不是整頁跳轉
                 let targetUrl = url;
                 if ((restrictedTabs.includes(tabName) || (url && (url.includes('player.html') || url.includes('admin.html')))) && !currentAccount) {
-                    targetUrl = '../User/Login/login.html'; // 重新導向到 iframe 內的登入頁面
+                    targetUrl = '../User/Login/login.html'; 
                 }
 
                 try {
@@ -157,6 +178,7 @@
                 if (targetUrl) {
                     mainFrame.src = targetUrl;
                     window.updateCurrentPage(targetUrl);
+                    updateActiveNavButton(targetUrl);
                 }
 
                 navButtons.forEach(btn => {
@@ -195,13 +217,34 @@
             function checkLoginStatus() {
                 const currentAccount = localStorage.getItem("account");
                 const currentUsername = localStorage.getItem("username") || currentAccount;
+                const cachedAvatar = localStorage.getItem("avatar"); // 👈 優先從 localStorage 讀取暫存
                 
                 const userRole = (localStorage.getItem("role") || "").toUpperCase();
                 const roleId = localStorage.getItem("roleId");
                 const isAdmin = (userRole === "ADMIN" || roleId === "2" || roleId === 2);
 
+                const $avatarContainer = $('#userAvatarContainer');
+
                 if (currentAccount) {
                     displayUserName.textContent = currentUsername;
+
+                    // 🌟 1. 如果 localStorage 裡已經有暫存頭貼，立刻秒速渲染！
+                    if (cachedAvatar && cachedAvatar !== 'null' && cachedAvatar !== '') {
+                        $avatarContainer.html(`<img src="${cachedAvatar}" alt="Avatar" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentNode.innerHTML='👤';">`);
+                    } else {
+                        $avatarContainer.html(`<span>👤</span>`);
+                    }
+
+                    // 🌟 2. 同時在背景向後端同步最新的頭貼資料，確保如果有變更可以即時更新
+                    if (typeof UserApi !== 'undefined' && typeof UserApi.getPlayerProfile === 'function') {
+                        UserApi.getPlayerProfile().done(function(profile) {
+                            if (profile && profile.avatar) {
+                                localStorage.setItem("avatar", profile.avatar); // 更新快取
+                                $avatarContainer.html(`<img src="${profile.avatar}" alt="Avatar" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentNode.innerHTML='👤';">`);
+                            }
+                        });
+                    }
+
                     loggedOutView.classList.add('hidden');
                     loggedInView.classList.remove('hidden');
                     loggedInView.classList.add('flex');
@@ -215,6 +258,7 @@
                     loggedInView.classList.add('hidden');
                     loggedInView.classList.remove('flex');
                     loggedOutView.classList.remove('hidden');
+                    loggedOutView.classList.add('flex');
                     adminTabBtn.classList.add('hidden');
                 }
             }
@@ -233,7 +277,6 @@
                         localStorage.removeItem("status");
                     }
                     
-                    // 🌟 登出時清空上次記憶的分頁，讓下次登入能正常回到預設頁面
                     localStorage.removeItem('current_iframe_page');
                     
                     checkLoginStatus();
@@ -294,6 +337,7 @@
             })();
         </script>
         
-       <script src="./js/client.js"></script>
+        <script src="../User/api/userApi.js"></script>
+        <script src="./js/client.js"></script>
     </body>
 </html>
