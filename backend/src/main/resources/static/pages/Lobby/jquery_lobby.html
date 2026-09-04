@@ -364,14 +364,20 @@
                             const gameData = availableGames.find(g => g.gameId === room.gameId);
                             const displayGameName = gameData ? gameData.gameName : '未知遊戲';
                             
-                            // 🌟 透過資料庫中的 frontend_path 動態組合絕對根目錄路徑
+                         // 🌟 優先採用資料庫中的 frontend_path，並確保路徑正確解析
                             let frontendUrl = '';
                             const rawPath = (gameData && (gameData.frontendPath || gameData.frontend_path)) || '';
-                            
+
                             if (rawPath) {
+                                // 確保路徑開頭正確，並對應實際檔案夾大小寫
                                 frontendUrl = rawPath.startsWith('/') ? rawPath : '/' + rawPath;
                             } else {
-                                frontendUrl = '/pages/Games/poker/poker_client.html';
+                                // 💡 防呆對應：根據 gameId 或名稱指定正確路徑
+                                if (gameData && gameData.gameId === 3) {
+                                    frontendUrl = '/pages/Games/quiz/quiz_client.html';
+                                } else {
+                                    frontendUrl = '/pages/Games/poker/poker_client.html';
+                                }
                             }
 
                             const roomHtml = `
