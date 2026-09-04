@@ -1,0 +1,19 @@
+單一 Spring Boot 專案
+│
+├── Java 後端模組
+│   ├── User
+│   ├── Lobby
+│   ├── Chat
+│   ├── Board
+│   ├── Game Management
+│   ├── Poker
+│   ├── Quiz
+│   └── TJ Poker
+│
+├── static 前端頁面
+│   ├── HTML
+│   ├── CSS
+│   ├── JavaScript
+│   └── 圖片素材
+│
+└── SQLite 資料庫

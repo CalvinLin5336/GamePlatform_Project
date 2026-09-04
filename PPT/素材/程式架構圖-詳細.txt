@@ -1,0 +1,138 @@
+gameplatform/
+│
+├── src/
+│   │
+│   ├── main/
+│   │   │
+│   │   ├── java/com/example/demo/
+│   │   │   │
+│   │   │   ├── GameplatformApplication.java
+│   │   │   │      # Spring Boot 程式進入點
+│   │   │   │
+│   │   │   └── modules/                 # 各功能模組
+│   │   │       │
+│   │   │       ├── board/               # 組隊布告欄
+│   │   │       │   ├── config/          # 時間、序號、跨來源等設定
+│   │   │       │   ├── controller/      # 公告、申請、留言、通知 API
+│   │   │       │   ├── dto/             # 公告及申請的傳輸資料
+│   │   │       │   ├── entity/          # 公告、留言、收藏、通知等資料表
+│   │   │       │   ├── repository/      # 布告欄資料庫存取
+│   │   │       │   ├── server/          # Board WebSocket
+│   │   │       │   └── service/         # 組隊、通知、房間串接邏輯
+│   │   │       │
+│   │   │       ├── chat/                # 大廳與房間聊天室
+│   │   │       │   ├── controller/      # Chat 登入及 Session API
+│   │   │       │   ├── dto/             # Chat 登入資料
+│   │   │       │   ├── listener/        # 接收房間結束事件
+│   │   │       │   └── server/          # Chat WebSocket 設定與處理
+│   │   │       │
+│   │   │       ├── game/                # 遊戲相關功能
+│   │   │       │   │
+│   │   │       │   ├── management/      # 遊戲管理系統
+│   │   │       │   │   ├── config/      # 遊戲與模式初始資料
+│   │   │       │   │   ├── controller/  # 遊戲查詢、後台管理 API
+│   │   │       │   │   ├── dto/         # Game／GameMode 傳輸資料
+│   │   │       │   │   ├── model/       # games、game_modes 資料模型
+│   │   │       │   │   ├── repository/  # 遊戲資料庫存取
+│   │   │       │   │   └── service/     # 遊戲及模式查詢、管理邏輯
+│   │   │       │   │
+│   │   │       │   ├── poker/           # 正式版田忌撲克
+│   │   │       │   │   ├── controller/  # 加入、出牌、離開等 API
+│   │   │       │   │   ├── dto/         # 遊戲畫面與操作傳輸資料
+│   │   │       │   │   ├── exception/   # 撲克遊戲錯誤
+│   │   │       │   │   ├── model/       # Card、Round、Player、GameRoom
+│   │   │       │   │   ├── server/      # Poker WebSocket
+│   │   │       │   │   ├── service/     # 遊戲流程、JWT、房間整合
+│   │   │       │   │   └── util/        # 排序與牌組輔助工具
+│   │   │       │   │
+│   │   │       │   ├── quiz/            # 限時問答遊戲
+│   │   │       │   │   ├── config/      # 題目初始資料
+│   │   │       │   │   ├── controller/  # 題目與玩家 API
+│   │   │       │   │   ├── dto/         # 作答與結果傳輸資料
+│   │   │       │   │   ├── model/       # Question、Option、Player
+│   │   │       │   │   ├── repository/  # 問答資料庫存取
+│   │   │       │   │   └── service/     # 出題、評分、排行榜邏輯
+│   │   │       │   │
+│   │   │       │   └── tjpoker/         # 保留的撲克測試版本
+│   │   │       │       ├── controller/
+│   │   │       │       ├── dto/
+│   │   │       │       ├── exception/
+│   │   │       │       ├── model/
+│   │   │       │       ├── server/
+│   │   │       │       ├── service/
+│   │   │       │       └── util/
+│   │   │       │
+│   │   │       ├── lobby/               # 遊戲大廳與房間系統
+│   │   │       │   ├── controller/      # 建房、入房、開始、離房 API
+│   │   │       │   ├── entity/          # Room 資料模型
+│   │   │       │   ├── event/           # RoomFinishedEvent
+│   │   │       │   ├── repository/      # 房間資料庫存取
+│   │   │       │   ├── scheduler/       # 過期房間自動清理
+│   │   │       │   ├── server/          # Room WebSocket
+│   │   │       │   └── service/         # 房間生命週期管理
+│   │   │       │
+│   │   │       ├── shop/                # 商城預留模組
+│   │   │       │      # 目前尚無正式 Java 後端功能
+│   │   │       │
+│   │   │       └── user/                # 會員與登入系統
+│   │   │           ├── controller/      # 登入、會員、管理員 API
+│   │   │           ├── database/        # SQLite 表格初始化
+│   │   │           ├── dto/             # 登入與會員傳輸資料
+│   │   │           ├── entity/          # User、Role、Status、Log
+│   │   │           ├── repository/      # 會員與操作紀錄存取
+│   │   │           ├── security/        # JWT、權限及安全設定
+│   │   │           └── service/         # 會員、密碼、Session 邏輯
+│   │   │
+│   │   └── resources/
+│   │       │
+│   │       ├── application.properties
+│   │       │      # Port、SQLite、JPA、JWT 等設定
+│   │       │
+│   │       └── static/                  # 前端由 Spring Boot 直接提供
+│   │           │
+│   │           ├── index.html           # 平台首頁入口
+│   │           │
+│   │           ├── pages/               # 各功能的 HTML／CSS／JavaScript
+│   │           │   │
+│   │           │   ├── Board/
+│   │           │   │   ├── index.html
+│   │           │   │   └── assets/      # Board JS 與 CSS
+│   │           │   │
+│   │           │   ├── Chat/
+│   │           │   │   ├── chatclient.html
+│   │           │   │   └── js/          # 導覽列及聊天室控制
+│   │           │   │
+│   │           │   ├── Games/
+│   │           │   │   ├── poker/       # 正式撲克 HTML／CSS／JS
+│   │           │   │   ├── quiz/        # 問答遊戲 HTML／CSS／JS
+│   │           │   │   └── tjpoker/     # 測試撲克 HTML／CSS／JS
+│   │           │   │
+│   │           │   ├── Lobby/
+│   │           │   │   ├── jquery_lobby.html
+│   │           │   │   └── waiting_room.html
+│   │           │   │
+│   │           │   ├── Shop/
+│   │           │   │   └── wait.html    # 商城等待開發頁
+│   │           │   │
+│   │           │   └── User/
+│   │           │       ├── api/         # 共用會員 API 呼叫
+│   │           │       ├── Login/       # 登入與註冊頁
+│   │           │       ├── Player/      # 玩家個人資料頁
+│   │           │       └── Admin/       # 管理員後台
+│   │           │
+│   │           └── assets/              # 共用靜態圖片
+│   │               └── Games/
+│   │                   ├── poker/       # 圖示、牌桌、52 張牌
+│   │                   ├── quiz/        # 問答遊戲圖示
+│   │                   └── tjpoker/     # 測試版牌桌與牌面
+│   │
+│   └── test/java/                       # 自動化測試
+│       ├── board/                       # 布告欄及 WebSocket 測試
+│       ├── game/management/             # 遊戲管理測試
+│       ├── game/poker/                  # Poker 流程與 JWT 測試
+│       └── game/tjpoker/                # TJ Poker 測試
+│
+├── gameplatform.db                      # SQLite 資料庫
+├── pom.xml                              # Maven 套件與建置設定
+├── mvnw / mvnw.cmd                      # Maven Wrapper
+└── target/                              # 編譯輸出，不上傳 Git
