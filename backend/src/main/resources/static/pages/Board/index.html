@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="簡易遊戲平台組隊公告欄">
+    <title>簡易遊戲平台｜組隊公告欄</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+</head>
+<body>
+    <nav class="quick-nav" aria-label="組隊功能">
+        <a href="#home">⌂ 組隊大廳</a>
+        <a href="#posts">⌕ 尋找夥伴</a>
+        <a href="#form/new">＋ 建立隊伍</a>
+        <button id="quickBattle" type="button">⚔ 即刻開戰</button>
+        <a class="hidden" data-login-only href="#applications">我的申請</a>
+        <a class="hidden" data-login-only href="#favorites">收藏</a>
+        <a id="notificationLink" href="#notifications">我的通知 <span id="notificationBadge" class="notification-badge hidden" aria-live="polite"></span></a>
+        <a class="hidden" data-login-only href="#captain">隊長管理</a>
+    </nav>
+    <p id="boardLiveStatus" class="live-status" role="status">即時訊息：連線中</p>
+
+    <main id="app" class="container" aria-live="polite"></main>
+
+    <footer>
+        <p>Simple Game Platform Team Recruitment · HTML / JavaScript / jQuery</p>
+    </footer>
+
+    <script src="../User/api/userApi.js"></script>
+    <script src="assets/board-utils.js"></script>
+    <script src="assets/realtime.js"></script>
+    <script src="assets/app.js"></script>
+</body>
+</html>

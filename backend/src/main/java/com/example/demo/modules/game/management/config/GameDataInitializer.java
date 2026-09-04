@@ -25,12 +25,19 @@ public class GameDataInitializer implements CommandLineRunner {
             poker.setGameCode("POKER");
             poker.setGameName("田忌撲克");
             poker.setDescription("第一輪選 3 張牌，第二、三輪各選 5 張牌的三輪撲克遊戲。");
-            poker.setFrontendPath("/src/pages/Games/poker/poker_client.html");
+            poker.setFrontendPath("/pages/Games/poker/poker_client.html");
             poker.setBackendPath("/api/games/poker");
-            poker.setImagePath("/src/assets/Games/poker/poker_game_icon.png");
+            poker.setImagePath("/assets/Games/poker/poker_game_icon.png");
             poker.setEnabled(true);
             poker = gameRepository.save(poker);
         }
+
+        migrateStaticPaths(
+                poker,
+                "/src/pages/Games/poker/poker_client.html",
+                "/pages/Games/poker/poker_client.html",
+                "/src/assets/Games/poker/poker_game_icon.png",
+                "/assets/Games/poker/poker_game_icon.png");
 
         createModeIfMissing(poker.getGameId(), "COMPUTER", "對戰電腦", 1, 1, 1, true);
         createModeIfMissing(poker.getGameId(), "PLAYER", "玩家對戰", 2, 2, 0, true);
@@ -41,12 +48,19 @@ public class GameDataInitializer implements CommandLineRunner {
             tjpoker.setGameCode("TJPOKER");
             tjpoker.setGameName("田忌撲克（測試版）");
             tjpoker.setDescription("保留原始測試入口，不提供房間系統的一般玩家選擇。");
-            tjpoker.setFrontendPath("/src/pages/Games/tjpoker/poker_client.html");
+            tjpoker.setFrontendPath("/pages/Games/tjpoker/poker_client.html");
             tjpoker.setBackendPath("/api/poker");
-            tjpoker.setImagePath("/src/assets/Games/tjpoker/poker_game_icon.png");
+            tjpoker.setImagePath("/assets/Games/tjpoker/poker_game_icon.png");
             tjpoker.setEnabled(false);
             tjpoker = gameRepository.save(tjpoker);
         }
+
+        migrateStaticPaths(
+                tjpoker,
+                "/src/pages/Games/tjpoker/poker_client.html",
+                "/pages/Games/tjpoker/poker_client.html",
+                "/src/assets/Games/tjpoker/poker_game_icon.png",
+                "/assets/Games/tjpoker/poker_game_icon.png");
 
         createModeIfMissing(tjpoker.getGameId(), "COMPUTER", "對戰電腦", 1, 1, 1, false);
         createModeIfMissing(tjpoker.getGameId(), "PLAYER", "玩家對戰", 2, 2, 0, false);
@@ -57,14 +71,39 @@ public class GameDataInitializer implements CommandLineRunner {
             quiz.setGameCode("QUIZ");
             quiz.setGameName("限時問答挑戰");
             quiz.setDescription("20 題計時問答挑戰，內容涵蓋電腦科學與軟體開發基礎知識。");
-            quiz.setFrontendPath("/src/pages/Games/quiz/quiz_client.html");
+            quiz.setFrontendPath("/pages/Games/quiz/quiz_client.html");
             quiz.setBackendPath("/api/quiz");
-            quiz.setImagePath("/src/assets/Games/quiz/quiz_game_icon.png");
+            quiz.setImagePath("/assets/Games/quiz/quiz_game_icon.png");
             quiz.setEnabled(true);
             quiz = gameRepository.save(quiz);
         }
 
+        migrateStaticPaths(
+                quiz,
+                "/src/pages/Games/quiz/quiz_client.html",
+                "/pages/Games/quiz/quiz_client.html",
+                "/src/assets/Games/quiz/quiz_game_icon.png",
+                "/assets/Games/quiz/quiz_game_icon.png");
+
         createModeIfMissing(quiz.getGameId(), "SINGLE", "單人挑戰", 1, 1, 0, true);
+    }
+
+    private void migrateStaticPaths(
+            Game game,
+            String oldFrontendPath,
+            String newFrontendPath,
+            String oldImagePath,
+            String newImagePath) {
+        boolean changed = false;
+        if (oldFrontendPath.equals(game.getFrontendPath())) {
+            game.setFrontendPath(newFrontendPath);
+            changed = true;
+        }
+        if (oldImagePath.equals(game.getImagePath())) {
+            game.setImagePath(newImagePath);
+            changed = true;
+        }
+        if (changed) gameRepository.save(game);
     }
 
     private void createModeIfMissing(

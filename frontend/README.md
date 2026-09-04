@@ -1,16 +1,12 @@
-# React + Vite
+# GamePlatform Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+前端目前使用一般 HTML、CSS 與 JavaScript，各功能頁面位於 `src/pages`。
 
-Currently, two official plugins are available:
+- 主畫面：`src/pages/Chat/chatclient.html`
+- 遊戲大廳：`src/pages/Lobby/jquery_lobby.html`
+- 房間等待區：`src/pages/Lobby/waiting_room.html`
+- 遊戲頁面：`src/pages/Games`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+開發時可使用 VS Code Live Server 開啟 `index.html`；專案不使用 React、Vite 或 npm 套件。
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+若日後將前端搬入 Spring Boot，請把頁面與素材放入 `src/main/resources/static`，並由 Spring Boot 直接提供靜態檔案。

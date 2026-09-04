@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遊戲大廳 (全動態資料版)</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 jQuery 核心 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-full flex flex-col items-center py-10 font-sans overflow-y-auto">
+
+    <!-- ================= 主畫面區 ================= -->
+    <div class="w-full max-w-5xl px-8 flex flex-col items-center">
+        
+        <!-- 頂部分頁按鈕區塊 -->
+        <div class="flex justify-center gap-4 mb-8 bg-slate-900 p-2 rounded-full border border-slate-700">
+            <button id="tabCreateBtn" class="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-full shadow-lg transition active:scale-95">
+                ➕ 新建房間
+            </button>
+            <button id="tabListBtn" class="px-8 py-2.5 bg-transparent text-slate-400 font-bold rounded-full hover:text-white transition active:scale-95">
+                📡 現有房間
+            </button>
+            <button id="tabActiveBtn" class="px-8 py-2.5 bg-transparent text-slate-400 font-bold rounded-full hover:text-white transition active:scale-95">
+                🎮 進行中房間
+            </button>
+        </div>
+
+        <!-- 區塊 A：新建房間 (預設顯示) -->
+        <div id="createRoomSection" class="w-full animate-[fadeIn_0.3s_ease-out]">
+            <h1 class="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                🎮 選擇你的遊戲
+            </h1>
+            
+            <!-- 動態遊戲方格容器 -->
+            <div id="gameGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div class="col-span-full text-center text-slate-500 py-10">
+                    正在從伺服器載入遊戲列表...
+                </div>
+            </div>
+        </div>
+
+        <!-- 區塊 B：現有房間列表 (預設隱藏 hidden) -->
+        <div id="roomListSection" class="hidden w-full max-w-3xl animate-[fadeIn_0.3s_ease-out]">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
+                        <span>📡</span> 等待加入的房間
+                    </h2>
+                    <button id="refreshRoomsBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition">
+                        🔄 重新整理
+                    </button>
+                </div>
+                
+                <!-- 列表容器 -->
+                <div id="roomListContainer" class="flex flex-col gap-3">
+                    <div class="text-center text-slate-500 py-4">載入中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 區塊 C：進行中房間列表 (預設隱藏 hidden) -->
+        <div id="activeRoomSection" class="hidden w-full max-w-3xl animate-[fadeIn_0.3s_ease-out]">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
+                        <span>🎮</span> 你正在進行中的遊戲
+                    </h2>
+                    <button id="refreshActiveBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition">
+                        🔄 重新整理
+                    </button>
+                </div>
+                
+                <!-- 進行中列表容器 -->
+                <div id="activeRoomContainer" class="flex flex-col gap-3">
+                    <div class="text-center text-slate-500 py-4">載入中...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================= 遊戲設定彈跳視窗 ================= -->
+    <div id="gameModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-96 shadow-2xl">
+            <h2 class="text-xl font-bold mb-5 text-slate-100 flex items-center gap-2">
+                <span>⚙️</span> 設定「<span id="modalGameTitle"></span>」
+            </h2>
+            <div class="mb-6">
+                <label class="block text-sm text-slate-400 mb-2">房間模式</label>
+                <select id="roomModeSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition">
+                </select>
+            </div>
+            <!-- 遊戲人數選單 -->
+            <div class="mb-6">
+                <label class="block text-sm text-slate-400 mb-2">遊玩人數</label>
+                <select id="playerCountSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition">
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-800">
+                <button id="closeModalBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition">取消</button>
+                <button id="confirmCreateBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition">開始建立</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= jQuery 互動邏輯 ================= -->
+    <script>
+        $(document).ready(function() {
+            const apiHost = '';
+            let availableGames = []; 
+            let selectedGameId = null;
+            let autoRefreshInterval = null;
+
+            // 1. 分頁切換邏輯
+            $('#tabCreateBtn').on('click', function() {
+                $(this).removeClass('bg-transparent text-slate-400').addClass('bg-indigo-600 text-white shadow-lg');
+                $('#tabListBtn, #tabActiveBtn').removeClass('bg-indigo-600 text-white shadow-lg').addClass('bg-transparent text-slate-400');
+                $('#createRoomSection').removeClass('hidden');
+                $('#roomListSection, #activeRoomSection').addClass('hidden');
+                
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            });
+
+            $('#tabListBtn').on('click', function() {
+                $(this).removeClass('bg-transparent text-slate-400').addClass('bg-indigo-600 text-white shadow-lg');
+                $('#tabCreateBtn, #tabActiveBtn').removeClass('bg-indigo-600 text-white shadow-lg').addClass('bg-transparent text-slate-400');
+                $('#roomListSection').removeClass('hidden');
+                $('#createRoomSection, #activeRoomSection').addClass('hidden');
+                
+                fetchWaitingRooms(); 
+                
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+                autoRefreshInterval = setInterval(fetchWaitingRooms, 3000);
+            });
+
+            $('#tabActiveBtn').on('click', function() {
+                $(this).removeClass('bg-transparent text-slate-400').addClass('bg-indigo-600 text-white shadow-lg');
+                $('#tabCreateBtn, #tabListBtn').removeClass('bg-indigo-600 text-white shadow-lg').addClass('bg-transparent text-slate-400');
+                $('#activeRoomSection').removeClass('hidden');
+                $('#createRoomSection, #roomListSection').addClass('hidden');
+                
+                fetchActiveRooms();
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            });
+
+            // 2. 抓取遊戲總表並動態渲染
+            function fetchGamesInfo() {
+                $.ajax({
+                    url: apiHost + '/api/lobby/games-info',
+                    type: 'GET',
+                    success: function(res) {
+                        if (res.success) {
+                            availableGames = res.games;
+                            renderGameCards(); 
+                        }
+                    },
+                    error: function() {
+                        $('#gameGrid').html('<div class="col-span-full text-center text-red-400 py-10">無法連線到伺服器，請確認 Spring Boot 是否啟動。</div>');
+                    }
+                });
+            }
+
+            function renderGameCards() {
+                const $grid = $('#gameGrid');
+                $grid.empty();
+
+                if (availableGames.length === 0) {
+                    $grid.html('<div class="col-span-full text-center text-slate-500 py-10">目前沒有可用的遊戲！</div>');
+                    return;
+                }
+
+                availableGames.forEach(game => {
+                    let imageHtml = '';
+                    if (game.imagePath) {
+                        imageHtml = `<img src="${game.imagePath}" alt="${game.gameName}" class="w-16 h-16 object-contain mb-4" onerror="this.outerHTML='<div class=\\'text-5xl mb-4\\'>🎮</div>'">`;
+                    } else {
+                        imageHtml = `<div class="text-5xl mb-4">🎮</div>`;
+                    }
+
+                    const cardHtml = `
+                        <div data-game-id="${game.gameId}" class="game-card flex flex-col items-center text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500 rounded-xl p-6 cursor-pointer transition transform hover:-translate-y-1 shadow-lg shadow-black/20">
+                            ${imageHtml}
+                            <h3 class="font-bold text-xl text-slate-100">${game.gameName}</h3>
+                            <p class="text-slate-400 text-sm mt-2 line-clamp-2">${game.description || '經典對戰遊戲'}</p>
+                        </div>
+                    `;
+                    $grid.append(cardHtml);
+                });
+            }
+
+            // 3. 彈窗設定邏輯
+            $('#gameGrid').on('click', '.game-card', function() {
+                const gameId = $(this).data('game-id');
+                selectedGameId = gameId;
+                const gameData = availableGames.find(g => g.gameId === gameId);
+
+                $('#modalGameTitle').text(gameData.gameName);
+
+                const $modeSelect = $('#roomModeSelect');
+                $modeSelect.empty();
+                
+                if(gameData.modes && gameData.modes.length > 0) {
+                    gameData.modes.forEach(mode => {
+                        $modeSelect.append(`<option value="${mode.modeCode}">${mode.modeName}</option>`);
+                    });
+                } else {
+                    $modeSelect.append(`<option value="">無可用模式</option>`);
+                }
+
+                $modeSelect.off('change').on('change', function() {
+                    const selectedModeCode = $(this).val();
+                    const modeInfo = gameData.modes.find(m => m.modeCode === selectedModeCode);
+                    
+                    const $playerSelect = $('#playerCountSelect');
+                    $playerSelect.empty();
+                    
+                    if (modeInfo) {
+                        if (modeInfo.minPlayers === modeInfo.maxPlayers) {
+                            $playerSelect.append(`<option value="${modeInfo.maxPlayers}">${modeInfo.maxPlayers} 人 (人數固定)</option>`);
+                        } else {
+                            for (let i = modeInfo.minPlayers; i <= modeInfo.maxPlayers; i++) {
+                                $playerSelect.append(`<option value="${i}">${i} 人</option>`);
+                            }
+                        }
+                    }
+                });
+
+                $modeSelect.trigger('change');
+                $('#gameModal').removeClass('hidden');
+            });
+
+            $('#closeModalBtn').on('click', function() {
+                $('#gameModal').addClass('hidden');
+                selectedGameId = null;
+            });
+
+            // 4. 建立房間 API 串接
+            $('#confirmCreateBtn').on('click', function() {
+                const currentAccount = localStorage.getItem("account") || "test_account_01";
+                const modeCode = $('#roomModeSelect').val(); 
+                const playerCount = $('#playerCountSelect').val(); 
+                
+                if (!modeCode) {
+                    alert('請選擇一個有效的遊戲模式！');
+                    return;
+                }
+
+                const $btn = $(this);
+                $btn.prop('disabled', true).text('建立中...');
+
+                $.ajax({
+                    url: apiHost + '/api/lobby/create-room',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ 
+                        gameId: selectedGameId, 
+                        modeCode: modeCode, 
+                        playerCount: parseInt(playerCount), 
+                        hostAccount: currentAccount 
+                    }),
+                    success: function(response) {
+                        if (response.success) {
+                            window.location.href = `waiting_room.html?room=${response.roomId}`;
+                        } else {
+                            alert('建立失敗：' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('伺服器連線失敗，請檢查 Spring Boot 是否有啟動！');
+                    },
+                    complete: function() { 
+                        $btn.prop('disabled', false).text('開始建立'); 
+                    }
+                });
+            });
+
+            // 5. 取得等待中的房間列表
+            function fetchWaitingRooms() {
+                $.ajax({
+                    url: apiHost + '/api/lobby/rooms',
+                    type: 'GET',
+                    success: function(response) {
+                        const $container = $('#roomListContainer');
+                        $container.empty();
+                        
+                        const availableRooms = response.rooms.filter(room => {
+                            const currentPlayers = room.players ? room.players.length : 0;
+                            return room.status === 'WAITING' && currentPlayers < room.maxPlayers;
+                        });
+                        
+                        if (availableRooms.length === 0) {
+                            $container.append('<div class="text-center text-slate-500 py-4">目前沒有可以加入的房間，自己開一局吧！</div>');
+                            return;
+                        }
+                        
+                        availableRooms.forEach(room => {
+                            const gameData = availableGames.find(g => g.gameId === room.gameId);
+                            const displayGameName = gameData ? gameData.gameName : '未知遊戲';
+                            
+                            let displayModeName = '未知模式';
+                            if (gameData && gameData.modes) {
+                                const modeInfo = gameData.modes.find(m => m.modeId === room.modeId);
+                                if (modeInfo) {
+                                    displayModeName = modeInfo.modeName;
+                                }
+                            }
+                            
+                            const currentPlayers = room.players ? room.players.length : 0;
+
+                            const buttonHtml = `
+                                <button onclick="joinRoom('${room.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition active:scale-95 shadow-md shadow-emerald-900/50">
+                                    加入遊戲
+                                </button>
+                            `;
+
+                            const roomHtml = `
+                                <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 flex justify-between items-center hover:border-indigo-500 transition">
+                                    <div>
+                                        <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded mr-2">${displayGameName}</span>
+                                        <span class="font-bold text-slate-200">房主: ${room.hostAccount}</span>
+                                        <p class="text-slate-400 text-sm mt-1">模式: ${displayModeName} (${room.minPlayers}~${room.maxPlayers}人)</p>
+                                        <p class="text-cyan-400 text-sm font-medium mt-1">👥 房間人數: ${currentPlayers} / ${room.maxPlayers} 人</p>
+                                        <p class="text-slate-500 text-xs mt-1">房號: ${room.id}</p>
+                                    </div>
+                                    ${buttonHtml}
+                                </div>
+                            `;
+                            $container.append(roomHtml);
+                        });
+                    },
+                    error: function() {
+                        $('#roomListContainer').html('<div class="text-center text-red-400 py-4">無法取得房間列表，請確認伺服器連線。</div>');
+                    }
+                });
+            }
+
+            $('#refreshRoomsBtn').on('click', function() {
+                fetchWaitingRooms();
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = setInterval(fetchWaitingRooms, 3000);
+                }
+            });
+
+            // 6. 取得進行中的房間列表（動態對應資料庫路徑）
+            function fetchActiveRooms() {
+                const currentAccount = localStorage.getItem("account") || "test_account_01";
+                $.ajax({
+                    url: apiHost + '/api/lobby/my-active-rooms?account=' + encodeURIComponent(currentAccount),
+                    type: 'GET',
+                    success: function(response) {
+                        const $container = $('#activeRoomContainer');
+                        $container.empty();
+                        
+                        if (!response.success || !response.rooms || response.rooms.length === 0) {
+                            $container.append('<div class="text-center text-slate-500 py-4">目前沒有進行中的遊戲！</div>');
+                            return;
+                        }
+                        
+                        response.rooms.forEach(room => {
+                            const gameData = availableGames.find(g => g.gameId === room.gameId);
+                            const displayGameName = gameData ? gameData.gameName : '未知遊戲';
+                            
+                            // 🌟 透過資料庫中的 frontend_path 動態組合絕對根目錄路徑
+                            let frontendUrl = '';
+                            const rawPath = (gameData && (gameData.frontendPath || gameData.frontend_path)) || '';
+                            
+                            if (rawPath) {
+                                frontendUrl = rawPath.startsWith('/') ? rawPath : '/' + rawPath;
+                            } else {
+                                frontendUrl = '/pages/Games/poker/poker_client.html';
+                            }
+
+                            const roomHtml = `
+                                <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 flex justify-between items-center hover:border-indigo-500 transition">
+                                    <div>
+                                        <span class="text-xs bg-emerald-600 text-white px-2 py-1 rounded mr-2">進行中</span>
+                                        <span class="font-bold text-slate-200">${displayGameName}</span>
+                                        <p class="text-slate-400 text-sm mt-1">房號: ${room.id}</p>
+                                    </div>
+                                    <button onclick="window.location.href='${frontendUrl}?room=${room.id}'" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition active:scale-95 shadow-md">
+                                        返回遊戲
+                                    </button>
+                                </div>
+                            `;
+                            $container.append(roomHtml);
+                        });
+                    },
+                    error: function() {
+                        $('#activeRoomContainer').html('<div class="text-center text-red-400 py-4">無法取得進行中的房間。</div>');
+                    }
+                });
+            }
+
+            $('#refreshActiveBtn').on('click', function() {
+                fetchActiveRooms();
+            });
+
+            // 7. 加入房間 API 串接
+            window.joinRoom = function(roomId) {
+                const currentAccount = localStorage.getItem("account") || "test_account_02";
+                $.ajax({
+                    url: apiHost + '/api/lobby/join-room',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ roomId: roomId, playerAccount: currentAccount }),
+                    success: function(res) {
+                        if (res.success) {
+                            window.location.href = `waiting_room.html?room=${roomId}`;
+                        } else {
+                            alert('加入失敗：' + res.message);
+                        }
+                    }
+                });
+            };
+
+            // 初始化載入
+            fetchGamesInfo();
+        });
+    </script>
+</body>
+</html>

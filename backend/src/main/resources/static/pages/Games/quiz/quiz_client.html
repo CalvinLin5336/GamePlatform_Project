@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+	<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>限時問答小遊戲</title>
+	<!-- Quill.js本地樣式檔 -->
+	<link href="./libs/quill/quill.snow.css" rel="stylesheet">
+	<!-- 自訂樣式檔 -->
+	<link href="./css/style.css" rel="stylesheet">
+	</head>
+	<body>
+	
+	<div class="container">	
+	  <div class="nav-tabs">
+	  	<button class="active" onclick="switchTab('game',event)">🎮 問答挑戰(20題)</button>
+	  	<button onclick="switchTab('reader', event)">📖 完整閱讀區</button>
+	  	<button onclick="switchTab('admin',event)">⚙題目管理維護</button>
+	  	<button onclick="switchTab('leaderboard',event)">🏆 排行榜</button>
+	  </div>
+	  
+	  <!-- 1. 遊戲挑戰分頁 -->
+	  <div id="game-tab" class="tab-content active">
+	 	<div id="player-setup" class="card" style="text-align: center;">
+	 		<h2>歡迎參加限時問答挑戰</h2>
+	 		<p>系統將隨機抽選 20題進行挑戰，準備好了嗎?</p>
+	 		<input type="text" id="player-name" placeholder="請輸入您的暱稱" style="padding: 10px; width: 60%; font-size:16px; margin-bottom: 15px;"><br>
+	 		<button class="btn btn-primary" style="font-size: 18px; padding: 10px 30px;" onclick="startQuiz()">開始答題</button>	
+	 	</div> 
+	 	
+	 	<div id="quiz-area" style="display: none;">
+	 	  <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
+	 			<h3>進度:<span id="current-index">1</span> / <span id="total-count">20</span></h3>
+	 			<div class="timer-badge">⏱剩餘時間: <span id ="timer-count">15</span> 秒</div>
+	 	  </div>
+	 	
+		  <div class="card">
+		 		<div id="question-title-display" style="font-size: 18px; margin-bottom: 20px"></div>
+		 		<div id="options-display"></div>
+		 		<button class="btn btn-primary" style="width: 100%; margin-top: 15px; font-size:16px" onclick="nextQuestion()">下一題 / 送出本題</button>
+		  </div>
+		</div>
+		
+			 
+	 	<!-- 遊戲結束成績單 -->  
+		<div id="report-card" style="display: none;">
+		  <div class="report-header">
+		  	<h2>遊戲結束 - 綜合成績單</h2>
+		  	<h3>得分:<span id="final-score" style="color: #007bff; font-size: 32px;">0</span> 分</h3>
+		  	<p>總題數:<span id="report-total">20</span> 題 | 答對:<span id="report-correct">0</span> 題</p>
+		  	<button class="btn btn-success" onclick="resetQuiz()">再玩一次</button>		  	
+		  </div>
+		  
+		  <h3>📋 詳細解答與說明分析</h3>
+		  <div id="report-details-container"></div>	
+		</div>
+	  </div>
+	  
+	  <!-- 2.完整閱讀區 -->
+	  <div id="reader-tab" class="tab-content">
+	  		<h3>📖 題庫完整閱讀區(包含題目、選項與詳細說明)</h3>
+	  		<button class="btn btn-primary" style="margin-bottom: 15px;" onclick="loadReaderData()">重新整理列表</button>
+	  		<div id="reader-container"></div>
+	  </div>
+	  
+	  <!-- 3.後端管理分頁 -->
+	  <div id="admin-tab" class="tab-content">
+	  	<div class="card">
+	  		<h3 id="form-title">➕ 新增問答題</h3>
+	  		<input type="hidden" id="edit-question-id">
+	  		  		
+	  		<label><b>1. 題目敘述 (HTML 富文本):</b></label>
+	  		<div id="editor-title" class="editor-container"></div>
+	  		
+	  		<label><b>2. 解答說明 (HTML 富文本):</b></label>
+	  		<div id="editor-explanation" class="editor-container"></div>	
+	  		
+	  		<div style="margin-bottom: 15px;">
+	  			<label><b>3. 限時秒數:</b></label>
+	  			<input type="number" id="admin-time-limit" value="15" style="padding: 6px; width: 100px"> 秒
+	  		</div>
+	  		
+	  		<label><b>4. 選項清單(勾選者代表為正確答案):</b></label>
+	  		<div id="admin-options-wrapper"></div>
+	  		<button class="btn btn-warning btn-sm" onclick="addAdminOptionRow()" style="margin-bottom: 15px;">+ 新增選項</button>
+	  		<div>
+	  			<button class="btn btn-success" onclick="saveQuestion()">💾 儲存題目</button>
+	  			<button class="btn btn-danger" onclick="resetAdminForm()">取消 / 重設</button>
+	    	</div>		  
+	    </div>
+	    
+	    <h3>📚 現有題庫列表</h3>
+	    <table>
+	    	<thead>
+	    		<tr>
+	    			<th style="width: 8%;">ID</th>
+	    			<th style="width: 45%;">題目內容</th>
+	    			<th style="width: 15%;">限時</th>
+	    			<th style="width: 12%;">選項數</th>
+	    			<th style="width: 20%;">操作</th>	    			
+	    		</tr>
+	    	</thead>
+	    	<tbody id="admin-table-body"></tbody>
+	    </table>
+	  </div>	
+	  
+	  <!-- 4. 排行榜分數 -->
+	  <div id="leaderboard-tab" class="tab-content">
+	  	<h3>🏆玩家最高分排行榜(Top 10)</h3>	  
+ 		<table>
+		  	<thead>
+		  		<tr>
+		  			<th>名次</th>
+		  			<th>玩家名稱</th>
+		  			<th>最高得分</th>
+		  		</tr>
+		  	</thead>
+		  	<tbody id="leaderboard-body"></tbody>	  	
+		  </table>
+  	  </div>
+	</div>
+	
+	<!-- Quill.js 本地腳本檔 -->
+	<script src="./libs/quill/quill.js"></script>
+	<!-- 實務邏輯 JS -->
+	<script src="./js/app.js"></script>
+	</body>
+</html>

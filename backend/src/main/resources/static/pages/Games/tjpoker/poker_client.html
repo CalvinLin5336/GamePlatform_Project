@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>田忌撲克</title>
+  <link rel="stylesheet" href="poker.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <script src="poker.js" defer></script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="game-header panel">
+      <div>
+        <p class="eyebrow">簡易遊戲平台</p>
+        <h1>田忌撲克</h1>
+      </div>
+      <div class="header-meta"><span class="round-key"><i class="key-one"></i>第1輪 <i class="key-two"></i>第2輪 <i class="key-three"></i>第3輪</span><div id="connectionBadge" class="badge">尚未加入</div></div>
+    </header>
+
+    <section id="lobby" class="panel lobby">
+      <h2>選擇遊戲方式</h2>
+      <p>每人 15 張牌，第一輪選 3 張，第二、三輪各選 5 張，留下 2 張棄牌。</p>
+      <label class="player-name-label">玩家名稱
+        <input id="nameInput" value="玩家" maxlength="20">
+      </label>
+      <div class="mode-grid">
+        <button id="computerButton" class="mode-card"><span>♠</span><strong>對戰電腦</strong></button>
+        <div class="mode-card room-card">
+          <span>♡</span><strong>玩家對戰</strong>
+          <label>房間編號<input id="roomInput" value="room-1" maxlength="30"></label>
+          <button id="playerButton">加入房間</button>
+        </div>
+      </div>
+      <p id="lobbyMessage" class="message"></p>
+    </section>
+
+    <section id="game" class="hidden">
+      <div class="status-grid">
+        <article id="player1Seat" class="seat-card"><span id="player1Name">玩家一</span><strong id="player1Status">等待加入</strong></article>
+        <article class="round-status">
+          <strong id="roomLabel">房間</strong>
+          <span id="gameMessage">等待玩家</span>
+        </article>
+        <article id="player2Seat" class="seat-card"><span id="player2Name">玩家二</span><strong id="player2Status">等待加入</strong></article>
+      </div>
+
+      <section class="table-layout">
+        <aside class="rank-guide rank-guide-left">
+          <strong>三張牌</strong>
+          <span>三條</span><i>＞</i><span>一對</span><i>＞</i><span>高牌</span>
+        </aside>
+        <aside class="rank-guide rank-guide-right">
+          <strong>五張牌</strong>
+          <span>同花順</span><i>＞</i><span>鐵支</span><i>＞</i><span>葫蘆</span><i>＞</i><span>同花</span><i>＞</i><span>順子</span><i>＞</i><span>三條</span><i>＞</i><span>兩對</span><i>＞</i><span>一對</span><i>＞</i><span>高牌</span>
+        </aside>
+        <section class="play-area">
+          <div class="round-title panel">
+            <span class="round-kicker">目前回合</span><h2 id="roundTitle">第一輪</h2>
+            <p id="roundHint">請選擇 3 張牌</p>
+            <p id="actionMessage" class="message"></p>
+          </div>
+
+          <section id="resultPanel" class="result-panel hidden">
+            <div id="resultSymbol" class="result-symbol">✓</div>
+            <div><span id="resultCaption" class="result-caption">本輪結果</span><h2 id="winnerTitle">遊戲結果</h2><div id="roundResults"></div></div>
+          </section>
+
+          <div class="player-preview-grid">
+            <article id="player1PreviewPanel" class="player-preview panel">
+              <header><strong id="player1PreviewName">玩家一</strong><span id="player1Count">0 / 3</span></header>
+              <div id="player1Type" class="hand-type">張數不足</div>
+              <div id="player1Preview" class="preview-cards"></div>
+            </article>
+            <article id="player2PreviewPanel" class="player-preview panel">
+              <header><strong id="player2PreviewName">玩家二</strong><span id="player2Count">0 / 3</span></header>
+              <div id="player2Type" class="hand-type">--</div>
+              <div id="player2Preview" class="preview-cards"></div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel hand-panel">
+        <div class="hand-heading">
+          <div><p class="eyebrow">玩家手牌</p><h2 id="seatLabel">玩家</h2></div>
+          <p id="handInstruction">點擊手牌放入本輪出牌區</p>
+        </div>
+        <div id="hand" class="hand"></div>
+        <div class="actions">
+          <button id="sortButton" class="secondary">切換排序</button>
+          <button id="clearButton" class="secondary">清空出牌區</button>
+          <button id="autoButton" class="secondary">自動選牌</button>
+          <button id="confirmButton" class="primary">確認出牌</button>
+          <button id="leaveButton" class="danger">離開遊戲</button>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

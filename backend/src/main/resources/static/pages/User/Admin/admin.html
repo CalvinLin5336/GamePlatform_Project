@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Platform - User Management</title>
+    <link rel="stylesheet" href="./css/admin.css">
+</head>
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-mark">GP</div>
+                <div>
+                    <strong>GAME PLATFORM</strong>
+                    <span>ADMIN CONTROL</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="後台功能">
+                <a class="nav-item" href="./admin.html?tab=dashboard" data-page="dashboard">
+                    <span class="nav-icon">▦</span><span>Dashboard</span>
+                </a>
+                <a class="nav-item active" href="./admin.html?tab=users" data-page="users">
+                    <span class="nav-icon">◉</span><span>Users</span>
+                </a>
+                <a class="nav-item" href="./admin.html?tab=logs" data-page="logs">
+                    <span class="nav-icon">≡</span><span>Operation Logs</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="operator-card">
+                    <div class="operator-avatar">A</div>
+                    <div>
+                        <strong id="operatorName">Admin</strong>
+                        <span id="operatorAccount">ADMIN</span>
+                    </div>
+                </div>
+                <a class="logout-link" href="#" id="backLobbyBtn">← 回到 Lobby</a>
+                <button class="logout-link logout-button" type="button" id="logoutBtn">↪ 登出</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div>
+                    <span class="topbar-kicker">USER MODULE</span>
+                    <h1 id="pageTitle">Users</h1>
+                </div>
+                <div class="topbar-status"><span class="status-dot"></span><span>ADMIN ACCESS</span></div>
+            </header>
+
+            <section id="dashboardPage" class="page-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-kicker">OVERVIEW</span>
+                        <h2>Platform Dashboard</h2>
+                        <p>查看目前 User module 的基本統計資料。</p>
+                    </div>
+                    <button class="secondary-btn" id="refreshDashboardBtn" type="button">↻ 重新整理</button>
+                </div>
+                <div class="stats-grid">
+                    <article class="stat-card accent-purple"><span>Total Users</span><strong id="totalUsers">—</strong><small>全部使用者</small></article>
+                    <article class="stat-card accent-cyan"><span>Active Users</span><strong id="activeUsers">—</strong><small>目前啟用</small></article>
+                    <article class="stat-card accent-rose"><span>Disabled Users</span><strong id="disabledUsers">—</strong><small>目前停用</small></article>
+                    <article class="stat-card accent-gold"><span>Admin Users</span><strong id="adminUsers">—</strong><small>管理員數量</small></article>
+                    <article class="stat-card accent-green stat-wide"><span>Today Operations</span><strong id="todayOperations">—</strong><small>今日操作次數</small></article>
+                </div>
+                <div class="info-card">
+                    <div>
+                        <span class="section-kicker">ACCESS</span>
+                        <h3>Admin module ready</h3>
+                        <p>目前 Dashboard、User CRUD 與 Operation Logs 已對接後端 API。</p>
+                    </div>
+                    <a class="primary-link" href="./admin.html?tab=users">管理使用者 →</a>
+                </div>
+            </section>
+
+            <section id="usersPage" class="page-section active-page">
+                <div class="section-heading users-heading">
+                    <div>
+                        <span class="section-kicker">USER MANAGEMENT</span>
+                        <h2>Users</h2>
+                        <p>完整管理使用者帳號、角色與狀態。</p>
+                    </div>
+                    <button class="primary-btn compact" id="createUserBtn" type="button">＋ 新增使用者</button>
+                </div>
+
+                <div class="toolbar">
+                    <label class="search-box">
+                        <span>⌕</span>
+                        <input id="userSearchInput" type="search" placeholder="搜尋 Account / Username">
+                    </label>
+                    <select id="roleFilter">
+                        <option value="ALL">全部角色</option>
+                        <option value="PLAYER">PLAYER</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                    <select id="statusFilter">
+                        <option value="ALL">全部狀態</option>
+                        <option value="Active">Active</option>
+                        <option value="Disabled">Disabled</option>
+                    </select>
+                    <button class="secondary-btn" id="refreshUsersBtn" type="button">↻</button>
+                </div>
+
+                <div class="table-card">
+                    <div class="table-header">
+                        <span id="userCountText">Users</span>
+                        <span id="userTableMessage" class="table-message"></span>
+                    </div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                            <tr><th>ID</th><th>Account</th><th>Username</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr><td colspan="7" class="empty-cell">載入中…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="logsPage" class="page-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-kicker">AUDIT TRAIL</span>
+                        <h2>Operation Logs</h2>
+                        <p>檢視 User module 的建立、更新、刪除與登入紀錄。</p>
+                    </div>
+                    <button class="secondary-btn" id="refreshLogsBtn" type="button">↻ 重新整理</button>
+                </div>
+                <div class="table-card">
+                    <div class="table-header"><span id="logCountText">Operation Logs</span></div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                            <tr><th>Time</th><th>Account</th><th>Action</th><th>Target</th><th>Role</th><th>Description</th></tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                <tr><td colspan="6" class="empty-cell">載入中…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="userModal" class="modal-backdrop" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-header">
+                <div><span class="section-kicker">USER</span><h3 id="modalTitle">新增使用者</h3></div>
+                <button class="icon-btn" type="button" id="closeModalBtn">×</button>
+            </div>
+
+            <form id="userForm" novalidate>
+                <input id="editingUserId" type="hidden">
+                <div class="form-grid">
+                    <label class="field"><span>Account</span><input id="userAccount" maxlength="50" required></label>
+                    <label class="field"><span>Username</span><input id="userUsername" maxlength="100" required></label>
+                    <label class="field full"><span>Password <em id="passwordHint">新增時必填，至少 8 個字元</em></span><input id="userPassword" type="password" maxlength="100" autocomplete="new-password"></label>
+                    <label class="field"><span>Role</span><select id="userRole"><option value="PLAYER">PLAYER</option><option value="ADMIN">ADMIN</option></select></label>
+                    <label class="field"><span>Status</span><select id="userStatus"><option value="Active">Active</option><option value="Disabled">Disabled</option></select></label>
+                    <label class="field full"><span>Avatar URL <em>optional</em></span><input id="userAvatar" type="url" maxlength="500"></label>
+                    <label class="field full"><span>Description <em>optional</em></span><textarea id="userDescription" maxlength="500" rows="3"></textarea></label>
+                </div>
+                <div id="modalMessage" class="message" role="alert"></div>
+                <div class="modal-actions">
+                    <button class="secondary-btn" type="button" id="cancelModalBtn">取消</button>
+                    <button class="primary-btn compact" type="submit" id="saveUserBtn">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="../api/userApi.js"></script>
+    <script src="./js/dashboard.js"></script>
+    <script src="./js/users.js"></script>
+    <script src="./js/operation-logs.js"></script>
+</body>
+</html>

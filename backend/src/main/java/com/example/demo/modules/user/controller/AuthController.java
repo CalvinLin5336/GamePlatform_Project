@@ -35,7 +35,7 @@ public class AuthController {
 	public UserResponse register(@RequestBody RegisterRequest request) {
 		String avatar = request.avatar();
 		if (avatar == null || avatar.isBlank()) {
-			avatar = "/src/pages/User/Player/avatar/user.png";
+			avatar = "/pages/User/Player/avatar/user.png";
 		}
 
 		UserRequest userRequest = new UserRequest(request.account(), request.password(), request.username(),

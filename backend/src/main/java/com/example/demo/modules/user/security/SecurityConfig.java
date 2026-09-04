@@ -33,6 +33,12 @@ public class SecurityConfig {
             // REST API 不使用 CSRF
             .csrf(csrf -> csrf.disable())
 
+            // 主畫面以同來源 iframe 載入 Lobby、User、Board 等頁面。
+            // 仍禁止外部網站嵌入，避免 clickjacking。
+            .headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions.sameOrigin())
+            )
+
             // JWT 不使用 Session
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
