@@ -20,7 +20,7 @@ public class JwtService {
 
     // Token 有效時間：1 小時
     private static final long EXPIRATION_TIME =
-            1000 * 60 * 60;
+            1000 * 60 * 60 * 24;
 
     public JwtService(@Value("${jwt.secret}") String secretKey) {
         this.key = Keys.hmacShaKeyFor(
