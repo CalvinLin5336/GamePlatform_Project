@@ -1,8 +1,6 @@
 package com.example.demo.modules.game.turing.util;
 
-import com.example.demo.modules.game.turing.model.TuringQuestion;
-import com.example.demo.modules.game.turing.model.TuringQuestionCondition;
-import com.example.demo.modules.game.turing.repository.TuringQuestionRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,8 +10,7 @@ import java.util.*;
 @Component
 public class PuzzleGenerator {
 
-    @Autowired
-    private TuringQuestionRepository turingQuestionRepository;
+
 
     private static final int[] MAP_12 = {7, 2, 9, 0, 4, 11, 1, 6, 3, 10, 5, 8};
     private static final int[] MAP_15 = {11, 4, 0, 8, 14, 2, 9, 13, 5, 1, 7, 12, 6, 3, 10};
@@ -307,32 +304,6 @@ public class PuzzleGenerator {
         public List<ActiveCondition> activeConditions;
     }
     
-    @Transactional
-    public void overwriteLivePuzzle(PuzzleResult dynamicPuzzle) throws Exception {
-        
-        // 1. 清空所有舊題目與條件，並加上 flush 強制立刻執行 Delete SQL
-        turingQuestionRepository.deleteAll();
-        turingQuestionRepository.flush();
-        
-        // 2. 建立全新的題目 (⚠️ 絕對不要加上 q.setId(1)，讓資料庫自動派發 ID！)
-        TuringQuestion q = new TuringQuestion();
-        q.setAnsB(dynamicPuzzle.blueAns);
-        q.setAnsY(dynamicPuzzle.yellowAns);
-        q.setAnsP(dynamicPuzzle.purpleAns);
-        q.setKCount(dynamicPuzzle.cardIds.size());
-        
-        q.setConditions(new ArrayList<>());
-        
-        for (ActiveCondition cond : dynamicPuzzle.activeConditions) {
-            TuringQuestionCondition qc = new TuringQuestionCondition();
-            qc.setConditionId(cond.cardId);
-            qc.setSubIndex((cond.conditionIndex % 10) + 1); 
-            qc.setDescription("Dynamic Criteria for Card " + cond.cardId);
-            qc.setQuestion(q); // 關聯主表
-            q.getConditions().add(qc);
-        }
-        
-        // 3. 全新寫入！並強制刷新進資料庫，避免狀態延遲
-        turingQuestionRepository.saveAndFlush(q);
-    }
+    
+    
 }

@@ -3,6 +3,8 @@ package com.example.demo.modules.game.turing.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class Puzzle {
 	private Integer puzzleId;
     private String difficulty; 
@@ -24,7 +26,8 @@ public class Puzzle {
 
     public String getDifficulty() { return difficulty; }
     public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
-
+    
+    @JsonIgnore
     public Code getSecretCode() { return secretCode; }
     public void setSecretCode(Code secretCode) { this.secretCode = secretCode; }
 

@@ -1,6 +1,7 @@
 /* global $ */
 const API_BASE = '/api/game'; 
 let currentAccount = "訪客";
+let currentRoomId = null; 
 let diffChar = 'B'; 
 
 let activePuzzle = null;
@@ -11,51 +12,112 @@ let totalTests = 0;
 
 let gameHistoryRounds = [];
 let cardLabelsCache = [];
+let isProposalLocked = false; 
 
 $(document).ready(function() {
     currentAccount = localStorage.getItem("account") || localStorage.getItem("username") || "訪客";
     $('#playerName').text(currentAccount);
 
     const urlParams = new URLSearchParams(location.search);
-    const difficultyParam = urlParams.get('difficulty') || urlParams.get('mode') || '4'; 
+    currentRoomId = urlParams.get('room') || ""; 
     
-    if (difficultyParam === '4') diffChar = 'A';
-    else if (difficultyParam === '6') diffChar = 'C';
-    else diffChar = 'B'; 
+    if (currentRoomId) {
+        $('#roomIdDisplay').text(currentRoomId);
+    }
 
     initNotepad();
 
+    // 🌟 啟用 jQuery UI 的 draggable 功能，讓兩個彈窗都可以被拖曳
+    $('#guessCard').draggable();
+    $('#resultCard').draggable();
+
     $('#btnNextRound').on('click', handleNextRound);
-    $('#btnSubmitDecode').on('click', handleSubmitDecode);
+    
+    // 點擊「破解密碼！」按鈕，彈出輸入答案的彈窗
+    $('#btnSubmitDecode').on('click', function() {
+        const current = getCurrentProposal();
+        $('#finalBlue').val(current.blue);
+        $('#finalYellow').val(current.yellow);
+        $('#finalPurple').val(current.purple);
+        
+        $('#finalGuessModal').removeClass('hidden');
+    });
+
+    // 彈窗內的「確認提交」按鈕事件
+    $('#confirmFinalSubmit').on('click', function() {
+        if (!confirm("確定要用這組密碼作為最終答案送出嗎？")) return;
+
+        $('#finalGuessModal').addClass('hidden');
+
+        const proposal = {
+            blue: parseInt($('#finalBlue').val()),
+            yellow: parseInt($('#finalYellow').val()),
+            purple: parseInt($('#finalPurple').val())
+        };
+        
+        const requestData = {
+            roomId: currentRoomId,     
+            playerName: currentAccount,
+            puzzleId: currentPuzzleId, 
+            currentRound: currentRound,
+            totalTests: totalTests,
+            b: proposal.blue,
+            y: proposal.yellow,
+            p: proposal.purple,
+            diffChar: diffChar
+        };
+
+        $.ajax({
+            url: `${API_BASE}/submit`,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(requestData),
+            success: function(result) {
+                showResultModal(result);
+            },
+            error: function(xhr) {
+                alert("結算失敗！");
+                console.error(xhr.responseText);
+            }
+        });
+    });
+
     $('#btnLeave').on('click', function() {
         if(confirm("確定要放棄這局並離開嗎？")) {
-            window.location.href = 'jquery_lobby.html';
+           window.location.href = '../../Lobby/jquery_lobby.html';
         }
     });
 
-    startGame(diffChar);
+    startGame();
 });
 
-function startGame(difficulty) {
-    logAction(`正在為您準備 [${difficulty}] 難度的謎題...`, "text-cyan-400");
+function startGame() {
+    logAction(`正在為您準備謎題...`, "text-cyan-400");
     
     $.ajax({
-        url: `${API_BASE}/new?difficulty=${difficulty}`,
+        url: `${API_BASE}/new?roomId=${currentRoomId}`,
         type: 'GET',
-        success: function(puzzle) {
-            activePuzzle = puzzle;
-            currentPuzzleId = puzzle.puzzleId; 
+        success: function(response) {
+            activePuzzle = response.puzzle;
+            currentPuzzleId = activePuzzle.puzzleId; 
+            
+            const difficultyNum = response.difficulty || 5; 
+            $('#difficultyDisplay').text(`${difficultyNum} 張卡`);
+
+            if (difficultyNum === 4) diffChar = 'A';
+            else if (difficultyNum === 6) diffChar = 'C';
+            else diffChar = 'B';
             
             const labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            cardLabelsCache = puzzle.verifiers.map((card, index) => ({
+            cardLabelsCache = activePuzzle.verifiers.map((card, index) => ({
                 cardId: card.cardId,
                 label: labels.charAt(index % 26)
             }));
 
-            renderVerifierCards(puzzle.verifiers);
+            renderVerifierCards(activePuzzle.verifiers);
             renderMatrixTable();
             $('#gameBoard').removeClass('hidden');
-            logAction(`謎題載入成功！共有 ${puzzle.verifiers.length} 張驗證卡。`, "text-emerald-400");
+            logAction(`謎題載入成功！共有 ${activePuzzle.verifiers.length} 張驗證卡。`, "text-emerald-400");
         },
         error: function(xhr) {
             alert("載入遊戲失敗，請檢查後端是否啟動！");
@@ -69,7 +131,6 @@ function renderVerifierCards(verifiers) {
     $container.empty();
     
     $container.removeClass('grid-cols-2 grid-cols-3');
-    // 4 張卡顯示 2 欄，5 張以上卡片顯示 3 欄
     if (verifiers.length <= 4) {
         $container.addClass('grid-cols-2');
     } else {
@@ -128,7 +189,13 @@ function verifyCard(cardId, label) {
     }
 
     const proposal = getCurrentProposal();
-    const requestData = { proposal: proposal, cardId: cardId, secret: activePuzzle.secretCode };
+    
+    if (!isProposalLocked) {
+        isProposalLocked = true;
+        $('#blueInput, #yellowInput, #purpleInput').prop('disabled', true).addClass('opacity-60 cursor-not-allowed');
+    }
+
+    const requestData = { roomId: currentRoomId, proposal: proposal, cardId: cardId };
     const cardEl = $(`#card-${cardId}`);
     
     $.ajax({
@@ -177,7 +244,6 @@ function recordMatrixResult(proposal, cardLabel, isValid) {
 function renderMatrixTable() {
     const $headerTr = $('#matrixHeaderTr');
     
-    // 將前三欄的寬度改為 w-6 確保在 table-fixed 下有足夠的顯示空間
     let headersHtml = `
         <th class="p-0.5 border-r border-slate-300 text-blue-600 font-bold w-6">▲</th>
         <th class="p-0.5 border-r border-slate-300 text-yellow-600 font-bold w-6">■</th>
@@ -259,39 +325,11 @@ function initNotepad() {
     });
 }
 
-function handleSubmitDecode() {
-    if (!confirm("確定要提交這組密碼作為最終答案嗎？")) return;
-
-    const proposal = getCurrentProposal();
-    const requestData = {
-        puzzleId: currentPuzzleId, 
-        currentRound: currentRound,
-        totalTests: totalTests,
-        b: proposal.blue,
-        y: proposal.yellow,
-        p: proposal.purple,
-        diffChar: diffChar,
-        playerName: currentAccount
-    };
-
-    $.ajax({
-        url: `${API_BASE}/submit`,
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(requestData),
-        success: function(result) {
-            showResultModal(result);
-        },
-        error: function(xhr) {
-            alert("結算失敗！");
-            console.error(xhr.responseText);
-        }
-    });
-}
-
 function handleNextRound() {
     currentRound++;
     testsThisRound = 0;
+    isProposalLocked = false; 
+    $('#blueInput, #yellowInput, #purpleInput').prop('disabled', false).removeClass('opacity-60 cursor-not-allowed');
     updateStatsUI();
     logAction(`進入第 ${currentRound} 輪。`, "text-amber-400 font-bold");
 }

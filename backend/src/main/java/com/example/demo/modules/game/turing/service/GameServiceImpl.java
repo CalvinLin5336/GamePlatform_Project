@@ -3,7 +3,6 @@ package com.example.demo.modules.game.turing.service;
 import com.example.demo.modules.game.turing.model.*;
 import com.example.demo.modules.game.turing.service.impl.GameService;
 import com.example.demo.modules.game.turing.repository.RecordRepository;
-import com.example.demo.modules.game.turing.repository.TuringQuestionRepository;
 import com.example.demo.modules.game.turing.util.PuzzleGenerator;
 import com.example.demo.modules.game.turing.util.TuringCardRegistry;
 
@@ -20,8 +19,7 @@ public class GameServiceImpl implements GameService {
     @Autowired
     private RecordRepository recordRepository;
     
-    @Autowired
-    private TuringQuestionRepository turingQuestionRepository; // 💡 注入題庫 Repository 取得真實自增 ID
+    // 🗑️ 刪除：不再需要注入 TuringQuestionRepository，因為我們不存題庫了！
     
     @Autowired
     private PuzzleGenerator puzzleGenerator; 
@@ -66,21 +64,12 @@ public class GameServiceImpl implements GameService {
             PuzzleGenerator.PuzzleResult result = puzzleGenerator.generatePuzzle(allConditions, allCodes, diffChar, cardCount);
             
             if (result != null) {
-                // 💡 建立 TuringQuestion 並存入資料庫，讓 JPA 自動產生流水號 ID
-                TuringQuestion question = new TuringQuestion(result.blueAns, result.yellowAns, result.purpleAns, cardCount);
-                if (result.activeConditions != null) {
-                    for (PuzzleGenerator.ActiveCondition cond : result.activeConditions) {
-                        TuringQuestionCondition conditionEntity = new TuringQuestionCondition(cond.cardId, "動態條件檢驗", question);
-                        conditionEntity.setSubIndex((cond.conditionIndex % 10) + 1);
-                        question.getConditions().add(conditionEntity);
-                    }
-                }
-                TuringQuestion savedQuestion = turingQuestionRepository.save(question);
-                
-                // 4. 建立前端需要的 Puzzle 物件，並將資料庫真正的自增 ID 帶入
+                // 🌟 核心修改：移除存入資料庫的邏輯，直接建立前端需要的 Puzzle 物件！
                 Code secretCode = new Code(result.blueAns, result.yellowAns, result.purpleAns);
                 Puzzle puzzle = new Puzzle();
-                puzzle.setPuzzleId(savedQuestion.getId()); // 傳入 Integer 型態的真實 ID
+                
+                // 設定為 -1 標示這是動態記憶體題目，不再依賴 DB 流水號
+                puzzle.setPuzzleId(-1); 
                 puzzle.setDifficulty(cardCount + "-張卡片模式");
                 puzzle.setSecretCode(secretCode);
                 

@@ -7,6 +7,10 @@
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- 引入 jQuery UI 支援 draggable 拖曳功能 -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    
     <script src="turing.js" defer></script>
     <style>
         /* 驗證卡片打勾打叉特效 */
@@ -44,7 +48,11 @@
     <header class="flex justify-between items-center bg-slate-900/90 p-3 rounded-xl border border-slate-700 mb-4 shadow-lg">
         <div>
             <h1 class="text-xl font-bold text-emerald-400 tracking-wide">圖靈解密 Turing Machine</h1>
-            <p class="text-xs text-slate-400">玩家：<span id="playerName" class="text-white font-bold">載入中...</span></p>
+            <p class="text-xs text-slate-400">
+                玩家：<span id="playerName" class="text-white font-bold">載入中...</span> | 
+                房號：<span id="roomIdDisplay" class="text-indigo-400 font-mono font-bold">單機模式</span> |
+                難度：<span id="difficultyDisplay" class="text-amber-400 font-bold">載入中...</span>
+            </p>
         </div>
         <div class="flex gap-3 text-center">
             <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600">
@@ -65,33 +73,28 @@
         <div class="col-span-12 lg:col-span-9 flex flex-col gap-4">
             
             <!-- 上半部：驗證卡片展示區 -->
-            <div id="verifierCardsContainer" class="grid gap-3 w-full">
-                <!-- 由 JS 動態依卡片數量切換 2 欄或 3 欄 -->
-            </div>
+            <div id="verifierCardsContainer" class="grid gap-3 w-full"></div>
 
-            <!-- 下半部：【提案密碼區】+【推演紀錄表】+【候選筆記區】欄位重新分配 -->
+            <!-- 下半部：【提案密碼區】+【推演紀錄表】+【候選筆記區】 -->
             <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
                 
-                <!-- 1. 提案密碼區 (維持佔 3 欄) -->
+                <!-- 1. 提案密碼區 (佔 3 欄) -->
                 <div class="md:col-span-3 bg-slate-100 text-slate-900 rounded-xl p-3 shadow-lg border border-slate-300 flex flex-col justify-between">
                     <div>
                         <h3 class="font-bold text-xs mb-2 text-center border-b pb-1 text-slate-800">設定本次提案密碼</h3>
                         <div class="flex justify-around items-center mb-3">
-                            <!-- 藍色 -->
                             <div class="flex flex-col items-center">
                                 <span class="text-blue-600 text-xs font-bold mb-0.5">▲ 藍</span>
                                 <select id="blueInput" class="w-10 p-1 text-sm font-bold text-center border-2 border-blue-400 rounded bg-white shadow">
                                     <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                                 </select>
                             </div>
-                            <!-- 黃色 -->
                             <div class="flex flex-col items-center">
                                 <span class="text-yellow-600 text-xs font-bold mb-0.5">■ 黃</span>
                                 <select id="yellowInput" class="w-10 p-1 text-sm font-bold text-center border-2 border-yellow-400 rounded bg-white shadow">
                                     <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                                 </select>
                             </div>
-                            <!-- 紫色 -->
                             <div class="flex flex-col items-center">
                                 <span class="text-purple-600 text-xs font-bold mb-0.5">● 紫</span>
                                 <select id="purpleInput" class="w-10 p-1 text-sm font-bold text-center border-2 border-purple-400 rounded bg-white shadow">
@@ -106,15 +109,13 @@
                     </div>
                 </div>
 
-                <!-- 空白區塊：在此處佔用 2 欄，強制推開提案區與紀錄表的距離 -->
                 <div class="hidden md:block md:col-span-2"></div>
 
-                <!-- 2. 推演紀錄表 (從佔 5 欄縮小為佔 3 欄) -->
+                <!-- 2. 推演紀錄表 (佔 3 欄) -->
                 <div class="md:col-span-3 bg-slate-200 text-slate-800 rounded-xl p-2.5 shadow-lg border border-slate-400 flex flex-col justify-between">
                     <div>
                         <h3 class="font-bold text-center mb-1 text-slate-900 text-xs">推演紀錄表</h3>
                         <div class="overflow-x-auto">
-                            <!-- 加入了 table-fixed 強制等分欄位 -->
                             <table class="w-full table-fixed text-center border-collapse text-[11px] bg-white rounded-lg overflow-hidden shadow">
                                 <thead>
                                     <tr id="matrixHeaderTr" class="bg-slate-300 text-slate-700 border-b border-slate-400"></tr>
@@ -146,7 +147,7 @@
             </div>
         </div>
 
-        <!-- 最右側：房間與動作紀錄區 (佔 3 欄，長條直立全高) -->
+        <!-- 最右側：房間與動作紀錄區 (佔 3 欄) -->
         <aside class="col-span-12 lg:col-span-3 flex flex-col">
             <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3 shadow-xl flex flex-col h-full min-h-[700px]">
                 <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-1.5">
@@ -161,13 +162,45 @@
 
     </main>
 
-    <!-- 結算彈窗 -->
-    <div id="resultModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-        <div class="bg-slate-900 border border-emerald-500 rounded-2xl p-8 w-[500px] shadow-2xl text-center">
+    <!-- 最終破解密碼輸入彈窗 (不虛化、可拖曳) -->
+    <div id="finalGuessModal" class="hidden fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+        <div id="guessCard" class="bg-slate-900 border-2 border-indigo-500 rounded-2xl p-6 w-[400px] shadow-2xl text-center pointer-events-auto cursor-move">
+            <h3 class="text-xl font-bold mb-2 text-indigo-400">🔐 提交最終破解答案</h3>
+            <p class="text-xs text-slate-400 mb-4">(提示：此視窗可任意拖曳)</p>
+            <div class="flex justify-around items-center mb-6">
+                <div class="flex flex-col items-center">
+                    <span class="text-blue-400 text-xs font-bold mb-1">▲ 藍</span>
+                    <select id="finalBlue" class="w-12 p-1.5 text-base font-bold text-center border-2 border-blue-400 rounded bg-slate-800 text-white shadow">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                    </select>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="text-yellow-400 text-xs font-bold mb-1">■ 黃</span>
+                    <select id="finalYellow" class="w-12 p-1.5 text-base font-bold text-center border-2 border-yellow-400 rounded bg-slate-800 text-white shadow">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                    </select>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="text-purple-400 text-xs font-bold mb-1">● 紫</span>
+                    <select id="finalPurple" class="w-12 p-1.5 text-base font-bold text-center border-2 border-purple-400 rounded bg-slate-800 text-white shadow">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="$('#finalGuessModal').addClass('hidden')" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold text-xs transition">取消</button>
+                <button id="confirmFinalSubmit" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs transition shadow">確認提交</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 結算彈窗 (置中、大卡片、不虛化背景、可拖曳) -->
+    <div id="resultModal" class="hidden fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+        <div id="resultCard" class="bg-slate-900 border-2 border-emerald-500 rounded-2xl p-8 w-[500px] shadow-2xl text-center pointer-events-auto cursor-move">
             <h2 id="resultTitle" class="text-3xl font-bold mb-4"></h2>
             <p id="resultMsg" class="text-slate-300 whitespace-pre-line text-lg mb-6 leading-relaxed"></p>
             <div id="rewardBox" class="hidden bg-amber-500/20 border border-amber-500 text-amber-400 p-4 rounded-lg mb-6 font-bold text-xl"></div>
-            <button onclick="window.location.href='jquery_lobby.html'" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition w-full">
+            <button onclick="window.location.href='../../Lobby/jquery_lobby.html'" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition w-full text-base">
                 返回大廳
             </button>
         </div>
