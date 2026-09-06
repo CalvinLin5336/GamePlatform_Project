@@ -63,7 +63,8 @@ public class LobbyController {
             gameMap.put("gameName", game.getGameName());
             gameMap.put("description", game.getDescription());
             gameMap.put("imagePath", game.getImagePath());
-            gameMap.put("frontendPath", game.getFrontendPath());
+            gameMap.put("frontendPath", game.getFrontendPath()); // 確保回傳前端路徑
+            
             // 抓出這款遊戲對應的所有「已啟用」模式
             List<GameMode> modes = gameModeRepository.findByGameIdAndEnabledTrueOrderByModeIdAsc(game.getGameId());
             
@@ -244,8 +245,8 @@ public class LobbyController {
         return ResponseEntity.ok(response);
     }
     
- // =========================================================
-    // 6. 離開房間 (升級版：支援廣播解散指令)
+    // =========================================================
+    // 6. 離開房間 (升級版：支援廣播解散指令 & 遊戲中防呆)
     // =========================================================
     @PostMapping("/room/{roomId}/leave")
     public ResponseEntity<Map<String, Object>> leaveRoom(
@@ -263,6 +264,14 @@ public class LobbyController {
         }
 
         Room room = optionalRoom.get();
+
+        // 🚨 新增防呆：如果遊戲已經在進行中，拒絕透過此 API 直接離開或解散房間
+        if ("PLAYING".equals(room.getStatus())) {
+            response.put("success", false);
+            response.put("message", "遊戲進行中，無法直接離開房間。");
+            return ResponseEntity.badRequest().body(response);
+        }
+
         room.getPlayers().remove(playerAccount);
 
         if (room.getHostAccount().equals(playerAccount) || room.getPlayers().isEmpty()) {
@@ -272,7 +281,7 @@ public class LobbyController {
                 disbandMsg.put("type", "ROOM_DISBANDED");
                 disbandMsg.put("message", "房主已離開，房間解散");
                 
-                // ⭐ 2. 廣播給房間內還在等待的所有人 (利用你寫好的廣播方法)
+                // ⭐ 2. 廣播給房間內還在等待的所有人 
                 broadcastAfterCommit(roomId, objectMapper.writeValueAsString(disbandMsg));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -315,16 +324,12 @@ public class LobbyController {
 
         Room room = optionalRoom.get();
 
-        
-        
-        
         if (!room.getHostAccount().equals(hostAccount)) {
             response.put("success", false);
             response.put("message", "權限不足，只有房主可以修改設定！");
             return ResponseEntity.status(403).body(response);
         }
 
-        
         Optional<GameMode> optionalMode = gameModeRepository.findById(modeId);
         if (optionalMode.isPresent()) {
             GameMode modeConfig = optionalMode.get();
@@ -411,7 +416,7 @@ public class LobbyController {
         }
     }
     
- // =========================================================
+    // =========================================================
     // 9. 房主開始遊戲
     // =========================================================
     @PostMapping("/room/{roomId}/start")
@@ -453,17 +458,28 @@ public class LobbyController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        // 4. 更改房間狀態、記錄開始時間與 1 小時逾時時間
+        // 4. 更改房間狀態、記錄開始時間與逾時時間
         roomLifecycleService.startRoom(room);
 
-        // 5. 找出這款遊戲的前端網址 (假設在 games 表格中有存 frontendPath，例如 "poker.html")
+        // 5. 找出這款遊戲的前端網址並加入防呆對應
         Optional<Game> optionalGame = gameRepository.findById(room.getGameId());
-        String frontendUrl = "game.html"; // 預設值
+        String frontendUrl = "/pages/Games/poker/poker_client.html"; // 預設值
+        
         if (optionalGame.isPresent() && optionalGame.get().getFrontendPath() != null) {
             frontendUrl = optionalGame.get().getFrontendPath();
+        } else {
+            // 💡 後端防呆：根據 gameId 確保限時問答挑戰不會跑錯棚
+            if (room.getGameId() != null && room.getGameId() == 3L) {
+                frontendUrl = "/pages/Games/quiz/quiz_client.html";
+            }
         }
         
-        // 組合出最終帶有房號的網址，例如： poker.html?room=128F0C0E
+        // 確保路徑開頭帶有 /
+        if (!frontendUrl.startsWith("/")) {
+            frontendUrl = "/" + frontendUrl;
+        }
+        
+        // 組合出最終帶有房號的網址
         String targetUrl = frontendUrl + "?room=" + roomId;
 
         // 6. 廣播 START_GAME 指令給全場
@@ -492,7 +508,7 @@ public class LobbyController {
         }
     }
     
- // =========================================================
+    // =========================================================
     // 取得指定玩家正在進行中的房間
     // =========================================================
     @GetMapping("/my-active-rooms")

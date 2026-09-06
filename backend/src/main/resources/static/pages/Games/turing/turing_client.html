@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圖靈解密 Turing Machine</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="turing.js" defer></script>
+    <style>
+        /* 驗證卡片打勾打叉特效 */
+        .verify-pass { border: 4px solid #10b981 !important; box-shadow: 0 0 15px #10b981; }
+        .verify-fail { border: 4px solid #ef4444 !important; box-shadow: 0 0 15px #ef4444; }
+        
+        /* 卡片上的紅色打叉標記 */
+        .card-cross-mark {
+            position: absolute;
+            color: rgba(220, 38, 38, 0.9);
+            font-weight: 900;
+            font-size: 30px;
+            line-height: 1;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            user-select: none;
+            text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;
+            z-index: 20;
+            transition: transform 0.1s;
+        }
+        .card-cross-mark:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+            color: rgba(185, 28, 28, 1);
+        }
+
+        /* 筆記格樣式 */
+        .note-cell { cursor: pointer; user-select: none; transition: background-color 0.2s; }
+        .note-o { background-color: #10b981 !important; color: white !important; font-weight: bold; }
+        .note-x { background-color: #ef4444 !important; color: white !important; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-emerald-950 text-slate-100 min-h-screen w-full font-sans p-4">
+
+    <!-- 頂部資訊列 -->
+    <header class="flex justify-between items-center bg-slate-900/90 p-3 rounded-xl border border-slate-700 mb-4 shadow-lg">
+        <div>
+            <h1 class="text-xl font-bold text-emerald-400 tracking-wide">圖靈解密 Turing Machine</h1>
+            <p class="text-xs text-slate-400">玩家：<span id="playerName" class="text-white font-bold">載入中...</span></p>
+        </div>
+        <div class="flex gap-3 text-center">
+            <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600">
+                <p class="text-[10px] text-slate-400">目前輪次</p>
+                <p id="currentRound" class="text-lg font-bold text-amber-400">1</p>
+            </div>
+            <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600">
+                <p class="text-[10px] text-slate-400">本輪測試</p>
+                <p id="testsThisRound" class="text-lg font-bold text-amber-400">0 / 3</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- 遊戲主畫面 -->
+    <main id="gameBoard" class="grid grid-cols-12 gap-4 hidden">
+        
+        <!-- 左側與中間主區塊 (佔 9 欄) -->
+        <div class="col-span-12 lg:col-span-9 flex flex-col gap-4">
+            
+            <!-- 上半部：驗證卡片展示區 -->
+            <div id="verifierCardsContainer" class="grid gap-3 w-full">
+                <!-- 由 JS 動態依卡片數量切換 2 欄或 3 欄 -->
+            </div>
+
+            <!-- 下半部：【提案密碼區】+【推演紀錄表】+【候選筆記區】欄位重新分配 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
+                
+                <!-- 1. 提案密碼區 (維持佔 3 欄) -->
+                <div class="md:col-span-3 bg-slate-100 text-slate-900 rounded-xl p-3 shadow-lg border border-slate-300 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-xs mb-2 text-center border-b pb-1 text-slate-800">設定本次提案密碼</h3>
+                        <div class="flex justify-around items-center mb-3">
+                            <!-- 藍色 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-blue-600 text-xs font-bold mb-0.5">▲ 藍</span>
+                                <select id="blueInput" class="w-10 p-1 text-sm font-bold text-center border-2 border-blue-400 rounded bg-white shadow">
+                                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                </select>
+                            </div>
+                            <!-- 黃色 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-yellow-600 text-xs font-bold mb-0.5">■ 黃</span>
+                                <select id="yellowInput" class="w-10 p-1 text-sm font-bold text-center border-2 border-yellow-400 rounded bg-white shadow">
+                                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                </select>
+                            </div>
+                            <!-- 紫色 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-purple-600 text-xs font-bold mb-0.5">● 紫</span>
+                                <select id="purpleInput" class="w-10 p-1 text-sm font-bold text-center border-2 border-purple-400 rounded bg-white shadow">
+                                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <button id="btnNextRound" class="w-full py-1.5 bg-slate-800 text-white rounded font-bold hover:bg-slate-700 transition text-xs shadow">結束本輪</button>
+                        <button id="btnSubmitDecode" class="w-full py-1.5 bg-emerald-600 text-white rounded font-bold shadow hover:bg-emerald-500 transition text-xs">破解密碼！</button>
+                    </div>
+                </div>
+
+                <!-- 空白區塊：在此處佔用 2 欄，強制推開提案區與紀錄表的距離 -->
+                <div class="hidden md:block md:col-span-2"></div>
+
+                <!-- 2. 推演紀錄表 (從佔 5 欄縮小為佔 3 欄) -->
+                <div class="md:col-span-3 bg-slate-200 text-slate-800 rounded-xl p-2.5 shadow-lg border border-slate-400 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-center mb-1 text-slate-900 text-xs">推演紀錄表</h3>
+                        <div class="overflow-x-auto">
+                            <!-- 加入了 table-fixed 強制等分欄位 -->
+                            <table class="w-full table-fixed text-center border-collapse text-[11px] bg-white rounded-lg overflow-hidden shadow">
+                                <thead>
+                                    <tr id="matrixHeaderTr" class="bg-slate-300 text-slate-700 border-b border-slate-400"></tr>
+                                </thead>
+                                <tbody id="turingMatrixBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 候選數字筆記 (佔 4 欄) -->
+                <div class="md:col-span-4 bg-yellow-50 text-slate-800 rounded-xl p-2.5 shadow-lg border border-yellow-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-center mb-1 text-slate-900 text-xs">候選數字筆記</h3>
+                        <table class="w-full text-center border-collapse text-xs bg-white rounded-lg overflow-hidden shadow">
+                            <thead>
+                                <tr class="border-b-2 border-slate-300 bg-yellow-100/60">
+                                    <th class="p-1 text-blue-600 font-bold border-r border-slate-200 w-1/3 text-[11px]">▲ 藍</th>
+                                    <th class="p-1 text-yellow-600 font-bold border-r border-slate-200 w-1/3 text-[11px]">■ 黃</th>
+                                    <th class="p-1 text-purple-600 font-bold w-1/3 text-[11px]">● 紫</th>
+                                </tr>
+                            </thead>
+                            <tbody id="notepadBody"></tbody>
+                        </table>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1 text-center">點擊切換：數字 ➔ O ➔ X</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 最右側：房間與動作紀錄區 (佔 3 欄，長條直立全高) -->
+        <aside class="col-span-12 lg:col-span-3 flex flex-col">
+            <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3 shadow-xl flex flex-col h-full min-h-[700px]">
+                <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-1.5">
+                    <h2 class="text-xs font-bold text-emerald-400">房間動作紀錄</h2>
+                    <button id="btnLeave" class="px-2 py-0.5 bg-red-900/50 hover:bg-red-600 text-red-200 text-[10px] rounded transition font-bold">離開遊戲</button>
+                </div>
+                <div id="actionLog" class="flex-1 overflow-y-auto space-y-1.5 text-xs text-slate-300 pr-1">
+                    <div class="text-center text-slate-500 py-3">遊戲開始...</div>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- 結算彈窗 -->
+    <div id="resultModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-slate-900 border border-emerald-500 rounded-2xl p-8 w-[500px] shadow-2xl text-center">
+            <h2 id="resultTitle" class="text-3xl font-bold mb-4"></h2>
+            <p id="resultMsg" class="text-slate-300 whitespace-pre-line text-lg mb-6 leading-relaxed"></p>
+            <div id="rewardBox" class="hidden bg-amber-500/20 border border-amber-500 text-amber-400 p-4 rounded-lg mb-6 font-bold text-xl"></div>
+            <button onclick="window.location.href='jquery_lobby.html'" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition w-full">
+                返回大廳
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>
