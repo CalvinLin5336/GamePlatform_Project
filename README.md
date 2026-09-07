@@ -1,3 +1,7 @@
+https://gameplatform-project.onrender.com/pages/Chat/chatclient.html
+[QR.bmp](https://github.com/user-attachments/files/31894990/QR.bmp)
+
+
 # 🎮 Simple Game Platform｜簡易遊戲平台
 
 > Java Spring Boot 多人簡易遊戲平台團隊專題
