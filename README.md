@@ -72,7 +72,6 @@ Simple Game Platform 是一個整合 **會員、遊戲大廳、組隊招募、�
 包含：
 
 ```text
-React
 HTML
 CSS
 JavaScript
@@ -112,7 +111,7 @@ npm build
 
 ---
 
-# 👨‍💻 My Responsibility
+
 
 ## Team Recruitment Module｜組隊公告欄
 
