@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 載入 jQuery 核心 -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="../User/api/userApi.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 h-screen w-full flex flex-col items-center py-10 font-sans overflow-y-auto">
 
@@ -121,6 +122,7 @@
     <script>
         $(document).ready(function() {
             const apiHost = '';
+            const lobbyRequest = options => UserApi.request(options);
             let availableGames = []; 
             let selectedGameId = null;
             let autoRefreshInterval = null;
@@ -159,7 +161,7 @@
 
             // 2. 抓取遊戲總表並動態渲染
             function fetchGamesInfo() {
-                $.ajax({
+                lobbyRequest({
                     url: apiHost + '/api/lobby/games-info',
                     type: 'GET',
                     success: function(res) {
@@ -262,7 +264,7 @@
                 const $btn = $(this);
                 $btn.prop('disabled', true).text('建立中...');
 
-                $.ajax({
+                lobbyRequest({
                     url: apiHost + '/api/lobby/create-room',
                     type: 'POST',
                     contentType: 'application/json',
@@ -290,7 +292,7 @@
 
             // 5. 取得等待中的房間列表
             function fetchWaitingRooms() {
-                $.ajax({
+                lobbyRequest({
                     url: apiHost + '/api/lobby/rooms',
                     type: 'GET',
                     success: function(response) {
@@ -359,7 +361,7 @@
             // 6. 取得進行中的房間列表（動態對應資料庫路徑）
             function fetchActiveRooms() {
                 const currentAccount = localStorage.getItem("account") || "test_account_01";
-                $.ajax({
+                lobbyRequest({
                     url: apiHost + '/api/lobby/my-active-rooms?account=' + encodeURIComponent(currentAccount),
                     type: 'GET',
                     success: function(response) {
@@ -412,7 +414,7 @@
             // 7. 加入房間 API 串接
             window.joinRoom = function(roomId) {
                 const currentAccount = localStorage.getItem("account") || "test_account_02";
-                $.ajax({
+                lobbyRequest({
                     url: apiHost + '/api/lobby/join-room',
                     type: 'POST',
                     contentType: 'application/json',
@@ -438,7 +440,7 @@
                 $(this).prop('disabled', true).text('加入中...');
                 
                 // 先檢查房間是否存在且可以加入
-                $.ajax({
+                lobbyRequest({
                     url: apiHost + '/api/lobby/room/' + inputRoomId,
                     type: 'GET',
                     success: function(res) {

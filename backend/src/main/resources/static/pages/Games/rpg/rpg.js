@@ -340,6 +340,16 @@
         byId('configSkillDetail').innerHTML = skillDetailHtml(selected);
     }
 
+    function selectConfigurationSkill(code) {
+        const config = state.skillConfiguration;
+        if (!config || !code) return;
+        state.selectedConfigSkillCode = code;
+        document.querySelectorAll('#learnedSkillList .config-skill-entry, #equippedSkillList .config-skill-entry')
+            .forEach(button => button.classList.toggle('selected', button.dataset.code === code));
+        const selected = config.learnedSkills.find(skill => skill.skillCode === code);
+        byId('configSkillDetail').innerHTML = skillDetailHtml(selected);
+    }
+
     async function openSkillConfiguration() {
         const character = state.selectedCharacter;
         if (!character) return;
@@ -985,21 +995,17 @@
     byId('learnedSkillList').addEventListener('click', event => {
         const button = event.target.closest('.config-skill-entry');
         if (!button) return;
-        state.selectedConfigSkillCode = button.dataset.code;
-        renderSkillConfiguration();
+        selectConfigurationSkill(button.dataset.code);
     });
     byId('learnedSkillList').addEventListener('dblclick', event => {
         const button = event.target.closest('.config-skill-entry');
         if (!button) return;
-        state.selectedConfigSkillCode = button.dataset.code;
+        selectConfigurationSkill(button.dataset.code);
         equipSelectedSkill().catch(error => showMessage(error.message, 'error'));
     });
     byId('equippedSkillList').addEventListener('click', event => {
         const button = event.target.closest('.config-skill-entry');
-        if (button) {
-            state.selectedConfigSkillCode = button.dataset.code;
-            renderSkillConfiguration();
-        }
+        if (button) selectConfigurationSkill(button.dataset.code);
     });
     byId('equippedSkillList').addEventListener('contextmenu', event => {
         const button = event.target.closest('.config-skill-entry');

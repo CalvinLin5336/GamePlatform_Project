@@ -91,6 +91,7 @@
             window.globalRoomId = roomId; 
             
             const apiHost = (typeof UserApi !== 'undefined') ? UserApi.API_BASE : '';
+            const roomRequest = options => UserApi.request(options);
             let myAccount = localStorage.getItem("account") || "訪客";
             window.globalAccount = myAccount;
             
@@ -162,7 +163,7 @@
             }
 
             function fetchInitialData() {
-                $.ajax({
+                roomRequest({
                     url: apiHost + '/api/lobby/games-info',
                     type: 'GET',
                     success: function(res) {
@@ -178,7 +179,7 @@
             }
 
             function fetchRoomDetail() {
-                $.ajax({
+                roomRequest({
                     url: `${apiHost}/api/lobby/room/${roomId}`,
                     type: 'GET',
                     success: function(res) {
@@ -335,7 +336,7 @@
                 const newModeId = parseInt($('#waitModeSelect').val());
                 const newMaxPlayers = parseInt($('#waitPlayerCountSelect').val());
 
-                $.ajax({
+                roomRequest({
                     url: `${apiHost}/api/lobby/room/${roomId}/settings`,
                     type: 'PUT',
                     contentType: 'application/json',
@@ -447,7 +448,7 @@
                         boardRequest('/kick?captainId='+boardMemberId, 'POST', {account:targetAccount}).fail(roomError);
                         return;
                     }
-                    $.ajax({
+                    roomRequest({
                         url: `${apiHost}/api/lobby/room/${roomId}/kick`,
                         type: 'POST',
                         contentType: 'application/json',
@@ -472,7 +473,7 @@
 
                     if (!hasRoomSession()) return;
 
-                    $.ajax({
+                    roomRequest({
                         url: `${apiHost}/api/lobby/room/${roomId}/leave`,
                         type: 'POST',
                         contentType: 'application/json',
@@ -495,7 +496,7 @@
                     return;
                 }
 
-                $.ajax({
+                roomRequest({
                     url: `${apiHost}/api/lobby/room/${roomId}/start`,
                     type: 'POST',
                     contentType: 'application/json',
@@ -558,13 +559,19 @@
                 if (!isPageUnload && window.parent && window.parent.fetch) {
                     window.parent.fetch(leaveUrl, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + UserApi.getToken()
+                        },
                         body: data
                     }).catch(e => console.error(e));
                 } else {
                     fetch(leaveUrl, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + UserApi.getToken()
+                        },
                         body: data,
                         keepalive: true
                     }).catch(e => console.error(e));
