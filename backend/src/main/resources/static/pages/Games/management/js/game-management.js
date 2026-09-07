@@ -1,9 +1,8 @@
 (function () {
     'use strict';
 
-    const API_BASE = window.location.port === '8080'
-        ? window.location.origin
-        : 'http://' + window.location.hostname + ':8080';
+    // 前端已由 Spring Boot 同源提供；本機與 Render 都直接使用目前來源。
+    const API_BASE = window.location.origin;
     const ADMIN_API = '/api/admin/game-management';
 
     let games = [];

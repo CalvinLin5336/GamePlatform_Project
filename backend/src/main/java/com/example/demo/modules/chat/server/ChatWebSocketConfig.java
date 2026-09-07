@@ -17,7 +17,7 @@ public class ChatWebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(chatWebSocketHandler(), "/ws/chat")
-                .setAllowedOrigins("*");
+        // 未指定跨域來源時，Spring WebSocket 只接受同源連線。
+        registry.addHandler(chatWebSocketHandler(), "/ws/chat");
     }
 }

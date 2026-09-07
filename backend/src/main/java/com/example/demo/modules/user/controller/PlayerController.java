@@ -9,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController("userPlayerController")
-@CrossOrigin(originPatterns = "*")
 @RequestMapping("/api/user/player")
 public class PlayerController {
 

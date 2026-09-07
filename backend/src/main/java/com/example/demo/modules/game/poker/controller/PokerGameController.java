@@ -2,7 +2,6 @@ package com.example.demo.modules.game.poker.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +25,6 @@ import com.example.demo.modules.game.poker.service.PokerPlatformRoomService;
 import com.example.demo.modules.game.management.dto.GameModeView;
 import com.example.demo.modules.user.dto.UserResponse;
 
-@CrossOrigin(origins="*")
 @RestController
 @RequestMapping("/api/games/poker")
 public class PokerGameController {

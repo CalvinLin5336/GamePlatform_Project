@@ -15,8 +15,7 @@ public class RoomWebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        // 🌟 關鍵在這裡：使用 /* 來攔截所有動態房號，並允許跨域連線
-        registry.addHandler(roomWebSocketHandler, "/ws/room/*")
-                .setAllowedOrigins("*");
+        // 使用 /* 攔截動態房號；未指定跨域來源時只接受同源連線。
+        registry.addHandler(roomWebSocketHandler, "/ws/room/*");
     }
 }

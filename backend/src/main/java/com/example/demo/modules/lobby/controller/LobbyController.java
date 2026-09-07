@@ -27,7 +27,6 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/lobby")
-@CrossOrigin(origins = "*") // 允許跨域請求，方便前端連線測試
 public class LobbyController {
 
     // 注入 Repository 來操作資料庫

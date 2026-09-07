@@ -6,7 +6,6 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +24,6 @@ import com.example.demo.modules.game.quiz.service.QuizService;
 
 @RestController
 @RequestMapping("/api/quiz/questions")
-@CrossOrigin(origins="*")  //允許所有來源進行 API 呼叫
 public class QuestionsController {
 	@Autowired
 	QuizService quizsrv;

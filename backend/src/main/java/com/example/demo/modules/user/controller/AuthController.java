@@ -10,7 +10,6 @@ import com.example.demo.modules.user.service.LoginSessionService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(originPatterns = "*")
 @RequestMapping("/api/user/auth")
 public class AuthController {
 	private final UserService userService;

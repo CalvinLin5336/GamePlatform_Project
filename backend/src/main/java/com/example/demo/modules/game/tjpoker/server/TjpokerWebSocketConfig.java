@@ -22,6 +22,6 @@ public class TjpokerWebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(tjpokerWebSocketHandler(), "/ws/poker").setAllowedOrigins("*");
+        registry.addHandler(tjpokerWebSocketHandler(), "/ws/poker");
     }
 }

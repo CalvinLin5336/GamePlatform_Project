@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/game")
-@CrossOrigin(origins = "*") // 🌟 加上跨域允許
 public class GameController {
 
     @Autowired

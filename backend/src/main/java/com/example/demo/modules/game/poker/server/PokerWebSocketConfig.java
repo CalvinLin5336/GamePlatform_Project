@@ -22,6 +22,6 @@ public class PokerWebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(pokerWebSocketHandler(), "/ws/games/poker").setAllowedOrigins("*");
+        registry.addHandler(pokerWebSocketHandler(), "/ws/games/poker");
     }
 }

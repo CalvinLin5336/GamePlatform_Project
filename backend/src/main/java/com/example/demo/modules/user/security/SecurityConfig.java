@@ -2,15 +2,20 @@ package com.example.demo.modules.user.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -18,6 +23,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${app.cors.allowed-origin-patterns:http://localhost:*,http://127.0.0.1:*}")
+    private String allowedOriginPatterns;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -27,7 +35,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            // User API 啟用 CORS，讓前端 Live Server 可以呼叫 User API
+            // 正式部署採同源；只有設定檔明確列出的開發來源可以跨域。
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
             // REST API 不使用 CSRF
@@ -44,26 +52,43 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+            )
+
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
+
             // API 權限
             .authorizeHttpRequests(auth -> auth
 
-                // User 登入 API
-                .requestMatchers("/api/user/auth/**").permitAll()
+                // 瀏覽器預檢與公開靜態資源
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/", "/index.html", "/favicon.ico", "/error",
+                        "/assets/**", "/pages/**").permitAll()
 
-                // Board 登入 / 註冊 API
-                .requestMatchers("/api/auth/**").permitAll()
+                // 原生 WebSocket 無法設定 Authorization Header；握手來源由各 WebSocket
+                // Config 限制，連線後的身分驗證仍由各 Handler 負責。
+                .requestMatchers("/ws/**").permitAll()
 
-                // Admin API 必須先放在 /api/** 前面
-                .requestMatchers("/api/user/admin/**").hasRole("ADMIN")
+                // 只有登入與註冊可匿名；/me 必須帶有效 JWT。
+                .requestMatchers(HttpMethod.POST,
+                        "/api/user/auth/login", "/api/user/auth/register").permitAll()
+
+                // 遊戲型錄可供首頁及登入前畫面讀取。
+                .requestMatchers(HttpMethod.GET, "/api/game-management/games/**").permitAll()
+
+                // Admin API 必須先放在一般 API 規則前面。
+                .requestMatchers("/api/user/admin/**", "/api/admin/**").hasRole("ADMIN")
 
                 // Player 個人資料 API
                 .requestMatchers("/api/user/player/**").hasAnyRole("PLAYER","ADMIN")
 
-                // 開發階段暫時允許其他 API
-                .requestMatchers("/**").permitAll()
+                // 平台 API 與 Board 功能必須登入。
+                .requestMatchers("/api/**", "/board/**").authenticated()
 
-                // 其他請求仍需要登入
-                .anyRequest().authenticated()
+                // 未列入契約的路徑不對外開放。
+                .anyRequest().denyAll()
             )
 
             // JWT Filter
@@ -78,9 +103,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedOriginPatterns(Arrays.stream(allowedOriginPatterns.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .toList());
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With",
+                "X-Player-Token"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
