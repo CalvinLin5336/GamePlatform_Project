@@ -900,7 +900,11 @@ public class RpgGameService {
         return new RpgCharacterView(character.id(), character.name(), character.professionCode(),
                 character.professionName(), character.level(), character.experience(),
                 experienceForLevel(character.level()), character.gold(), currentHp, stats.hp(), currentMp, stats.mp(),
-                stats.attack(), stats.magic(), stats.defense(), stats.magicDefense(), stats.speed());
+                stats.attack(), stats.magic(), stats.defense(), stats.magicDefense(), stats.speed(),
+                stats.baseAttack(), stats.attackBaseBonus(), stats.baseMagic(), stats.baseDefense(),
+                stats.baseMagicDefense(), stats.baseSpeed(),
+                stats.physicalPenetrationPercent(), stats.physicalPenetrationFlat(),
+                stats.criticalRate(), stats.physicalLifesteal(), skillSlotCount(character.professionCode()));
     }
 
     private RpgSkillView toSkillView(SkillData skill, boolean available) {
@@ -959,9 +963,25 @@ public class RpgGameService {
 
     private RpgProfessionView toProfessionView(ProfessionData profession) {
         return new RpgProfessionView(profession.code(), profession.name(), profession.description(),
-                professionTraitDescription(profession.code()),
+                professionTraitDescription(profession.code()), professionExtraAttributes(profession.code()),
                 profession.baseHp(), profession.baseMp(), profession.baseAtk(), profession.baseAp(),
-                profession.baseDef(), profession.baseMdef(), profession.baseSpeed());
+                profession.baseDef(), profession.baseMdef(), profession.baseSpeed(),
+                profession.growthHp(), profession.growthMp(), profession.growthAtk(), profession.growthAp(),
+                profession.growthDef(), profession.growthMdef(), profession.growthSpeed(),
+                repository.findProfessionSkills(profession.code()).stream()
+                        .map(skill -> toSkillView(skill, true)).toList());
+    }
+
+    private String professionExtraAttributes(String professionCode) {
+        return switch (professionCode) {
+            case "E001" -> "物理吸血：依已損失生命值動態提高，最高 18%";
+            case "E002" -> "高 AP、高 MP，擅長魔法傷害";
+            case "E003" -> "爆擊機率 +25%\n殺意：爆擊時累積，最高 3 層";
+            case "E004" -> "最大 HP +20%\n擅長護盾與壁壘反傷";
+            case "E005" -> "物理穿透 +10%\n爆擊機率 +10%";
+            case "E006" -> "高 AP、高 MP，兼具治癒與神聖魔法傷害";
+            default -> "無";
+        };
     }
 
     private String professionTraitDescription(String professionCode) {
@@ -1019,9 +1039,18 @@ public class RpgGameService {
                 profession.baseDef() + growth * profession.growthDef(),
                 profession.baseMdef() + growth * profession.growthMdef(),
                 profession.baseSpeed() + growth * profession.growthSpeed() };
+        int[] baseValues = values.clone();
         int[] additive = new int[values.length];
         int[] baseBonus = new int[values.length];
         double[] multiplier = new double[values.length];
+        double physicalPenetrationPercent = "E005".equals(character.professionCode()) ? 10 : 0;
+        int physicalPenetrationFlat = 0;
+        double criticalRate = switch (character.professionCode()) {
+            case "E003" -> 25;
+            case "E005" -> 10;
+            default -> 0;
+        };
+        double physicalLifesteal = 0;
         switch (character.professionCode()) {
             case "E002" -> additive[1] += (int) (values[3] * 0.30);
             case "E004" -> multiplier[0] += 20;
@@ -1032,16 +1061,30 @@ public class RpgGameService {
         String[] names = { "HP", "MP", "ATK", "AP", "DEF", "MDEF", "SPEED" };
         for (EquipmentStatData stat : repository.findEquippedStats(character.id())) {
             int index = java.util.Arrays.asList(names).indexOf(stat.statType());
-            if (index < 0) continue;
-            if ("MULTIPLIER".equals(stat.modifierType())) multiplier[index] += stat.modifierValue();
-            else if (index == 2 && "WEAPON".equals(stat.equipmentType())) baseBonus[index] += (int) stat.modifierValue();
-            else additive[index] += (int) stat.modifierValue();
+            if (index >= 0) {
+                if ("MULTIPLIER".equals(stat.modifierType())) multiplier[index] += stat.modifierValue();
+                else if (index == 2 && "WEAPON".equals(stat.equipmentType())) baseBonus[index] += (int) stat.modifierValue();
+                else additive[index] += (int) stat.modifierValue();
+            } else if ("PHYSICAL_PENETRATION".equals(stat.statType())) {
+                if ("PERCENT".equals(stat.modifierType())) physicalPenetrationPercent += stat.modifierValue();
+                else physicalPenetrationFlat += (int) stat.modifierValue();
+            } else if ("CRITICAL_RATE".equals(stat.statType())) {
+                criticalRate += stat.modifierValue();
+            } else if ("PHYSICAL_LIFESTEAL".equals(stat.statType())) {
+                physicalLifesteal += stat.modifierValue();
+            }
         }
         for (int index = 0; index < values.length; index++) {
             values[index] = (int) ((values[index] + baseBonus[index]) * (1 + multiplier[index] / 100.0)
                     + additive[index]);
         }
-        return new CharacterStats(values[0], values[1], values[2], values[3], values[4], values[5], values[6]);
+        return new CharacterStats(values[0], values[1], values[2], values[3], values[4], values[5], values[6],
+                baseValues[2], baseBonus[2], baseValues[3], baseValues[4], baseValues[5], baseValues[6],
+                physicalPenetrationPercent, physicalPenetrationFlat, criticalRate, physicalLifesteal);
+    }
+
+    private int skillSlotCount(String professionCode) {
+        return "E003".equals(professionCode) ? 5 : 4;
     }
 
     private String slotName(String slot) {
@@ -1196,7 +1239,10 @@ public class RpgGameService {
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
 
-    private record CharacterStats(int hp, int mp, int attack, int magic, int defense, int magicDefense, int speed) { }
+    private record CharacterStats(int hp, int mp, int attack, int magic, int defense, int magicDefense, int speed,
+            int baseAttack, int attackBaseBonus, int baseMagic, int baseDefense, int baseMagicDefense, int baseSpeed,
+            double physicalPenetrationPercent, int physicalPenetrationFlat,
+            double criticalRate, double physicalLifesteal) { }
     private record LevelResult(int level, int experience) { }
     private record DamageResult(int hpDamage, int absorbed, int remainingShield) { }
     private record MonsterActionResult(int playerHp, int monsterHp, int monsterMp, int retainedActionPercent) { }

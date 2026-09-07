@@ -197,6 +197,14 @@ public class RpgGameRepository {
                 """, (rs, row) -> mapSkill(rs), characterId, professionCode, level);
     }
 
+    public List<SkillData> findProfessionSkills(String professionCode) {
+        return jdbc.query("""
+                SELECT * FROM rpg_skills
+                WHERE profession_code = ?
+                ORDER BY required_level, skill_code
+                """, (rs, row) -> mapSkill(rs), professionCode);
+    }
+
     public Optional<SkillData> findEquippedSkill(long characterId, String skillCode) {
         return jdbc.query("""
                 SELECT s.* FROM rpg_character_skills cs

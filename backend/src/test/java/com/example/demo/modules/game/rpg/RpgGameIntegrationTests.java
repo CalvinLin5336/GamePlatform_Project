@@ -257,7 +257,11 @@ class RpgGameIntegrationTests {
 
         mvc.perform(get("/api/games/rpg/professions").header("Authorization", token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(6));
+                .andExpect(jsonPath("$.length()").value(6))
+                .andExpect(jsonPath("$[0].growthHp").value(60))
+                .andExpect(jsonPath("$[0].growthAttack").value(7))
+                .andExpect(jsonPath("$[0].skills.length()").value(4))
+                .andExpect(jsonPath("$[0].skills[0].skillName").value("劈砍"));
 
         MvcResult created = mvc.perform(post("/api/games/rpg/characters")
                         .header("Authorization", token)
@@ -271,6 +275,9 @@ class RpgGameIntegrationTests {
                 .andExpect(jsonPath("$.maxHp").value(500))
                 .andExpect(jsonPath("$.currentMp").value(80))
                 .andExpect(jsonPath("$.maxMp").value(80))
+                .andExpect(jsonPath("$.baseAttack").value(50))
+                .andExpect(jsonPath("$.criticalRate").value(0.0))
+                .andExpect(jsonPath("$.skillSlotCount").value(4))
                 .andReturn();
         long characterId = json.readTree(created.getResponse().getContentAsString()).get("characterId").asLong();
 

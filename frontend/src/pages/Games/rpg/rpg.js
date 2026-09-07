@@ -14,7 +14,7 @@
         stages: [],
         skills: [],
         inventory: [],
-        inventoryFilter: 'ALL',
+        inventoryFilter: 'CONSUMABLE',
         selectedItemCode: null,
         equipment: [],
         selectedEquipmentId: null,
@@ -23,6 +23,8 @@
         selectedShopProductId: null,
         skillConfiguration: null,
         selectedConfigSkillCode: null,
+        selectedProfessionCode: null,
+        selectedProfessionSkillCode: null,
         selectedRegionCode: 'A001',
         selectedStage: null,
         battle: null,
@@ -172,20 +174,50 @@
     }
 
     function renderProfessions() {
-        byId('professionCode').innerHTML = '<option value="">請選擇職業</option>'
-            + state.professions.map(item => '<option value="' + escapeHtml(item.code) + '">'
-                + escapeHtml(item.name) + '</option>').join('');
-
         byId('professionGrid').innerHTML = state.professions.map(item =>
-            '<button class="profession-card" data-code="' + escapeHtml(item.code) + '" type="button">'
+            '<button class="profession-card' + (item.code === state.selectedProfessionCode ? ' selected' : '')
+            + '" data-code="' + escapeHtml(item.code) + '" type="button">'
             + '<span class="sprite profession-sprite profession-' + escapeHtml(item.code) + '"></span>'
-            + '<span><strong>' + escapeHtml(item.name) + '</strong>'
-            + '<p>' + escapeHtml(item.description) + '</p>'
-            + '<small>HP ' + item.hp + '　MP ' + item.mp + '　ATK ' + item.attack
-            + '　AP ' + item.magic + '　DEF ' + item.defense + '　MDEF ' + item.magicDefense
-            + '　SPEED ' + item.speed
-            + '</small></span></button>'
+            + '<strong>' + escapeHtml(item.name) + '</strong></button>'
         ).join('');
+        renderProfessionDetail();
+    }
+
+    function renderProfessionDetail() {
+        const profession = professionByCode(state.selectedProfessionCode);
+        byId('professionCode').value = profession ? profession.code : '';
+        if (!profession) {
+            byId('professionDetail').textContent = '請從左側選擇職業。';
+            byId('professionSkillList').innerHTML = '';
+            byId('professionSkillDetail').textContent = '請選擇職業技能。';
+            return;
+        }
+        byId('professionDetail').innerHTML = '<strong>' + escapeHtml(profession.name) + '</strong><br><br>'
+            + escapeHtml(profession.description) + '<br><br>基礎值<br>'
+            + 'HP ' + profession.hp + '　MP ' + profession.mp + '<br>'
+            + 'ATK ' + profession.attack + '　AP ' + profession.magic + '<br>'
+            + 'DEF ' + profession.defense + '　MDEF ' + profession.magicDefense
+            + '　SPEED ' + profession.speed + '<br><br>每級成長<br>'
+            + 'HP +' + profession.growthHp + '　MP +' + profession.growthMp + '<br>'
+            + 'ATK +' + profession.growthAttack + '　AP +' + profession.growthMagic + '<br>'
+            + 'DEF +' + profession.growthDefense + '　MDEF +' + profession.growthMagicDefense + '<br>'
+            + 'SPEED +' + profession.growthSpeed + '<br><br>職業特性：<br>'
+            + escapeHtml(profession.traitDescription).replace(/\n/g, '<br>')
+            + '<br><br>額外屬性：<br>' + escapeHtml(profession.extraAttributes).replace(/\n/g, '<br>');
+        const skills = profession.skills || [];
+        if (!skills.some(skill => skill.skillCode === state.selectedProfessionSkillCode)) {
+            state.selectedProfessionSkillCode = skills.length ? skills[0].skillCode : null;
+        }
+        byId('professionSkillList').innerHTML = skills.map(skill =>
+            '<button class="create-skill-entry' + (skill.skillCode === state.selectedProfessionSkillCode ? ' selected' : '')
+            + '" data-code="' + escapeHtml(skill.skillCode) + '" type="button">'
+            + skillIcon(skill) + '<span>Lv' + skill.requiredLevel + '　<strong>'
+            + escapeHtml(skill.skillName) + '</strong>　MP ' + skill.mpCost + '</span></button>'
+        ).join('');
+        const selectedSkill = skills.find(skill => skill.skillCode === state.selectedProfessionSkillCode);
+        byId('professionSkillDetail').innerHTML = selectedSkill
+            ? '學習等級：Lv' + selectedSkill.requiredLevel + '<br>' + skillDetailHtml(selectedSkill)
+            : '這個職業目前沒有可學習技能。';
     }
 
     function renderCharacters() {
@@ -211,7 +243,6 @@
             renderCharacterDetail();
         }
         byId('openCreateBtn').hidden = state.characters.length >= 3;
-        if (state.characters.length >= 3) byId('createCharacterForm').hidden = true;
     }
 
     function renderCharacterDetail() {
@@ -225,6 +256,7 @@
         byId('detailProfession').textContent = character.professionName;
         byId('detailLevel').textContent = character.level;
         byId('detailGold').textContent = character.gold;
+        byId('detailSkillSlots').textContent = character.skillSlotCount;
         byId('detailHp').textContent = character.currentHp + ' / ' + character.maxHp;
         byId('detailMp').textContent = character.currentMp + ' / ' + character.maxMp;
         byId('detailExp').textContent = character.experience + ' / ' + character.experienceToNextLevel;
@@ -234,11 +266,43 @@
         byId('detailAttack').textContent = character.attack;
         byId('detailMagic').textContent = character.magic;
         byId('detailDefense').textContent = character.defense;
-        byId('detailMagicDefense').textContent = character.magicDefense;
         byId('detailSpeed').textContent = character.speed;
         const profession = professionByCode(character.professionCode);
         byId('detailProfessionText').textContent = profession
             ? '職業特性　' + profession.traitDescription : '';
+    }
+
+    function renderCharacterStatus() {
+        const character = state.selectedCharacter;
+        if (!character) return;
+        const profession = professionByCode(character.professionCode);
+        setProfessionSprite(byId('statusPortrait'), character.professionCode);
+        byId('statusName').textContent = character.characterName;
+        byId('statusProfession').textContent = character.professionName;
+        byId('statusLevel').textContent = character.level;
+        byId('statusHp').textContent = character.currentHp + ' / ' + character.maxHp;
+        byId('statusMp').textContent = character.currentMp + ' / ' + character.maxMp;
+        byId('statusExp').textContent = character.experience + ' / ' + character.experienceToNextLevel;
+        setBar('statusHpBar', character.currentHp, character.maxHp);
+        setBar('statusMpBar', character.currentMp, character.maxMp);
+        setBar('statusExpBar', character.experience, character.experienceToNextLevel);
+        byId('statusGold').textContent = character.gold;
+        byId('statusSkillSlots').textContent = character.skillSlotCount;
+        const rows = [
+            ['ATK', character.baseAttack + ' + ' + character.attackBaseBonus],
+            ['AP', character.magic],
+            ['DEF', character.defense],
+            ['MDEF', character.magicDefense],
+            ['SPEED', character.speed],
+            ['separator', ''],
+            ['物理穿透', character.physicalPenetrationPercent + '% + ' + character.physicalPenetrationFlat],
+            ['爆擊機率', character.criticalRate + '%'],
+            ['物理吸血', character.physicalLifesteal + '%']
+        ];
+        byId('statusAttributeList').innerHTML = rows.map(row => row[0] === 'separator'
+            ? '<hr>' : '<div><span>' + row[0] + '</span><strong>' + row[1] + '</strong></div>').join('');
+        byId('statusTrait').innerHTML = '職業特性　'
+            + escapeHtml(profession ? profession.traitDescription : '無').replace(/\n/g, '<br>');
     }
 
     function skillDetailHtml(skill) {
@@ -270,14 +334,10 @@
             + (skill.skillCode === state.selectedConfigSkillCode ? ' selected' : '')
             + '" data-code="' + escapeHtml(skill.skillCode) + '" type="button">'
             + skillIcon(skill) + '<span><strong>' + (index + 1) + '. '
-            + escapeHtml(skill.skillName) + '</strong><small>MP ' + skill.mpCost + '</small></span></button>'
-            + '<button class="unequip-skill" data-code="' + escapeHtml(skill.skillCode)
-            + '" type="button">卸下</button></div>'
+            + escapeHtml(skill.skillName) + '</strong><small>MP ' + skill.mpCost + '</small></span></button></div>'
         ).join('');
         const selected = config.learnedSkills.find(skill => skill.skillCode === state.selectedConfigSkillCode);
         byId('configSkillDetail').innerHTML = skillDetailHtml(selected);
-        byId('equipSkillBtn').disabled = !selected || equippedCodes.has(selected.skillCode)
-            || config.equippedSkills.length >= config.slotCount;
     }
 
     async function openSkillConfiguration() {
@@ -368,11 +428,12 @@
         byId('mapCharacterClass').textContent = character.professionName + '　Lv' + character.level;
         byId('mapHp').textContent = character.currentHp + ' / ' + character.maxHp;
         byId('mapMp').textContent = character.currentMp + ' / ' + character.maxMp;
+        byId('mapExp').textContent = character.experience + ' / ' + character.experienceToNextLevel;
         setBar('mapHpBar', character.currentHp, character.maxHp);
         setBar('mapMpBar', character.currentMp, character.maxMp);
+        setBar('mapExpBar', character.experience, character.experienceToNextLevel);
         byId('mapStats').textContent = 'ATK ' + character.attack + '　AP ' + character.magic
-            + '　DEF ' + character.defense + '　MDEF ' + character.magicDefense
-            + '　SPEED ' + character.speed;
+            + '　DEF ' + character.defense + '　SPEED ' + character.speed;
     }
 
     function renderStages() {
@@ -387,12 +448,14 @@
         });
         if (region) {
             byId('regionTitle').textContent = region.regionName;
-            byId('regionDescription').textContent = region.regionDescription;
+            byId('regionDescription').textContent = region.regionDescription
+                + '\n建議等級：Lv' + region.regionMinLevel + '～' + region.regionMaxLevel;
         }
         byId('stageGrid').innerHTML = regionStages.map(stage =>
             '<button class="stage-entry" data-code="' + escapeHtml(stage.stageCode) + '" type="button" '
             + (stage.unlocked ? '' : 'disabled') + '><strong>' + escapeHtml(stage.stageName)
-            + (stage.clearCount ? '　已通關' : '') + '</strong><small>建議 Lv' + stage.recommendedLevel
+            + '　' + (stage.clearCount ? '已通關' : stage.unlocked ? '可挑戰' : '未解鎖')
+            + '</strong><small>建議 Lv' + stage.recommendedLevel
             + '　｜　' + escapeHtml(stage.monsterName) + '</small></button>'
         ).join('');
     }
@@ -537,20 +600,29 @@
         if (!state.selectedCharacter) return;
         state.inventory = await request(RPG_API + '/characters/'
             + encodeURIComponent(state.selectedCharacter.characterId) + '/inventory');
-        state.inventoryFilter = 'ALL';
-        state.selectedItemCode = state.inventory.length ? state.inventory[0].itemCode : null;
-        byId('inventoryCharacterName').textContent = state.selectedCharacter.characterName
-            + '　｜　持有金幣 ' + state.selectedCharacter.gold;
+        state.inventoryFilter = 'CONSUMABLE';
+        state.selectedItemCode = null;
+        renderInventoryCharacterSummary();
         document.querySelectorAll('.inventory-tab').forEach(tab => {
-            tab.classList.toggle('selected', tab.dataset.type === 'ALL');
+            tab.classList.toggle('selected', tab.dataset.type === 'CONSUMABLE');
         });
         renderInventory();
         byId('inventoryModal').hidden = false;
     }
 
+    function renderInventoryCharacterSummary() {
+        const character = state.selectedCharacter;
+        if (!character) return;
+        byId('inventoryCharacterName').textContent = state.selectedCharacter.characterName
+            + '　Lv' + state.selectedCharacter.level;
+        byId('inventoryHp').textContent = state.selectedCharacter.currentHp + ' / ' + state.selectedCharacter.maxHp;
+        byId('inventoryMp').textContent = state.selectedCharacter.currentMp + ' / ' + state.selectedCharacter.maxMp;
+        setBar('inventoryHpBar', state.selectedCharacter.currentHp, state.selectedCharacter.maxHp);
+        setBar('inventoryMpBar', state.selectedCharacter.currentMp, state.selectedCharacter.maxMp);
+    }
+
     function renderInventory() {
-        const items = state.inventory.filter(item => state.inventoryFilter === 'ALL'
-            || item.itemType === state.inventoryFilter);
+        const items = state.inventory.filter(item => item.itemType === state.inventoryFilter);
         if (!items.some(item => item.itemCode === state.selectedItemCode)) {
             state.selectedItemCode = items.length ? items[0].itemCode : null;
         }
@@ -604,6 +676,7 @@
             await loadCharacters();
             selectCharacter(characterId);
             state.inventory = await request(RPG_API + '/characters/' + encodeURIComponent(characterId) + '/inventory');
+            renderInventoryCharacterSummary();
             renderInventory();
             showMessage(result.message, 'success');
             if (!byId('adventureScreen').hidden) {
@@ -785,17 +858,26 @@
     byId('professionGrid').addEventListener('click', event => {
         const button = event.target.closest('.profession-card');
         if (!button) return;
-        byId('professionCode').value = button.dataset.code;
-        document.querySelectorAll('.profession-card').forEach(item => {
-            item.classList.toggle('selected', item === button);
-        });
+        state.selectedProfessionCode = button.dataset.code;
+        state.selectedProfessionSkillCode = null;
+        renderProfessions();
+    });
+    byId('professionSkillList').addEventListener('click', event => {
+        const button = event.target.closest('.create-skill-entry');
+        if (!button) return;
+        state.selectedProfessionSkillCode = button.dataset.code;
+        renderProfessionDetail();
     });
     byId('openCreateBtn').addEventListener('click', () => {
-        byId('createCharacterForm').hidden = false;
-        byId('createCharacterForm').scrollIntoView({ behavior: 'smooth' });
+        state.selectedProfessionCode = state.professions.length ? state.professions[0].code : null;
+        state.selectedProfessionSkillCode = null;
+        byId('characterName').value = '';
+        renderProfessions();
+        byId('createCharacterScreen').hidden = false;
     });
     byId('cancelCreateBtn').addEventListener('click', () => {
-        byId('createCharacterForm').hidden = true;
+        showMessage('');
+        byId('createCharacterScreen').hidden = true;
     });
     byId('createCharacterForm').addEventListener('submit', async event => {
         event.preventDefault();
@@ -810,10 +892,10 @@
                 })
             });
             event.target.reset();
-            byId('createCharacterForm').hidden = true;
             state.selectedCharacter = null;
             await loadCharacters();
             showMessage('角色已加入冒險者名冊。', 'success');
+            byId('createCharacterScreen').hidden = true;
         } catch (error) {
             showMessage(error.message, 'error');
         } finally {
@@ -824,19 +906,29 @@
     byId('enterWorldBtn').addEventListener('click', () => {
         enterWorld().catch(error => showMessage(error.message, 'error'));
     });
-    ['openSkillConfigBtn', 'mapSkillConfigBtn', 'stageSkillConfigBtn'].forEach(id => {
+    function openCharacterInfo() {
+        renderCharacterStatus();
+        showMessage('');
+        byId('characterInfoScreen').hidden = false;
+    }
+    byId('openCharacterInfoBtn').addEventListener('click', openCharacterInfo);
+    byId('mapCharacterInfoBtn').addEventListener('click', openCharacterInfo);
+    byId('closeCharacterInfoBtn').addEventListener('click', () => {
+        byId('characterInfoScreen').hidden = true;
+    });
+    ['mapSkillConfigBtn', 'stageSkillConfigBtn'].forEach(id => {
         byId(id).addEventListener('click', () => {
             openSkillConfiguration().catch(error => showMessage(error.message, 'error'));
         });
     });
-    ['openInventoryBtn', 'mapInventoryBtn'].forEach(id => {
+    ['mapInventoryBtn'].forEach(id => {
         byId(id).addEventListener('click', () => {
             openInventory().catch(error => showMessage(error.message, 'error'));
         });
     });
-    ['openEquipmentBtn', 'mapEquipmentBtn'].forEach(id => byId(id).addEventListener('click', () =>
+    ['mapEquipmentBtn'].forEach(id => byId(id).addEventListener('click', () =>
         openEquipment().catch(error => showMessage(error.message, 'error'))));
-    ['openShopBtn', 'mapShopBtn'].forEach(id => byId(id).addEventListener('click', () =>
+    ['mapShopBtn'].forEach(id => byId(id).addEventListener('click', () =>
         openShop().catch(error => showMessage(error.message, 'error'))));
     byId('closeEquipmentBtn').addEventListener('click', () => { byId('equipmentModal').hidden = true; showMessage(''); });
     byId('equipmentProfessionFilter').addEventListener('change', renderEquipment);
@@ -880,6 +972,16 @@
         byId('inventoryModal').hidden = true;
         showMessage('');
     });
+    byId('reloadInventoryBtn').addEventListener('click', async () => {
+        try {
+            state.inventory = await request(RPG_API + '/characters/'
+                + encodeURIComponent(state.selectedCharacter.characterId) + '/inventory');
+            renderInventory();
+            showMessage('背包資料已重新讀取。', 'success');
+        } catch (error) {
+            showMessage(error.message, 'error');
+        }
+    });
     byId('learnedSkillList').addEventListener('click', event => {
         const button = event.target.closest('.config-skill-entry');
         if (!button) return;
@@ -893,19 +995,17 @@
         equipSelectedSkill().catch(error => showMessage(error.message, 'error'));
     });
     byId('equippedSkillList').addEventListener('click', event => {
-        const remove = event.target.closest('.unequip-skill');
-        if (remove) {
-            unequipSkill(remove.dataset.code).catch(error => showMessage(error.message, 'error'));
-            return;
-        }
         const button = event.target.closest('.config-skill-entry');
         if (button) {
             state.selectedConfigSkillCode = button.dataset.code;
             renderSkillConfiguration();
         }
     });
-    byId('equipSkillBtn').addEventListener('click', () => {
-        equipSelectedSkill().catch(error => showMessage(error.message, 'error'));
+    byId('equippedSkillList').addEventListener('contextmenu', event => {
+        const button = event.target.closest('.config-skill-entry');
+        if (!button) return;
+        event.preventDefault();
+        unequipSkill(button.dataset.code).catch(error => showMessage(error.message, 'error'));
     });
     byId('closeSkillConfigBtn').addEventListener('click', () => {
         byId('skillConfigModal').hidden = true;
@@ -956,6 +1056,9 @@
             if (!token()) throw new Error('請先登入 GamePlatform，再進入維爾薩王國。');
             state.user = await request('/api/user/auth/me');
             byId('accountBadge').textContent = state.user.username + '｜' + state.user.account;
+            byId('characterWelcome').textContent = '歡迎歸來，' + state.user.username
+                + '。請選擇角色，或在名冊中建立新的冒險者。';
+            byId('createWelcome').textContent = state.user.username + '，請為角色命名並選擇職業';
             const results = await Promise.all([
                 request(RPG_API + '/professions'),
                 request(RPG_API + '/characters')

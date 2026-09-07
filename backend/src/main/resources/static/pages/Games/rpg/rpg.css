@@ -17,6 +17,7 @@
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 html { min-width: 320px; }
 body {
     margin: 0;
@@ -99,10 +100,10 @@ button:disabled { cursor: not-allowed; }
 .message.error { border-color: #b54b3e; color: #ffc0ae; }
 .message.success { border-color: #829b55; color: #dff1b7; }
 
-.roster-layout { display: grid; grid-template-columns: minmax(390px, .9fr) minmax(520px, 1.1fr); gap: 30px; max-width: 1230px; margin: 0 auto; }
-.roster-panel, .character-overview { min-height: 610px; padding: 28px 34px; }
+.roster-layout { display: grid; grid-template-columns: 525px 1fr; gap: 30px; max-width: 1190px; margin: 0 auto; }
+.roster-panel, .character-overview { height: 625px; padding: 28px 34px; }
 .roster-panel > h3, .character-overview > h3 { font-size: 26px; }
-.character-roster { height: 485px; overflow-y: auto; border: 1px solid var(--gold); background: #271f19; }
+.character-roster { height: 500px; overflow: auto; border: 1px solid var(--gold); background: #271f19; }
 .character-roster::-webkit-scrollbar, .battleLog::-webkit-scrollbar { width: 12px; }
 .character-roster::-webkit-scrollbar-thumb { background: var(--gold); border: 2px solid #38291e; }
 .character-entry {
@@ -188,21 +189,23 @@ button:disabled { cursor: not-allowed; }
 
 .map-character-bar {
     display: grid;
-    grid-template-columns: 70px 180px repeat(5, minmax(110px, 1fr));
+    grid-template-columns: 70px 180px repeat(6, minmax(105px, 1fr));
     align-items: center;
     gap: 18px;
     padding: 17px 24px;
 }
 .map-character-bar > .sprite { grid-row: 1 / 3; }
 .map-character-name { grid-row: 1 / 3; }
-.map-character-bar > .compact-meter:not(.mana) { grid-column: 3 / 5; }
-.map-character-bar > .compact-meter.mana { grid-column: 5 / 8; }
-.map-stats { grid-column: 3 / 8; }
-#mapSkillConfigBtn { grid-column: 2 / 3; }
-#mapInventoryBtn { grid-column: 3 / 4; }
-#mapEquipmentBtn { grid-column: 4 / 5; }
-#mapShopBtn { grid-column: 5 / 6; }
-#changeCharacterBtn { grid-column: 6 / 8; }
+.map-character-bar > .compact-meter:not(.mana, .experience) { grid-column: 3 / 5; }
+.map-character-bar > .compact-meter.mana { grid-column: 5 / 7; }
+.map-character-bar > .compact-meter.experience { grid-column: 7 / 9; }
+.map-stats { grid-column: 3 / 9; }
+#mapCharacterInfoBtn { grid-column: 1 / 3; }
+#mapSkillConfigBtn { grid-column: 3 / 4; }
+#mapInventoryBtn { grid-column: 4 / 5; }
+#mapEquipmentBtn { grid-column: 5 / 6; }
+#mapShopBtn { grid-column: 6 / 7; }
+#changeCharacterBtn { grid-column: 7 / 9; }
 .map-character-name span, .map-character-name strong, .map-character-name small { display: block; }
 .map-character-name span { color: #fff0bf; font-weight: 700; }
 .map-character-name strong { margin: 4px 0; color: var(--gold-light); font-size: 20px; }
@@ -211,6 +214,7 @@ button:disabled { cursor: not-allowed; }
 .compact-meter i { grid-column: 1 / -1; grid-row: 1; height: 31px; border: 1px solid var(--gold); background: #211b17; overflow: hidden; }
 .compact-meter b { display: block; height: 100%; background: var(--blood); }
 .compact-meter.mana b { background: var(--mana); }
+.compact-meter.experience b { background: #c7922b; }
 .compact-meter strong { position: absolute; right: 10px; font-size: 13px; }
 .map-stats { color: #ffe6af; text-align: center; }
 .world-layout { display: grid; grid-template-columns: minmax(640px, 2fr) minmax(340px, 1fr); gap: 26px; margin-top: 22px; }
@@ -317,8 +321,9 @@ button:disabled { cursor: not-allowed; }
     .roster-layout, .world-layout, .expedition-grid, .battle-info-grid { grid-template-columns: 1fr; }
     .roster-panel, .character-overview { min-height: auto; }
     .map-character-bar { grid-template-columns: 70px repeat(2, 1fr); }
-    .map-character-bar > .sprite, .map-character-name, .map-character-bar > .compact-meter:not(.mana),
-    .map-character-bar > .compact-meter.mana, .map-stats, #mapSkillConfigBtn, #mapInventoryBtn,
+    .map-character-bar > .sprite, .map-character-name, .map-character-bar > .compact-meter:not(.mana, .experience),
+    .map-character-bar > .compact-meter.mana, .map-character-bar > .compact-meter.experience,
+    .map-stats, #mapCharacterInfoBtn, #mapSkillConfigBtn, #mapInventoryBtn,
     #mapEquipmentBtn, #mapShopBtn, #changeCharacterBtn { grid-column: auto; grid-row: auto; }
     .world-map { min-height: 540px; }
     .battle-info-grid > section { min-height: auto; }
@@ -342,8 +347,57 @@ button:disabled { cursor: not-allowed; }
 
 .shield-status { min-height: 1.35em; margin: 9px 0 0; text-align: center; font-weight: 700; }
 
-.overview-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
-.overview-actions #enterWorldBtn { grid-column: 1 / -1; }
+.overview-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; margin-top: 22px; }
+
+.rpg-child-window {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    overflow: auto;
+    padding: 28px;
+    background: rgba(10, 7, 5, .82);
+    box-shadow: inset 0 0 0 1px var(--gold), inset 0 0 0 8px rgba(24, 20, 17, .72);
+}
+.rpg-child-window[hidden] { display: none; }
+
+.character-status-layout {
+    display: grid;
+    grid-template-columns: 350px 275px minmax(520px, 1fr);
+    gap: 22px;
+    max-width: 1390px;
+    margin: 6px auto 0;
+}
+.character-status-layout > section { min-height: 650px; padding: 26px 20px; }
+.status-identity { text-align: center; }
+.status-portrait { width: 124px; height: 124px; margin: 0 auto 16px; }
+.status-identity h3 { margin: 0 0 8px; font-size: 27px; }
+.status-identity > p { font-size: 18px; }
+.status-attributes > h3, .status-effects > h3 { font-size: 24px; }
+.status-attribute-list { display: grid; gap: 10px; }
+.status-attribute-list > div { display: flex; justify-content: space-between; border: 1px solid var(--gold); padding: 13px 28px; font-size: 18px; }
+.status-attribute-list hr { width: 100%; border: 0; border-top: 2px solid #d9d9d9; }
+.status-trait { min-height: 115px; padding: 18px; line-height: 1.65; }
+.status-current-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border: 1px solid var(--gold); padding: 0; min-height: 415px; }
+.status-current-grid > div:first-child { border-right: 1px solid var(--gold); }
+.status-current-grid .parchment { border: 0; }
+.status-effects > .medieval-button { display: block; min-width: 220px; margin: 18px auto 0; }
+
+.create-contract { max-width: 1390px; margin: 0 auto; padding: 30px 40px 20px; }
+.create-name { display: grid; grid-template-columns: 110px 310px; align-items: center; gap: 12px; width: 440px; font-size: 20px; font-weight: 700; }
+.create-name input { height: 48px; border: 1px solid var(--gold); padding: 8px 11px; background: var(--parchment-light); color: var(--ink); }
+.create-contract-layout { display: grid; grid-template-columns: 310px 395px minmax(450px, 1fr); gap: 30px; margin-top: 28px; }
+.create-contract-layout h3 { margin: 0 0 14px; text-align: center; font-size: 22px; }
+.create-contract .profession-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 0; }
+.create-contract .profession-card { display: grid; grid-template-columns: 66px 1fr; align-items: center; min-height: 66px; padding: 7px; text-align: left; }
+.create-contract .profession-card .profession-sprite { width: 56px; height: 56px; }
+.create-contract .profession-card strong { font-size: 17px; }
+.create-profession-detail { height: 450px; overflow-y: auto; padding: 16px; line-height: 1.55; }
+.create-skill-list { height: 255px; overflow-y: auto; border: 1px solid var(--gold); background: #2a2018; }
+.create-skill-entry { display: grid; grid-template-columns: 58px 1fr; align-items: center; width: 100%; min-height: 64px; border: 0; border-bottom: 1px solid #755723; padding: 6px 10px; background: #2a2018; color: #ffe8ad; text-align: left; }
+.create-skill-entry.selected { background: #553b25; }
+.create-skill-entry .skill-icon { width: 50px; height: 50px; }
+.create-skill-detail { height: 185px; margin-top: 14px; overflow-y: auto; padding: 14px; line-height: 1.5; }
+.create-note { margin: 18px 0 0; text-align: center; }
 .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -401,17 +455,18 @@ button:disabled { cursor: not-allowed; }
 .config-skill-entry.selected { outline: 2px solid var(--gold-light); outline-offset: -2px; background: #513821; }
 .config-skill-entry strong, .config-skill-entry small { display: block; }
 .config-skill-entry small { margin-top: 5px; color: #d4bb86; }
-.config-equipped-row { display: grid; grid-template-columns: 1fr 64px; border-bottom: 1px solid #795b2a; }
+.config-equipped-row { display: grid; grid-template-columns: 1fr; border-bottom: 1px solid #795b2a; }
 .config-equipped-row .config-skill-entry { border-bottom: 0; }
-.unequip-skill { border: 0; border-left: 1px solid #795b2a; background: #39251d; color: #ffbfaa; }
 .skill-config-layout .skill-detail { height: 430px; overflow-y: auto; }
 .skill-config-note { margin: 18px 0 0; color: #f3dca7; text-align: center; }
 .skill-config-actions { display: flex; justify-content: center; gap: 24px; margin-top: 18px; }
 .skill-config-actions .medieval-button { min-width: 220px; }
 
 .inventory-panel { width: min(1050px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; padding: 24px; }
-.inventory-panel .panel-heading h2, .inventory-panel .panel-heading p { margin: 0; }
-.inventory-panel .panel-heading p { margin-top: 5px; color: #e8cf99; }
+.inventory-panel > h2 { margin: 0 0 18px; text-align: center; }
+.inventory-character-summary { display: grid; grid-template-columns: 110px 260px 1fr 1fr; align-items: center; gap: 18px; margin-bottom: 16px; }
+.inventory-character-summary > span { font-weight: 700; }
+.inventory-character-summary > strong { border: 1px solid var(--gold); padding: 12px; background: var(--parchment-light); color: var(--ink); text-align: center; }
 .inventory-layout { display: grid; grid-template-columns: 1.25fr 1fr; gap: 24px; }
 .inventory-layout > section:last-child > h3 { margin-top: 0; text-align: center; }
 .inventory-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
@@ -426,16 +481,27 @@ button:disabled { cursor: not-allowed; }
 .inventory-empty { grid-column: 1 / -1; padding: 24px; color: #d4bb86; text-align: center; }
 .inventory-layout .skill-detail { min-height: 330px; }
 .inventory-layout .wide { width: 100%; margin-top: 14px; }
+.inventory-actions { display: flex; justify-content: center; gap: 24px; margin-top: 18px; }
+.inventory-actions .medieval-button { min-width: 220px; }
 
 @media (max-width: 1050px) {
     .skill-config-layout { grid-template-columns: 1fr 1fr; }
     .skill-config-layout > section:last-child { grid-column: 1 / -1; }
     .skill-config-layout .skill-detail { height: auto; min-height: 180px; }
     .inventory-layout { grid-template-columns: 1fr; }
+    .inventory-character-summary { grid-template-columns: 1fr 1fr; }
+    .character-status-layout, .create-contract-layout { grid-template-columns: 1fr; }
+    .character-status-layout > section { min-height: auto; }
+    .create-name { width: 100%; }
 }
 @media (max-width: 720px) {
     .overview-actions, .skill-config-layout { grid-template-columns: 1fr; }
     .skill-config-layout > section:last-child { grid-column: auto; }
     .config-skill-list { height: 280px; }
     .skill-config-actions { flex-direction: column; }
+    .inventory-actions { flex-direction: column; }
+    .inventory-actions .medieval-button { min-width: 0; }
+    .create-name { grid-template-columns: 1fr; }
+    .create-contract { padding: 22px 16px; }
+    .create-contract .profession-grid { grid-template-columns: 1fr; }
 }

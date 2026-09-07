@@ -9,23 +9,15 @@
 </head>
 <body>
 <main class="game-shell">
-    <header class="royal-header">
-        <div>
-            <h1>維爾薩王國</h1>
-            <p id="pageSubtitle">選擇出征角色</p>
-        </div>
-        <div class="header-actions">
-            <span id="accountBadge">確認登入中……</span>
-            <button id="leaveGameBtn" class="medieval-button subtle" type="button">返回遊戲大廳</button>
-        </div>
-    </header>
+    <span id="accountBadge" class="visually-hidden">確認登入中……</span>
+    <span id="pageSubtitle" class="visually-hidden">選擇出征角色</span>
 
     <section id="message" class="message" hidden></section>
 
     <section id="characterScreen" class="screen" hidden>
         <div class="screen-title">
             <h2>選擇出征角色</h2>
-            <p>請選擇角色，或在名冊中建立新的冒險者。</p>
+            <p id="characterWelcome">歡迎歸來，請選擇角色，或在名冊中建立新的冒險者。</p>
         </div>
 
         <div class="roster-layout">
@@ -42,8 +34,8 @@
                         <div id="characterPortrait" class="sprite profession-sprite"></div>
                         <div>
                             <h4 id="detailCharacterName">—</h4>
-                            <p><span id="detailProfession">—</span>　Lv.<span id="detailLevel">1</span></p>
-                            <p>持有金幣　<span id="detailGold">0</span></p>
+                            <p><span id="detailProfession">—</span>　Lv<span id="detailLevel">1</span></p>
+                            <p>持有金幣　<span id="detailGold">0</span>　｜　技能欄位　<span id="detailSkillSlots">4</span></p>
                         </div>
                     </div>
                     <div class="meter hp"><span>HP</span><i><b id="detailHpBar"></b></i><strong id="detailHp">0 / 0</strong></div>
@@ -53,15 +45,11 @@
                         <span>ATK <strong id="detailAttack">0</strong></span>
                         <span>AP <strong id="detailMagic">0</strong></span>
                         <span>DEF <strong id="detailDefense">0</strong></span>
-                        <span>MDEF <strong id="detailMagicDefense">0</strong></span>
                         <span>SPEED <strong id="detailSpeed">0</strong></span>
                     </div>
                     <div id="detailProfessionText" class="parchment profession-note"></div>
                     <div class="overview-actions">
-                        <button id="openSkillConfigBtn" class="medieval-button subtle" type="button">調整攜帶技能</button>
-                        <button id="openInventoryBtn" class="medieval-button subtle" type="button">開啟背包</button>
-                        <button id="openEquipmentBtn" class="medieval-button subtle" type="button">裝備管理</button>
-                        <button id="openShopBtn" class="medieval-button subtle" type="button">冒險者商店</button>
+                        <button id="openCharacterInfoBtn" class="medieval-button subtle" type="button">查看完整角色狀態</button>
                         <button id="enterWorldBtn" class="medieval-button" type="button">使用此角色進入遊戲</button>
                     </div>
                 </div>
@@ -70,18 +58,54 @@
 
         <div class="screen-actions split">
             <button id="openCreateBtn" class="medieval-button" type="button">＋ 建立新角色</button>
+            <button id="leaveGameBtn" class="medieval-button subtle" type="button">返回遊戲大廳</button>
         </div>
+    </section>
 
-        <form id="createCharacterForm" class="leather-panel create-panel" hidden>
-            <div class="panel-heading">
-                <div><h3>建立新角色</h3><p>選擇職業並為冒險者命名。</p></div>
-                <button id="cancelCreateBtn" class="medieval-button subtle" type="button">取消</button>
+    <section id="characterInfoScreen" class="rpg-child-window" hidden>
+        <div class="screen-title"><h2>角色狀態</h2></div>
+        <div class="character-status-layout">
+            <section class="leather-panel status-identity">
+                <div id="statusPortrait" class="sprite profession-sprite status-portrait"></div>
+                <h3 id="statusName">—</h3>
+                <p><span id="statusProfession">—</span>　Lv<span id="statusLevel">1</span></p>
+                <div class="meter hp"><span>HP</span><i><b id="statusHpBar"></b></i><strong id="statusHp">0 / 0</strong></div>
+                <div class="meter mp"><span>MP</span><i><b id="statusMpBar"></b></i><strong id="statusMp">0 / 0</strong></div>
+                <div class="meter exp"><span>EXP</span><i><b id="statusExpBar"></b></i><strong id="statusExp">0 / 0</strong></div>
+                <p>持有金幣　<span id="statusGold">0</span></p>
+                <p>技能欄位　<span id="statusSkillSlots">4</span></p>
+            </section>
+            <section class="leather-panel status-attributes">
+                <h3>能力值</h3>
+                <div id="statusAttributeList" class="status-attribute-list"></div>
+            </section>
+            <section class="leather-panel status-effects">
+                <h3>職業特性與目前狀態</h3>
+                <div id="statusTrait" class="parchment status-trait"></div>
+                <h3>當前持有狀態</h3>
+                <div class="status-current-grid"><div></div><div class="parchment"></div></div>
+                <button id="closeCharacterInfoBtn" class="medieval-button" type="button">關閉</button>
+            </section>
+        </div>
+    </section>
+
+    <section id="createCharacterScreen" class="rpg-child-window" hidden>
+        <div class="screen-title">
+            <h2>締結你的冒險者契約</h2>
+            <p id="createWelcome">請為角色命名並選擇職業</p>
+        </div>
+        <form id="createCharacterForm" class="leather-panel create-contract">
+            <label class="create-name">角色名稱<input id="characterName" maxlength="20" required></label>
+            <div class="create-contract-layout">
+                <section><h3>選擇職業</h3><div id="professionGrid" class="profession-grid"></div></section>
+                <section><h3>職業屬性與特性</h3><div id="professionDetail" class="parchment create-profession-detail"></div></section>
+                <section><h3>可學習職業技能</h3><div id="professionSkillList" class="create-skill-list"></div><div id="professionSkillDetail" class="parchment create-skill-detail"></div></section>
             </div>
-            <div id="professionGrid" class="profession-grid"></div>
-            <div class="create-controls">
-                <label>角色名稱<input id="characterName" maxlength="20" placeholder="2～20 個字" required></label>
-                <label>選擇職業<select id="professionCode" required><option value="">載入職業中……</option></select></label>
-                <button id="createCharacterBtn" class="medieval-button" type="submit">建立角色</button>
+            <input id="professionCode" type="hidden" required>
+            <p class="create-note">每個角色都會獲得急救、職業入門技能與基礎藥水。</p>
+            <div class="screen-actions">
+                <button id="createCharacterBtn" class="medieval-button" type="submit">完成角色創建</button>
+                <button id="cancelCreateBtn" class="medieval-button subtle" type="button">返回角色名冊</button>
             </div>
         </form>
     </section>
@@ -92,7 +116,9 @@
             <div class="map-character-name"><span>出征角色</span><strong id="mapCharacterName">—</strong><small id="mapCharacterClass">—</small></div>
             <div class="compact-meter"><span>HP</span><i><b id="mapHpBar"></b></i><strong id="mapHp">0 / 0</strong></div>
             <div class="compact-meter mana"><span>MP</span><i><b id="mapMpBar"></b></i><strong id="mapMp">0 / 0</strong></div>
+            <div class="compact-meter experience"><span>EXP</span><i><b id="mapExpBar"></b></i><strong id="mapExp">0 / 0</strong></div>
             <div class="map-stats" id="mapStats">ATK 0　AP 0　DEF 0　SPEED 0</div>
+            <button id="mapCharacterInfoBtn" class="medieval-button subtle" type="button">角色資訊</button>
             <button id="mapSkillConfigBtn" class="medieval-button subtle" type="button">攜帶技能</button>
             <button id="mapInventoryBtn" class="medieval-button subtle" type="button">道具背包</button>
             <button id="mapEquipmentBtn" class="medieval-button subtle" type="button">裝備管理</button>
@@ -216,24 +242,22 @@
             </section>
         </div>
         <p class="skill-config-note">雙擊左側技能即可攜帶；使用右側的卸下按鈕即可卸下。變更會立即保存。</p>
-        <div class="skill-config-actions">
-            <button id="equipSkillBtn" class="medieval-button" type="button">攜帶所選技能</button>
-            <button id="closeSkillConfigBtn" class="medieval-button subtle" type="button">完成</button>
-        </div>
+        <div class="skill-config-actions"><button id="closeSkillConfigBtn" class="medieval-button subtle" type="button">完成</button></div>
     </section>
 </div>
 
 <div id="inventoryModal" class="modal-backdrop" hidden>
     <section class="leather-panel inventory-panel" role="dialog" aria-modal="true" aria-labelledby="inventoryTitle">
-        <div class="panel-heading">
-            <div><h2 id="inventoryTitle">冒險者背包</h2><p id="inventoryCharacterName">—</p></div>
-            <button id="closeInventoryBtn" class="medieval-button subtle" type="button">返回</button>
+        <h2 id="inventoryTitle">角色背包</h2>
+        <div class="inventory-character-summary">
+            <span>目前角色</span><strong id="inventoryCharacterName">—</strong>
+            <div class="meter hp"><span>HP</span><i><b id="inventoryHpBar"></b></i><strong id="inventoryHp">0 / 0</strong></div>
+            <div class="meter mp"><span>MP</span><i><b id="inventoryMpBar"></b></i><strong id="inventoryMp">0 / 0</strong></div>
         </div>
         <div class="inventory-layout">
             <section>
                 <div class="inventory-tabs" role="tablist">
-                    <button class="inventory-tab selected" data-type="ALL" type="button">全部</button>
-                    <button class="inventory-tab" data-type="CONSUMABLE" type="button">消耗品</button>
+                    <button class="inventory-tab selected" data-type="CONSUMABLE" type="button">消耗品</button>
                     <button class="inventory-tab" data-type="SKILL_SCROLL" type="button">技能卷軸</button>
                     <button class="inventory-tab" data-type="MATERIAL" type="button">素材</button>
                     <button class="inventory-tab" data-type="QUEST" type="button">任務道具</button>
@@ -245,6 +269,10 @@
                 <div id="inventoryDetail" class="parchment skill-detail">請選擇道具。</div>
                 <button id="useInventoryItemBtn" class="medieval-button wide" type="button" disabled>使用選擇的道具</button>
             </section>
+        </div>
+        <div class="inventory-actions">
+            <button id="reloadInventoryBtn" class="medieval-button subtle" type="button">重新讀取</button>
+            <button id="closeInventoryBtn" class="medieval-button subtle" type="button">返回遊戲主頁</button>
         </div>
     </section>
 </div>
