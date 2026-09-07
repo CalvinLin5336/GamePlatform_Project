@@ -103,6 +103,24 @@ public class GameDataInitializer implements CommandLineRunner {
 
         migrateRpgMetadata(rpg);
         createModeIfMissing(rpg.getGameId(), "SINGLE", "單人冒險", 1, 1, 0, true);
+
+        // 🌟 新增：「圖靈解密」自動初始化與防護，避免 Render 雲端重啟後消失
+        Game turing = gameRepository.findByGameCode("TURING").orElse(null);
+        if (turing == null) {
+            turing = new Game();
+            turing.setGameCode("TURING");
+            turing.setGameName("圖靈解密");
+            turing.setDescription("運用邏輯推演破解三位數密碼，挑戰成為頂尖的解密大師！");
+            turing.setFrontendPath("/pages/Games/turing/turing_client.html");
+            turing.setBackendPath("/api/game");
+            turing.setImagePath("/assets/Games/turing/icon.png");
+            turing.setEnabled(true);
+            turing = gameRepository.save(turing);
+        }
+
+        createModeIfMissing(turing.getGameId(), "TURING_4", "4張卡", 1, 1, 0, true);
+        createModeIfMissing(turing.getGameId(), "TURING_5", "5張卡", 1, 1, 0, true);
+        createModeIfMissing(turing.getGameId(), "TURING_6", "6張卡", 1, 1, 0, true);
     }
 
     private void migrateStaticPaths(
