@@ -82,11 +82,28 @@ $(document).ready(function() {
         });
     });
 
-    $('#btnLeave').on('click', function() {
-        if(confirm("確定要放棄這局並離開嗎？")) {
-           window.location.href = '../../Lobby/jquery_lobby.html';
-        }
-    });
+	$('#btnLeave').on('click', function() {
+	        // 🌟 1. 更明確的防呆確認文字
+	        if(confirm("確定要放棄這局並離開嗎？\n這將會直接結束遊戲，並將房間廢棄！")) {
+	            
+	            // 避免玩家焦躁重複點擊
+	            $(this).prop('disabled', true).text('離開中...');
+
+	            // 🌟 2. 呼叫後端大廳 API 更新房間狀態為「廢棄」
+	            $.ajax({
+	                url: `/api/lobby/room/${currentRoomId}/abandon`, 
+	                type: 'POST',
+	                contentType: 'application/json',
+	                data: JSON.stringify({ 
+	                    playerAccount: currentAccount
+	                }),
+	                complete: function() {
+	                    // 🌟 3. 不管後端請求成功或失敗，前端最後都強制跳轉回大廳
+	                    window.location.href = '../../Lobby/jquery_lobby.html';
+	                }
+	            });
+	        }
+	    });
 
     startGame();
 });

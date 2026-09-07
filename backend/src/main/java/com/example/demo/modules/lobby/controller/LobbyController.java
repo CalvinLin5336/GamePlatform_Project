@@ -529,4 +529,44 @@ public class LobbyController {
         
         return ResponseEntity.ok(response);
     }
+    
+ // =========================================================
+    // 10. 廢棄/放棄房間 (遊戲中途離開)
+    // =========================================================
+    @PostMapping("/room/{roomId}/abandon")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> abandonRoom(
+            @PathVariable String roomId,
+            @RequestBody Map<String, String> request) {
+
+        String playerAccount = request.get("playerAccount");
+        Map<String, Object> response = new HashMap<>();
+
+        Optional<Room> optionalRoom = roomRepository.findById(roomId);
+        if (optionalRoom.isPresent()) {
+            Room room = optionalRoom.get();
+            
+            // 🌟 核心邏輯：將房間狀態改為 ABANDONED (廢棄)
+            room.setStatus("ABANDONED");
+            roomRepository.save(room);
+            
+            // 順便發送廣播，讓可能還在該房間連線的其他人知道房間已廢棄
+            try {
+                Map<String, Object> disbandMsg = new HashMap<>();
+                disbandMsg.put("type", "ROOM_DISBANDED");
+                disbandMsg.put("message", "玩家 " + playerAccount + " 已經放棄遊戲，房間已廢棄！");
+                broadcastAfterCommit(roomId, objectMapper.writeValueAsString(disbandMsg));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
+            response.put("success", true);
+            response.put("message", "房間已標記為廢棄 (ABANDONED)");
+            return ResponseEntity.ok(response);
+        }
+
+        response.put("success", false);
+        response.put("message", "找不到指定的房間！");
+        return ResponseEntity.badRequest().body(response);
+    }
 }
