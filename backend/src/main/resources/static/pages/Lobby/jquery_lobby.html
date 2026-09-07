@@ -20,7 +20,7 @@
                 ➕ 新建房間
             </button>
             <button id="tabListBtn" class="px-8 py-2.5 bg-transparent text-slate-400 font-bold rounded-full hover:text-white transition active:scale-95">
-                📡 現有房間
+                📡 等待中房間
             </button>
             <button id="tabActiveBtn" class="px-8 py-2.5 bg-transparent text-slate-400 font-bold rounded-full hover:text-white transition active:scale-95">
                 🎮 進行中房間
@@ -43,6 +43,17 @@
 
         <!-- 區塊 B：現有房間列表 (預設隱藏 hidden) -->
         <div id="roomListSection" class="hidden w-full max-w-3xl animate-[fadeIn_0.3s_ease-out]">
+            <!-- 🌟 新增：手動輸入房號加入區塊 -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-xl mb-6 flex items-center justify-between">
+                <div class="flex items-center gap-3 w-full max-w-md">
+                    <span class="text-xl">🔑</span>
+                    <input type="text" id="manualRoomIdInput" placeholder="輸入房號直接加入" class="flex-1 bg-slate-950 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 transition font-mono uppercase">
+                    <button id="manualJoinBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-bold transition shadow-md shadow-indigo-900/50">
+                        加入
+                    </button>
+                </div>
+            </div>
+
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
@@ -415,6 +426,58 @@
                     }
                 });
             };
+
+            // 🌟 8. 手動輸入房號加入邏輯
+            $('#manualJoinBtn').on('click', function() {
+                const inputRoomId = $('#manualRoomIdInput').val().trim().toUpperCase();
+                if (!inputRoomId) {
+                    alert('請輸入有效的房號！');
+                    return;
+                }
+                
+                $(this).prop('disabled', true).text('加入中...');
+                
+                // 先檢查房間是否存在且可以加入
+                $.ajax({
+                    url: apiHost + '/api/lobby/room/' + inputRoomId,
+                    type: 'GET',
+                    success: function(res) {
+                        if (res.success) {
+                            const room = res.room;
+                            const currentPlayers = room.players ? room.players.length : 0;
+                            
+                            if (room.status !== 'WAITING') {
+                                alert('該房間已經開始遊戲或已結束！');
+                                $('#manualJoinBtn').prop('disabled', false).text('加入');
+                                return;
+                            }
+                            
+                            if (currentPlayers >= room.maxPlayers) {
+                                alert('該房間已滿！');
+                                $('#manualJoinBtn').prop('disabled', false).text('加入');
+                                return;
+                            }
+                            
+                            // 呼叫原本的加入邏輯
+                            window.joinRoom(inputRoomId);
+                        } else {
+                            alert('找不到指定的房間，請確認房號是否正確！');
+                            $('#manualJoinBtn').prop('disabled', false).text('加入');
+                        }
+                    },
+                    error: function() {
+                        alert('尋找房間失敗，請確認伺服器連線！');
+                        $('#manualJoinBtn').prop('disabled', false).text('加入');
+                    }
+                });
+            });
+
+            // 綁定 Enter 鍵觸發加入
+            $('#manualRoomIdInput').on('keypress', function(e) {
+                if (e.which === 13) {
+                    $('#manualJoinBtn').click();
+                }
+            });
 
             // 初始化載入
             fetchGamesInfo();
