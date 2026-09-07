@@ -4,6 +4,7 @@ import com.example.demo.modules.lobby.entity.Room;
 import com.example.demo.modules.lobby.repository.RoomRepository;
 import com.example.demo.modules.lobby.server.RoomWebSocketHandler;
 import com.example.demo.modules.lobby.service.RoomLifecycleService;
+import com.example.demo.modules.user.repository.UserPageRepository;
 import com.example.demo.modules.game.management.repository.GameModeRepository;
 import com.example.demo.modules.game.management.repository.GameRepository;
 import com.example.demo.modules.game.management.model.GameMode;
@@ -40,6 +41,9 @@ public class LobbyController {
 
     @Autowired
     private RoomLifecycleService roomLifecycleService;
+    
+    @Autowired
+    private UserPageRepository userPageRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -103,7 +107,7 @@ public class LobbyController {
     @PostMapping("/create-room")
     public ResponseEntity<Map<String, Object>> createRoom(@RequestBody Map<String, Object> request) {
         String hostAccount = (String) request.get("hostAccount"); 
-        String hostName = (String) request.get("hostName"); // 🌟 接收前端傳來的 Username
+        String hostName = (String) request.get("hostName"); 
         if (hostName == null || hostName.isBlank()) hostName = hostAccount;
 
         Long gameId = Long.valueOf(request.get("gameId").toString());
@@ -133,7 +137,17 @@ public class LobbyController {
         newRoom.setComputerPlayers(modeConfig.getComputerPlayers()); 
         
         newRoom.getPlayers().add(hostAccount);
-        newRoom.getPlayerNames().put(hostAccount, hostName); // 🌟 儲存房主對應名稱
+        newRoom.getPlayerNames().put(hostAccount, hostName); 
+
+        // 🌟 透過 UserPageRepository 取得房主頭貼
+        try {
+            var hostUser = userPageRepository.findByAccount(hostAccount);
+            if (hostUser != null && hostUser.avatar() != null) {
+                newRoom.getPlayerAvatars().put(hostAccount, hostUser.avatar());
+            }
+        } catch (Exception e) {
+            // 略過錯誤，維持預設
+        }
         
         Room savedRoom = roomRepository.save(newRoom);
         
@@ -154,11 +168,12 @@ public class LobbyController {
     public ResponseEntity<Map<String, Object>> joinRoom(@RequestBody Map<String, Object> request) {
         String roomId = (String) request.get("roomId");
         String playerAccount = (String) request.get("playerAccount");
-        String playerName = (String) request.get("playerName"); // 🌟 接收前端傳來的 Username
+        String playerName = (String) request.get("playerName"); 
         if (playerName == null || playerName.isBlank()) playerName = playerAccount;
 
         Map<String, Object> response = new HashMap<>();
 
+        // 🌟 必須先從資料庫找出房間，才能進行後續檢查與修改
         Optional<Room> optionalRoom = roomRepository.findById(roomId);
         if (optionalRoom.isEmpty()) {
             response.put("success", false);
@@ -182,7 +197,18 @@ public class LobbyController {
         
         if (!room.getPlayers().contains(playerAccount)) {
             room.getPlayers().add(playerAccount); 
-            room.getPlayerNames().put(playerAccount, playerName); // 🌟 儲存玩家對應名稱
+            room.getPlayerNames().put(playerAccount, playerName); 
+            
+            // 🌟 正確抓取加入者的頭貼並放入 room 物件中
+            try {
+                var joiningUser = userPageRepository.findByAccount(playerAccount);
+                if (joiningUser != null && joiningUser.avatar() != null) {
+                    room.getPlayerAvatars().put(playerAccount, joiningUser.avatar());
+                }
+            } catch (Exception e) {
+                // 略過錯誤
+            }
+            
             roomRepository.save(room);    
             broadcastRoomSync(roomId, room);
         }
@@ -253,7 +279,8 @@ public class LobbyController {
         }
 
         room.getPlayers().remove(playerAccount);
-        room.getPlayerNames().remove(playerAccount); // 清理名字對照
+        room.getPlayerNames().remove(playerAccount); 
+        room.getPlayerAvatars().remove(playerAccount); // 清理頭貼對照
 
         if (room.getHostAccount().equals(playerAccount) || room.getPlayers().isEmpty()) {
             try {
@@ -355,6 +382,7 @@ public class LobbyController {
 
         room.getPlayers().remove(targetAccount);
         room.getPlayerNames().remove(targetAccount);
+        room.getPlayerAvatars().remove(targetAccount);
         roomRepository.save(room);
 
         try {

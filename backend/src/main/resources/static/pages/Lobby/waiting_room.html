@@ -95,13 +95,12 @@
             let myAccount = localStorage.getItem("account") || "訪客";
             window.globalAccount = myAccount;
             
-            // 🌟 用來暫存自己的頭貼資料
             let myAvatarBase64 = null;
             if (typeof UserApi !== 'undefined' && typeof UserApi.getPlayerProfile === 'function') {
                 UserApi.getPlayerProfile().done(function(profile) {
                     if (profile && profile.avatar) {
                         myAvatarBase64 = profile.avatar;
-                        localStorage.setItem("avatar", profile.avatar); // 同步更新
+                        localStorage.setItem("avatar", profile.avatar);
                     }
                 }).fail(function() {
                     myAvatarBase64 = localStorage.getItem("avatar") || null;
@@ -260,7 +259,6 @@
                 $('#waitCurrentPlayers').text(room.players.length);
                 $('#waitMaxPlayers').text(room.maxPlayers);
                 
-                // 🌟 修正：只要是房主，就必須檢查人數是否已滿，未滿則按鈕反灰不可點擊
                 if (isHost) {
                     const isFull = (room.players.length === room.maxPlayers);
                     const $startBtn = $('#startGameBtn');
@@ -287,15 +285,16 @@
                     const isMe = (playerAccount === myAccount);
                     const isThisHost = (playerAccount === room.hostAccount);
                     
-                    // 🌟 自己的行套用專屬 Base64 頭貼
-                    const playerAvatar = isMe ? (myAvatarBase64 || localStorage.getItem("avatar")) : null;
+                    // 🌟 取得頭貼：自己用暫存或 localStorage，別人從 room.playerAvatars 拿
+                    let playerAvatar = isMe ? (myAvatarBase64 || localStorage.getItem("avatar")) : null;
+                    if (!playerAvatar && room.playerAvatars && room.playerAvatars[playerAccount]) {
+                        playerAvatar = room.playerAvatars[playerAccount];
+                    }
                     
-                    // 🌟 新增：決定要顯示的名稱 (Username)
                     let displayUsername = playerAccount;
                     if (isMe) {
                         displayUsername = localStorage.getItem("username") || playerAccount;
                     } else if (room.playerNames && room.playerNames[playerAccount]) {
-                        // 預留擴充點：若未來後端有傳遞其他玩家的 username 對應，可在此套用
                         displayUsername = room.playerNames[playerAccount];
                     }
 
@@ -304,7 +303,6 @@
                         kickBtnHtml = `<button onclick="kickPlayer('${playerAccount}')" class="text-xs bg-red-900/50 hover:bg-red-600 text-red-200 px-2.5 py-1 rounded transition active:scale-95">踢除</button>`;
                     }
 
-                    // 🌟 動態渲染頭貼或預設圖示
                     let avatarHtml = `<div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sm overflow-hidden shrink-0">🧑‍🚀</div>`;
                     if (playerAvatar) {
                         avatarHtml = `
@@ -517,7 +515,6 @@
             $('#startGameBtn').on('click', function() {
                 if (!hasRoomSession()) return;
                 
-                // 🌟 雙重防呆：點擊時如果人數未滿，跳出提示並阻擋 API 請求
                 if (currentRoomData && currentRoomData.players.length < currentRoomData.maxPlayers) {
                     alert('人數未滿，請等待其他玩家加入後再開始遊戲！');
                     return;
@@ -550,7 +547,6 @@
                 });
             });
 
-            // 啟動驗證與連線
             if (typeof UserApi !== 'undefined') {
                 UserApi.checkLogin().then(function(user) {
                     if (!user) return $.Deferred().reject({status:401}).promise();

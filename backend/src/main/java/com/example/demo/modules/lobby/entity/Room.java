@@ -66,6 +66,13 @@ public class Room {
     @MapKeyColumn(name = "player_account")
     @Column(name = "player_name")
     private Map<String, String> playerNames = new HashMap<>();
+    
+ // 🌟 新增：儲存 帳號 -> 頭貼 的對照表
+    @ElementCollection
+    @CollectionTable(name = "room_player_avatars", joinColumns = @JoinColumn(name = "room_id"))
+    @MapKeyColumn(name = "player_account")
+    @Column(name = "player_avatar", length = 1000) // 預留長度給 Base64
+    private Map<String, String> playerAvatars = new HashMap<>();
 
     @PrePersist
     public void prePersist() {
@@ -122,4 +129,8 @@ public class Room {
 
     public Map<String, String> getPlayerNames() { return playerNames; }
     public void setPlayerNames(Map<String, String> playerNames) { this.playerNames = playerNames; }
+    
+    public Map<String, String> getPlayerAvatars() { return playerAvatars; }
+    public void setPlayerAvatars(Map<String, String> playerAvatars) { this.playerAvatars = playerAvatars; }
+
 }
