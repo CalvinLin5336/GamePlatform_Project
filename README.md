@@ -1,7 +1,8 @@
 平台連結：https://gameplatform-project.onrender.com/pages/Chat/chatclient.html
-
-         <img width="126" height="129" alt="image" src="https://github.com/user-attachments/assets/9a51977b-c124-4c58-8b01-c0a5a064177d" />
-
+<div align="center">
+         <br>
+<img width="126" height="129" alt="image" src="https://github.com/user-attachments/assets/9a51977b-c124-4c58-8b01-c0a5a064177d" />
+</div>
 
 
 # 🎮 Simple Game Platform｜簡易遊戲平台
