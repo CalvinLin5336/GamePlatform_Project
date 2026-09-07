@@ -87,6 +87,22 @@ public class GameDataInitializer implements CommandLineRunner {
                 "/assets/Games/quiz/quiz_game_icon.png");
 
         createModeIfMissing(quiz.getGameId(), "SINGLE", "單人挑戰", 1, 1, 0, true);
+
+        Game rpg = gameRepository.findByGameCode("RPG").orElse(null);
+        if (rpg == null) {
+            rpg = new Game();
+            rpg.setGameCode("RPG");
+            rpg.setGameName("維爾薩王國");
+            rpg.setDescription("培養專屬冒險者，探索五個異變地區並迎戰魔物的單人回合制 RPG。");
+            rpg.setFrontendPath("/pages/Games/rpg/rpg_client.html");
+            rpg.setBackendPath("/api/games/rpg");
+            rpg.setImagePath("/assets/Games/rpg/game_icon.png");
+            rpg.setEnabled(true);
+            rpg = gameRepository.save(rpg);
+        }
+
+        migrateRpgMetadata(rpg);
+        createModeIfMissing(rpg.getGameId(), "SINGLE", "單人冒險", 1, 1, 0, true);
     }
 
     private void migrateStaticPaths(
@@ -113,6 +129,23 @@ public class GameDataInitializer implements CommandLineRunner {
             poker.setDescription("三輪撲克策略對戰");
             gameRepository.save(poker);
         }
+    }
+
+    private void migrateRpgMetadata(Game rpg) {
+        boolean changed = false;
+        if ("瓦爾瑟拉冒險譚".equals(rpg.getGameName())) {
+            rpg.setGameName("維爾薩王國");
+            changed = true;
+        }
+        if (rpg.getDescription() != null && rpg.getDescription().startsWith("由 Homework03 移植")) {
+            rpg.setDescription("培養專屬冒險者，探索五個異變地區並迎戰魔物的單人回合制 RPG。");
+            changed = true;
+        }
+        if ("/assets/Games/rpg/region_01_moss_forest.png".equals(rpg.getImagePath())) {
+            rpg.setImagePath("/assets/Games/rpg/game_icon.png");
+            changed = true;
+        }
+        if (changed) gameRepository.save(rpg);
     }
 
     private void createModeIfMissing(

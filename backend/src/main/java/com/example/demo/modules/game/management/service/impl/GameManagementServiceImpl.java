@@ -72,6 +72,7 @@ public class GameManagementServiceImpl implements GameManagementService {
     @Override
     public GameView updateGame(Long gameId, GameRequest request) {
         Game game = requireGame(gameId);
+        requireUnchangedGameCode(game, request);
         validateGame(request, gameId);
         copyGame(request, game);
         return toGameView(gameRepository.save(game), true);
@@ -99,6 +100,7 @@ public class GameManagementServiceImpl implements GameManagementService {
     public GameModeView updateMode(Long gameId, Long modeId, GameModeRequest request) {
         requireGame(gameId);
         GameMode mode = requireMode(gameId, modeId);
+        requireUnchangedModeCode(mode, request);
         validateMode(gameId, request, modeId);
         copyMode(request, mode);
         return new GameModeView(gameModeRepository.save(mode));
@@ -163,6 +165,20 @@ public class GameManagementServiceImpl implements GameManagementService {
                         throw new ResponseStatusException(HttpStatus.CONFLICT, "遊戲代碼已存在");
                     }
                 });
+    }
+
+    private void requireUnchangedGameCode(Game game, GameRequest request) {
+        if (request == null || request.getGameCode() == null) return;
+        if (!game.getGameCode().equalsIgnoreCase(request.getGameCode().trim())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "遊戲代碼建立後不可修改");
+        }
+    }
+
+    private void requireUnchangedModeCode(GameMode mode, GameModeRequest request) {
+        if (request == null || request.getModeCode() == null) return;
+        if (!mode.getModeCode().equalsIgnoreCase(request.getModeCode().trim())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "模式代碼建立後不可修改");
+        }
     }
 
     private void validateMode(Long gameId, GameModeRequest request, Long currentModeId) {

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Platform - 遊戲管理</title>
+    <link rel="stylesheet" href="./css/game-management.css">
+</head>
+<body>
+    <main class="page-shell">
+        <header class="page-header">
+            <div>
+                <span class="eyebrow">GAME MANAGEMENT</span>
+                <h1>遊戲管理</h1>
+                <p>管理平台遊戲、入口資訊、上架狀態與遊戲模式。</p>
+            </div>
+            <button id="refreshGamesBtn" class="button secondary" type="button">重新整理</button>
+        </header>
+
+        <section id="accessMessage" class="message error" hidden></section>
+
+        <section id="managementContent" hidden>
+            <div class="stats-grid">
+                <article><span>全部遊戲</span><strong id="totalGames">0</strong></article>
+                <article><span>已上架</span><strong id="enabledGames">0</strong></article>
+                <article><span>遊戲模式</span><strong id="totalModes">0</strong></article>
+                <article><span>已啟用模式</span><strong id="enabledModes">0</strong></article>
+            </div>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <span class="eyebrow">GAMES</span>
+                        <h2>遊戲清單</h2>
+                    </div>
+                    <button id="createGameBtn" class="button primary" type="button">新增遊戲</button>
+                </div>
+
+                <div class="toolbar">
+                    <label class="search-field">
+                        <span>搜尋</span>
+                        <input id="gameSearch" type="search" placeholder="遊戲名稱或代碼">
+                    </label>
+                    <label>
+                        <span>狀態</span>
+                        <select id="gameStatusFilter">
+                            <option value="ALL">全部</option>
+                            <option value="ENABLED">已上架</option>
+                            <option value="DISABLED">已下架</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div id="gamesMessage" class="message" hidden></div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>遊戲</th>
+                            <th>狀態</th>
+                            <th>模式</th>
+                            <th>前端入口</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="gamesTableBody">
+                            <tr><td colspan="6" class="empty">載入中……</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="modesPanel" class="panel" hidden>
+                <div class="panel-heading">
+                    <div>
+                        <span class="eyebrow">GAME MODES</span>
+                        <h2 id="modesTitle">遊戲模式</h2>
+                        <p id="modesDescription"></p>
+                    </div>
+                    <button id="createModeBtn" class="button primary" type="button">新增模式</button>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>模式</th>
+                            <th>真人玩家</th>
+                            <th>電腦玩家</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="modesTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <div id="gameModal" class="modal-backdrop" hidden>
+        <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="gameModalTitle">
+            <div class="modal-heading">
+                <h2 id="gameModalTitle">新增遊戲</h2>
+                <button class="icon-button close-modal" type="button" aria-label="關閉">×</button>
+            </div>
+            <form id="gameForm">
+                <input id="gameId" type="hidden">
+                <div class="form-grid">
+                    <label><span>遊戲代碼</span><input id="gameCode" maxlength="50" required></label>
+                    <label><span>遊戲名稱</span><input id="gameName" maxlength="100" required></label>
+                    <label class="full"><span>說明</span><textarea id="gameDescription" maxlength="500" rows="3"></textarea></label>
+                    <label class="full"><span>前端入口</span><input id="frontendPath" maxlength="200" placeholder="/pages/Games/..." required></label>
+                    <label class="full"><span>後端入口</span><input id="backendPath" maxlength="200" placeholder="/api/..." required></label>
+                    <label class="full"><span>圖片路徑</span><input id="imagePath" maxlength="200" placeholder="/assets/Games/..."></label>
+                    <label class="checkbox-field full"><input id="gameEnabled" type="checkbox"><span>允許玩家在平台選擇這款遊戲</span></label>
+                </div>
+                <div id="gameFormMessage" class="message" hidden></div>
+                <div class="modal-actions">
+                    <button class="button secondary close-modal" type="button">取消</button>
+                    <button id="saveGameBtn" class="button primary" type="submit">儲存</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <div id="modeModal" class="modal-backdrop" hidden>
+        <section class="modal-card small" role="dialog" aria-modal="true" aria-labelledby="modeModalTitle">
+            <div class="modal-heading">
+                <h2 id="modeModalTitle">新增遊戲模式</h2>
+                <button class="icon-button close-mode-modal" type="button" aria-label="關閉">×</button>
+            </div>
+            <form id="modeForm">
+                <input id="modeId" type="hidden">
+                <div class="form-grid">
+                    <label><span>模式代碼</span><input id="modeCode" maxlength="50" required></label>
+                    <label><span>模式名稱</span><input id="modeName" maxlength="100" required></label>
+                    <label><span>最少真人玩家</span><input id="minPlayers" type="number" min="1" required></label>
+                    <label><span>最多真人玩家</span><input id="maxPlayers" type="number" min="1" required></label>
+                    <label><span>電腦玩家</span><input id="computerPlayers" type="number" min="0" required></label>
+                    <label class="checkbox-field"><input id="modeEnabled" type="checkbox"><span>啟用此模式</span></label>
+                </div>
+                <div id="modeFormMessage" class="message" hidden></div>
+                <div class="modal-actions">
+                    <button class="button secondary close-mode-modal" type="button">取消</button>
+                    <button id="saveModeBtn" class="button primary" type="submit">儲存</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <script src="./js/game-management.js"></script>
+</body>
+</html>
