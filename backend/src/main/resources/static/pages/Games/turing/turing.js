@@ -83,23 +83,25 @@ $(document).ready(function() {
     });
 
 	$('#btnLeave').on('click', function() {
-	        // 🌟 1. 更明確的防呆確認文字
-	        if(confirm("確定要放棄這局並離開嗎？\n這將會直接結束遊戲，並將房間廢棄！")) {
-	            
-	            // 避免玩家焦躁重複點擊
+	        if(confirm("確定要放棄這局並離開嗎？\n這將會直接結束遊戲，並將房間標示為廢棄 (ABANDONED)！")) {
 	            $(this).prop('disabled', true).text('離開中...');
 
-	            // 🌟 2. 呼叫後端大廳 API 更新房間狀態為「廢棄」
+	            // 1. 先清除遊戲端的記憶體快取
 	            $.ajax({
-	                url: `/api/lobby/room/${currentRoomId}/abandon`, 
-	                type: 'POST',
-	                contentType: 'application/json',
-	                data: JSON.stringify({ 
-	                    playerAccount: currentAccount
-	                }),
+	                url: `/api/game/clear-cache/${currentRoomId}`,
+	                type: 'DELETE',
 	                complete: function() {
-	                    // 🌟 3. 不管後端請求成功或失敗，前端最後都強制跳轉回大廳
-	                    window.location.href = '../../Lobby/jquery_lobby.html';
+	                    // 2. 接著通知大廳系統廢棄這個房間
+	                    $.ajax({
+	                        url: `/api/lobby/room/${currentRoomId}/abandon`, 
+	                        type: 'POST',
+	                        contentType: 'application/json',
+	                        data: JSON.stringify({ playerAccount: currentAccount }),
+	                        complete: function() {
+	                            // 3. 最後一律跳轉回大廳
+	                            window.location.href = '../../Lobby/jquery_lobby.html';
+	                        }
+	                    });
 	                }
 	            });
 	        }
