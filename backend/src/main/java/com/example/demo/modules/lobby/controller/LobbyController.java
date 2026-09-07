@@ -546,8 +546,12 @@ public class LobbyController {
         if (optionalRoom.isPresent()) {
             Room room = optionalRoom.get();
             
-            // 🌟 核心邏輯：將房間狀態改為 ABANDONED (廢棄)
+         // 🌟 核心邏輯：將房間狀態改為 ABANDONED (廢棄)
             room.setStatus("ABANDONED");
+            // 補上這兩行，精準寫入結束原因與當下時間！
+            room.setEndReason("ABANDONED");
+            room.setEndedAt(java.time.LocalDateTime.now()); 
+            
             roomRepository.save(room);
             
             // 順便發送廣播，讓可能還在該房間連線的其他人知道房間已廢棄

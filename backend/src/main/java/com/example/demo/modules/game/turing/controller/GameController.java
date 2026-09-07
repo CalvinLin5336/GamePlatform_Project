@@ -12,18 +12,19 @@ import com.example.demo.modules.game.management.repository.GameModeRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/game")
+@CrossOrigin(origins = "*") // 🌟 加上跨域允許
 public class GameController {
 
-
-    
     @Autowired
     private GameService gameService;
 
@@ -36,6 +37,9 @@ public class GameController {
     // 🌟 核心解法：使用記憶體快取來儲存每個房間的正解！
     private static final Map<String, Code> activeRoomSecrets = new ConcurrentHashMap<>();
 
+    // =========================================================
+    // 1. 初始化遊戲與動態生成題目 (保留原本從 DB 撈取模式難度的邏輯)
+    // =========================================================
     @GetMapping("/new")
     public ResponseEntity<Map<String, Object>> startNewGame(@RequestParam String roomId) {
         Room room = roomRepository.findById(roomId)
@@ -55,7 +59,7 @@ public class GameController {
         // 生成對應難度的謎題
         Puzzle puzzle = gameService.createNewPuzzle(diffChar);
         
-        // 🌟 將正解存入快取！(假設你的 Puzzle 內有 getSecretCode() 方法，請依實際情況微調)
+        // 🌟 將正解存入快取！(不信任遞送給前端的資料)
         Code secret = puzzle.getSecretCode(); 
         activeRoomSecrets.put(roomId, secret);
 
@@ -66,6 +70,9 @@ public class GameController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================
+    // 2. 玩家進行單張卡片檢驗
+    // =========================================================
     @PostMapping("/verify")
     public ResponseEntity<Boolean> testVerifierCard(@RequestBody VerifyCardRequest request) {
         // 🌟 1. 從記憶體快取中拿出這個房間的真正解答
@@ -80,7 +87,11 @@ public class GameController {
         return ResponseEntity.ok(result);
     }
 
+    // =========================================================
+    // 3. 提交最終答案與結算 (加上了更新大廳狀態與時間)
+    // =========================================================
     @PostMapping("/submit")
+    @Transactional // 🌟 確保戰績與房間狀態更新能同步安全寫入
     public ResponseEntity<GameResultDto> submitFinalGuess(@RequestBody FinalGuessRequest request) {
         
         // 1. 從記憶體快取中拿出這個房間的正解
@@ -103,7 +114,6 @@ public class GameController {
         if (isCorrect) {
             resultMessage = "🎉 恭喜你成功破譯密碼！\n正確答案是 " + answerRevealMsg;
         } else {
-            // 💥 破譯失敗時，明確告訴玩家正確答案是什麼
             resultMessage = "💥 密碼錯誤，破譯失敗！\n正確答案是 " + answerRevealMsg;
         }
 
@@ -123,12 +133,28 @@ public class GameController {
                 isCorrect,
                 rewardTokens
         );
-
         gameService.saveRecord(record);
         
-        // 5. 遊戲結束，清空該房間的快取，釋放記憶體
+        // 🌟 5. 遊戲正常結束，更新大廳房間狀態並精準寫入時間
+        roomRepository.findById(request.getRoomId()).ifPresent(room -> {
+            room.setStatus("FINISHED");
+            room.setEndReason("FINISHED");
+            room.setEndedAt(LocalDateTime.now());
+            roomRepository.save(room);
+        });
+
+        // 6. 遊戲結束，清空該房間的快取，釋放記憶體
         activeRoomSecrets.remove(request.getRoomId());
 
         return ResponseEntity.ok(result);
+    }
+
+    // =========================================================
+    // 4. 專供中途放棄遊戲時呼叫，用來清除殭屍快取
+    // =========================================================
+    @DeleteMapping("/clear-cache/{roomId}")
+    public ResponseEntity<?> clearCache(@PathVariable String roomId) {
+        activeRoomSecrets.remove(roomId);
+        return ResponseEntity.ok().build();
     }
 }
