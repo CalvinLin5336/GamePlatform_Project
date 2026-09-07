@@ -2,7 +2,7 @@
     'use strict';
 
     // 前端由 Spring Boot 提供，API 使用同來源相對路徑。
-    const API_BASE = '';
+    const API_BASE = 'http://' + window.location.hostname + ':8080';
     const sessionKeys = ['token', 'userId', 'account', 'username', 'role', 'status'];
     // Live Server 可從 frontend、專案根目錄或 pages 啟動，頁面網址不可寫死在網站根目錄。
     const pagesPath = window.location.pathname.match(/^(.*\/)(?:Board|Lobby|Chat|User)(?:\/|$)/i)?.[1] || '/pages/';

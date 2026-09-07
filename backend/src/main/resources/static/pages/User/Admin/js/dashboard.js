@@ -77,8 +77,14 @@ $(function () {
 
     function initNavigation() {
         $('.nav-item').on('click', function (event) {
-            event.preventDefault();
+            
             const page = $(this).data('page');
+
+            if (page === 'game_manager') {
+                return;
+            }
+
+            event.preventDefault();
             const url = new URL(window.location.href);
             url.searchParams.set('tab', page);
             history.replaceState({}, '', url);
