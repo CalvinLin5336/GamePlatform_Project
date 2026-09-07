@@ -62,7 +62,7 @@
         </div>
     </section>
 
-    <section id="characterInfoScreen" class="rpg-child-window" hidden>
+    <section id="characterInfoScreen" class="screen" hidden>
         <div class="screen-title"><h2>角色狀態</h2></div>
         <div class="character-status-layout">
             <section class="leather-panel status-identity">
@@ -89,7 +89,7 @@
         </div>
     </section>
 
-    <section id="createCharacterScreen" class="rpg-child-window" hidden>
+    <section id="createCharacterScreen" class="screen" hidden>
         <div class="screen-title">
             <h2>締結你的冒險者契約</h2>
             <p id="createWelcome">請為角色命名並選擇職業</p>
@@ -198,7 +198,7 @@
                 <p id="playerShieldText" class="shield-status"></p>
             </article>
             <article class="leather-panel combatant">
-                <div class="combatant-heading"><div id="monsterPortrait" class="sprite monster-sprite battle-portrait"></div><div><h3 id="monsterName">怪物</h3><p>青苔森林的異變魔物</p></div></div>
+                <div class="combatant-heading"><div id="monsterPortrait" class="sprite monster-sprite battle-portrait"></div><div><h3 id="monsterName">怪物</h3><p id="monsterStats">敵方能力請由敵方資訊查看</p></div></div>
                 <div class="meter hp"><span>HP</span><i><b id="monsterHpBar"></b></i><strong id="monsterHpText">0 / 0</strong></div>
                 <div class="meter mp"><span>MP</span><i><b id="monsterMpBar"></b></i><strong id="monsterMpText">0 / 0</strong></div>
                 <div class="meter action"><span>行動值</span><i><b id="monsterActionBar"></b></i><strong id="monsterActionText">0%</strong></div>
@@ -215,14 +215,59 @@
         <div class="battle-actions leather-panel">
             <button id="useSelectedSkillBtn" class="medieval-button" type="button" disabled>使用選擇的技能</button>
             <button id="battleItemBtn" class="medieval-button subtle" type="button">使用道具</button>
-            <button id="returnToMapBtn" class="medieval-button" type="button" hidden>返回冒險地圖</button>
-            <button id="repeatStageBtn" class="medieval-button" type="button" hidden>再次挑戰本關</button>
             <button id="abandonBattleBtn" class="medieval-button danger" type="button">撤離目前戰鬥</button>
         </div>
-        <h2 id="battleStatusTitle" class="battle-result" hidden></h2>
+        <div class="battle-status-actions leather-panel">
+            <strong>戰鬥資訊</strong>
+            <button id="openPlayerBattleInfoBtn" class="medieval-button subtle" type="button">角色資訊</button>
+            <button id="openMonsterBattleInfoBtn" class="medieval-button subtle" type="button">敵方資訊</button>
+        </div>
         <span id="turnBadge" hidden></span>
     </section>
 </main>
+
+<div id="combatantInfoModal" class="modal-backdrop" hidden>
+    <section class="leather-panel combatant-info-dialog" role="dialog" aria-modal="true" aria-labelledby="combatantInfoTitle">
+        <h2 id="combatantInfoTitle">戰鬥角色資訊</h2>
+        <div class="combatant-info-layout">
+            <section class="combatant-info-identity">
+                <div id="combatantInfoPortrait" class="sprite battle-portrait"></div>
+                <h3 id="combatantInfoName">—</h3>
+                <p id="combatantInfoIdentity">—</p>
+                <div class="meter hp"><span>HP</span><i><b id="combatantInfoHpBar"></b></i><strong id="combatantInfoHp">0 / 0</strong></div>
+                <div class="meter mp"><span>MP</span><i><b id="combatantInfoMpBar"></b></i><strong id="combatantInfoMp">0 / 0</strong></div>
+                <div class="meter action"><span>行動值</span><i><b id="combatantInfoActionBar"></b></i><strong id="combatantInfoAction">0%</strong></div>
+                <p id="combatantInfoReward" class="combatant-info-reward"></p>
+            </section>
+            <section class="combatant-info-stats">
+                <h3>當前能力值</h3>
+                <div id="combatantInfoStats" class="combatant-stat-grid"></div>
+            </section>
+            <section class="combatant-info-statuses">
+                <h3>當前持有狀態</h3>
+                <div id="combatantInfoStatuses" class="parchment combatant-info-copy"></div>
+            </section>
+            <section class="combatant-info-traits">
+                <h3 id="combatantInfoTraitsTitle">特性</h3>
+                <div id="combatantInfoTraits" class="parchment combatant-info-copy"></div>
+            </section>
+        </div>
+        <button id="closeCombatantInfoBtn" class="medieval-button combatant-info-close" type="button">關閉</button>
+    </section>
+</div>
+
+<div id="battleResultModal" class="modal-backdrop battle-result-backdrop" hidden>
+    <section id="battleResultDialog" class="leather-panel battle-result-dialog" role="dialog" aria-modal="true" aria-labelledby="battleResultTitle">
+        <h2 id="battleResultEnglish" class="battle-result-english">V I C T O R Y</h2>
+        <h3 id="battleResultTitle">戰鬥勝利</h3>
+        <div id="battleResultDetails" class="parchment battle-result-details"></div>
+        <p class="battle-result-hint">可再次挑戰同一關，或返回先前選擇的地區</p>
+        <div class="battle-result-actions">
+            <button id="returnToMapBtn" class="medieval-button subtle" type="button">返回冒險地圖</button>
+            <button id="repeatStageBtn" class="medieval-button" type="button">連續挑戰同一關</button>
+        </div>
+    </section>
+</div>
 
 <div id="skillConfigModal" class="modal-backdrop" hidden>
     <section class="leather-panel skill-config-panel" role="dialog" aria-modal="true" aria-labelledby="skillConfigTitle">

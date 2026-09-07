@@ -44,6 +44,44 @@ class PokerPlatformRoomServiceTests {
     }
 
     @Test
+    void derivesModeFromPlatformRoomWhenLobbyOnlyProvidesRoomId() {
+        RoomRepository roomRepository=mock(RoomRepository.class);
+        GameManagementService gameManagementService=mock(GameManagementService.class);
+        PokerPlatformRoomService service=new PokerPlatformRoomService();
+        ReflectionTestUtils.setField(service, "roomRepository", roomRepository);
+        ReflectionTestUtils.setField(service, "gameManagementService", gameManagementService);
+
+        Room room=playingRoom();
+        GameModeView mode=new GameModeView();
+        mode.setModeId(2L);
+        mode.setGameId(1L);
+        mode.setModeCode("PLAYER");
+        GameView game=new GameView();
+        game.setGameId(1L);
+        game.setGameCode("POKER");
+
+        when(roomRepository.findById("ROOM1234")).thenReturn(Optional.of(room));
+        when(gameManagementService.findMode(2L, false)).thenReturn(mode);
+        when(gameManagementService.findGame(1L, false)).thenReturn(game);
+
+        assertSame(mode, service.requireJoinableRoom("ROOM1234", null, "player8"));
+    }
+
+    @Test
+    void rejectsExplicitModeThatDoesNotMatchPlatformRoom() {
+        RoomRepository roomRepository=mock(RoomRepository.class);
+        PokerPlatformRoomService service=new PokerPlatformRoomService();
+        ReflectionTestUtils.setField(service, "roomRepository", roomRepository);
+        ReflectionTestUtils.setField(service, "gameManagementService",
+                mock(GameManagementService.class));
+        when(roomRepository.findById("ROOM1234")).thenReturn(Optional.of(playingRoom()));
+
+        GameException error=assertThrows(GameException.class,
+                () -> service.requireJoinableRoom("ROOM1234", 99L, "player8"));
+        assertEquals("MODE_MISMATCH", error.getCode());
+    }
+
+    @Test
     void rejectsAccountThatIsNotInPlatformRoom() {
         RoomRepository roomRepository=mock(RoomRepository.class);
         PokerPlatformRoomService service=new PokerPlatformRoomService();

@@ -95,6 +95,49 @@ class RpgGameIntegrationTests {
     }
 
     @Test
+    void sameMemberKeepsRpgProgressWhenEnteringAgain() throws Exception {
+        UserResponse user = user("persistent");
+        String firstEntryToken = bearer(user);
+        MvcResult created = mvc.perform(post("/api/games/rpg/characters")
+                        .header("Authorization", firstEntryToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"characterName\":\"長期冒險者\",\"professionCode\":\"E001\"}"))
+                .andExpect(status().isOk()).andReturn();
+        long characterId = json.readTree(created.getResponse().getContentAsString())
+                .get("characterId").asLong();
+
+        jdbc.update("""
+                UPDATE rpg_characters
+                SET level=4, experience=77, gold=123, current_hp=321, current_mp=54
+                WHERE user_id=? AND character_id=?
+                """, user.id(), characterId);
+        jdbc.update("""
+                UPDATE rpg_character_stage_progress SET clear_count=2
+                WHERE character_id=? AND stage_code='ST001'
+                """, characterId);
+
+        initializer.initialize();
+        String nextEntryToken = bearer(user);
+        mvc.perform(get("/api/games/rpg/characters").header("Authorization", nextEntryToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].characterId").value(characterId))
+                .andExpect(jsonPath("$[0].level").value(4))
+                .andExpect(jsonPath("$[0].experience").value(77))
+                .andExpect(jsonPath("$[0].gold").value(123))
+                .andExpect(jsonPath("$[0].currentHp").value(321))
+                .andExpect(jsonPath("$[0].currentMp").value(54));
+        mvc.perform(get("/api/games/rpg/characters/{id}/stages", characterId)
+                        .header("Authorization", nextEntryToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].clearCount").value(2));
+        mvc.perform(get("/api/games/rpg/characters/{id}/inventory", characterId)
+                        .header("Authorization", nextEntryToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].itemCode").value("I001"))
+                .andExpect(jsonPath("$[0].quantity").value(5));
+    }
+
+    @Test
     void skillScrollTeachesCanonicalUniversalSkillWithoutConsumingDuplicates() throws Exception {
         UserResponse user = user("scroll");
         String token = bearer(user);
@@ -171,6 +214,80 @@ class RpgGameIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.character.attack").value(original.get("attack").asInt() + 14))
                 .andExpect(jsonPath("$.equipment[0].equippedSlot").value("WEAPON"));
+    }
+
+    @Test
+    void equipmentTraitsAndCombatModifiersMatchHomeworkRules() throws Exception {
+        UserResponse ranger = user("equipmentcombat");
+        String rangerToken = bearer(ranger);
+        MvcResult rangerCreated = mvc.perform(post("/api/games/rpg/characters")
+                        .header("Authorization", rangerToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"characterName\":\"裝備戰鬥\",\"professionCode\":\"E005\"}"))
+                .andExpect(status().isOk()).andReturn();
+        long rangerId = json.readTree(rangerCreated.getResponse().getContentAsString())
+                .get("characterId").asLong();
+        jdbc.update("INSERT INTO rpg_character_equipment(character_id,equipment_id,equipped_slot) VALUES(?, 'EQ008', 'OFF_HAND')",
+                rangerId);
+        jdbc.update("INSERT INTO rpg_character_equipment(character_id,equipment_id,equipped_slot) VALUES(?, 'EQ016', 'ACCESSORY_1')",
+                rangerId);
+        jdbc.update("INSERT INTO rpg_character_equipment(character_id,equipment_id,equipped_slot) VALUES(?, 'EQ018', 'ACCESSORY_2')",
+                rangerId);
+        jdbc.update("UPDATE rpg_equipment_stat SET modifier_value=100 WHERE equipment_id='EQ018' AND stat_type='CRITICAL_RATE'");
+        try {
+            MvcResult started = mvc.perform(post("/api/games/rpg/battles")
+                            .header("Authorization", rangerToken).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"characterId\":" + rangerId + ",\"stageCode\":\"ST001\"}"))
+                    .andExpect(status().isOk()).andReturn();
+            String battleId = json.readTree(started.getResponse().getContentAsString()).get("battleId").asText();
+            jdbc.update("UPDATE rpg_battles SET player_hp=100,player_action=10000,monster_action=0,monster_hp=10000,max_monster_hp=10000 WHERE battle_id=?",
+                    battleId);
+
+            mvc.perform(post("/api/games/rpg/battles/{id}/actions", battleId)
+                            .header("Authorization", rangerToken).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"skillCode\":\"S022\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.logs").value(org.hamcrest.Matchers.hasItem(
+                            org.hamcrest.Matchers.containsString("50.0% 物理防禦"))))
+                    .andExpect(jsonPath("$.logs").value(org.hamcrest.Matchers.hasItem(
+                            org.hamcrest.Matchers.containsString("【爆擊】"))))
+                    .andExpect(jsonPath("$.logs").value(org.hamcrest.Matchers.hasItem(
+                            org.hamcrest.Matchers.containsString("【物理吸血】"))));
+        } finally {
+            jdbc.update("UPDATE rpg_equipment_stat SET modifier_value=4 WHERE equipment_id='EQ018' AND stat_type='CRITICAL_RATE'");
+        }
+
+        UserResponse warrior = user("equipmenttrait");
+        String warriorToken = bearer(warrior);
+        MvcResult warriorCreated = mvc.perform(post("/api/games/rpg/characters")
+                        .header("Authorization", warriorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"characterName\":\"反傷戰士\",\"professionCode\":\"E001\"}"))
+                .andExpect(status().isOk()).andReturn();
+        long warriorId = json.readTree(warriorCreated.getResponse().getContentAsString())
+                .get("characterId").asLong();
+        jdbc.update("INSERT INTO rpg_character_equipment(character_id,equipment_id,equipped_slot) VALUES(?, 'EQ010', 'ARMOR')",
+                warriorId);
+
+        mvc.perform(get("/api/games/rpg/characters/{id}/equipment", warriorId)
+                        .header("Authorization", warriorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.equipmentCode == 'EQ010')].traits[0]").value(
+                        org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("尖刺反擊"))));
+        MvcResult warriorBattle = mvc.perform(post("/api/games/rpg/battles")
+                        .header("Authorization", warriorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"characterId\":" + warriorId + ",\"stageCode\":\"ST001\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.player.statuses").value(org.hamcrest.Matchers.hasItem("裝備反彈 10%")))
+                .andReturn();
+        String warriorBattleId = json.readTree(warriorBattle.getResponse().getContentAsString())
+                .get("battleId").asText();
+        jdbc.update("UPDATE rpg_battles SET player_action=10000,monster_action=9999,monster_atk=100,monster_hp=10000,max_monster_hp=10000 WHERE battle_id=?",
+                warriorBattleId);
+        mvc.perform(post("/api/games/rpg/battles/{id}/actions", warriorBattleId)
+                        .header("Authorization", warriorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"skillCode\":\"S002\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.logs").value(org.hamcrest.Matchers.hasItem(
+                        org.hamcrest.Matchers.containsString("【尖刺反擊】"))));
     }
 
     @Test
@@ -308,6 +425,18 @@ class RpgGameIntegrationTests {
                         .content("{\"characterId\":" + characterId + ",\"stageCode\":\"ST001\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.player.identity").value("戰士"))
+                .andExpect(jsonPath("$.player.attack").value(50))
+                .andExpect(jsonPath("$.player.magicDefense").isNumber())
+                .andExpect(jsonPath("$.player.statuses").isEmpty())
+                .andExpect(jsonPath("$.player.traits[0]").value(
+                        org.hamcrest.Matchers.containsString("浴血奮戰")))
+                .andExpect(jsonPath("$.monster.identity").value("普通怪・野獸"))
+                .andExpect(jsonPath("$.monster.attack").isNumber())
+                .andExpect(jsonPath("$.monster.magicDefense").isNumber())
+                .andExpect(jsonPath("$.monster.statuses").isEmpty())
+                .andExpect(jsonPath("$.monster.traits[0]").value(
+                        org.hamcrest.Matchers.containsString("種族特性")))
                 .andReturn();
         JsonNode battle = json.readTree(started.getResponse().getContentAsString());
         String battleId = battle.get("battleId").asText();
@@ -642,6 +771,10 @@ class RpgGameIntegrationTests {
                         .content("{\"skillCode\":\"S004\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DEFEAT"))
+                .andExpect(jsonPath("$.experiencePenalty").value(10))
+                .andExpect(jsonPath("$.currentExperience").value(40))
+                .andExpect(jsonPath("$.experienceToNextLevel").value(100))
+                .andExpect(jsonPath("$.currentGold").value(0))
                 .andExpect(jsonPath("$.logs").value(org.hamcrest.Matchers.hasItem(
                         org.hamcrest.Matchers.containsString("失去 10 點經驗值"))));
 
@@ -755,7 +888,16 @@ class RpgGameIntegrationTests {
                         .content("{\"skillCode\":\"S002\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("VICTORY"))
-                .andExpect(jsonPath("$.levelUp").value(true));
+                .andExpect(jsonPath("$.rewardExp").value(20))
+                .andExpect(jsonPath("$.rewardGold").value(8))
+                .andExpect(jsonPath("$.currentGold").value(8))
+                .andExpect(jsonPath("$.levelUp").value(true))
+                .andExpect(jsonPath("$.previousLevel").value(2))
+                .andExpect(jsonPath("$.currentLevel").value(3))
+                .andExpect(jsonPath("$.currentExperience").value(15))
+                .andExpect(jsonPath("$.experienceToNextLevel").value(170))
+                .andExpect(jsonPath("$.recoveredHp").value(0))
+                .andExpect(jsonPath("$.recoveredMp").value(0));
         mvc.perform(get("/api/games/rpg/characters").header("Authorization", levelingToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].level").value(3))

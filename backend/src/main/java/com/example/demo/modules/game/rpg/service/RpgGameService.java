@@ -339,18 +339,19 @@ public class RpgGameService {
                 stage.monsterMagicDefense(), stage.monsterSpeed(), 0, 0, "ACTIVE", log.toString(), "");
         EffectState effects = new EffectState();
         if (repository.hasEquipped(character.id(), "EQ010")) {
-            effects.reflectPercent = 10;
-            effects.equipmentReflect = 1;
+            effects.equipmentReflect = 10;
         }
         TurnProgress progress = advanceToPlayerTurn(stage, character, baseBattle, effects,
                 new TurnProgress(baseBattle.playerHp(), baseBattle.monsterHp(), baseBattle.monsterMp(),
                         baseBattle.playerAction(), baseBattle.monsterAction(), baseBattle.turnNumber()), log);
         String status = progress.playerHp() <= 0 ? "DEFEAT" : "ACTIVE";
-        if ("DEFEAT".equals(status)) settleDefeat(userId, character, log);
+        Integer experiencePenalty = "DEFEAT".equals(status) ? settleDefeat(userId, character, log) : null;
         BattleData battle = withProgress(baseBattle, progress, baseBattle.playerMp(), status,
                 log.toString(), effects.serialize());
         repository.createBattle(battle);
-        return toBattleView(battle, character, stage, false, null, null);
+        CharacterData refreshed = requireCharacter(userId, character.id());
+        return toBattleView(battle, refreshed, stage, false, null, null,
+                null, null, null, experiencePenalty);
     }
 
     public RpgBattleView findBattle(long userId, String battleId) {
@@ -360,7 +361,8 @@ public class RpgGameService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "找不到關卡資料"));
         return toBattleView(battle, character, stage, false,
                 "VICTORY".equals(battle.status()) ? stage.rewardExp() : null,
-                "VICTORY".equals(battle.status()) ? stage.rewardGold() : null);
+                "VICTORY".equals(battle.status()) ? stage.rewardGold() : null,
+                null, null, null, null);
     }
 
     @Transactional
@@ -373,6 +375,7 @@ public class RpgGameService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "目前還沒輪到玩家行動");
         }
         CharacterData character = requireCharacter(userId, battle.characterId());
+        CharacterStats liveStats = characterStats(character, requireProfession(character.professionCode()));
         StageData stage = repository.findStage(character.id(), battle.stageCode(), battle.monsterLevel())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "找不到關卡資料"));
         String skillCode = normalizeCode(rawSkillCode, "請選擇技能");
@@ -410,11 +413,14 @@ public class RpgGameService {
             int monsterDefense = "MAGICAL".equals(skill.type())
                     ? effectiveMonsterMdef(battle, effects) : effectiveMonsterDef(battle, effects);
             if ("PHYSICAL".equals(skill.type())) {
-                int penetration = "E005".equals(character.professionCode()) ? 10 : 0;
-                if ("S022".equals(skill.code())) penetration += 30;
-                if (penetration > 0) {
-                    monsterDefense = monsterDefense * (100 - penetration) / 100;
-                    appendLog(log, "【穿透】忽略敵人 " + penetration + "% 物理防禦。");
+                double penetration = liveStats.physicalPenetrationPercent()
+                        + ("S022".equals(skill.code()) ? 30 : 0);
+                penetration = Math.min(100, Math.max(0, penetration));
+                monsterDefense = Math.max(0, (int) (monsterDefense * (1 - penetration / 100.0))
+                        - liveStats.physicalPenetrationFlat());
+                if (penetration > 0 || liveStats.physicalPenetrationFlat() > 0) {
+                    appendLog(log, "【穿透】忽略敵人 " + penetration
+                            + "% 物理防禦與 " + liveStats.physicalPenetrationFlat() + " 點固定防禦。");
                 }
             }
             int playerDamage;
@@ -426,10 +432,11 @@ public class RpgGameService {
                 playerDamage = calculateDamage(skill, effectiveAtk, effectiveAp, monsterDefense);
             }
             if ("PHYSICAL".equals(skill.type())) {
-                int criticalChance = baseCriticalChance(character.professionCode()) + effects.criticalBonus;
+                double criticalChance = liveStats.criticalRate() + effects.criticalBonus;
                 if ("S007".equals(skill.code())) criticalChance += 40;
                 if ("S016".equals(skill.code())) criticalChance = 100;
-                if (ThreadLocalRandom.current().nextInt(100) < criticalChance) {
+                criticalChance = Math.min(100, Math.max(0, criticalChance));
+                if (ThreadLocalRandom.current().nextDouble(100) < criticalChance) {
                     playerDamage = (int) Math.ceil(playerDamage * 1.5);
                     appendLog(log, "【爆擊】本次物理傷害提升為 1.5 倍。");
                     if ("E003".equals(character.professionCode())) {
@@ -481,13 +488,16 @@ public class RpgGameService {
                 playerHp = Math.max(0, playerHp - reflected);
                 appendLog(log, "【敵方反傷】反射 " + reflected + " 點傷害。");
             }
-            if ("E001".equals(character.professionCode()) && "PHYSICAL".equals(skill.type())) {
+            if ("PHYSICAL".equals(skill.type())) {
                 double missingRatio = (battle.maxPlayerHp() - playerHp) / (double) battle.maxPlayerHp();
-                double lifeStealRate = Math.min(0.9, Math.max(0, missingRatio)) * 0.20;
+                double lifeStealRate = Math.max(0, liveStats.physicalLifesteal()) / 100.0;
+                if ("E001".equals(character.professionCode())) {
+                    lifeStealRate += Math.min(0.9, Math.max(0, missingRatio)) * 0.20;
+                }
                 int restored = Math.min((int) Math.ceil(actualDamage * lifeStealRate), battle.maxPlayerHp() - playerHp);
                 if (restored > 0) {
                     playerHp += restored;
-                    appendLog(log, "【浴血奮戰】物理吸血恢復 " + restored + " 點生命值。");
+                    appendLog(log, "【物理吸血】恢復 " + restored + " 點生命值。");
                 }
             }
         }
@@ -508,9 +518,13 @@ public class RpgGameService {
         boolean levelUp = false;
         Integer rewardExp = null;
         Integer rewardGold = null;
+        Integer previousLevel = null;
+        Integer recoveredHp = null;
+        Integer recoveredMp = null;
+        Integer experiencePenalty = null;
         if (playerHp <= 0 && monsterHp > 0) {
             status = "DEFEAT";
-            settleDefeat(userId, character, log);
+            experiencePenalty = settleDefeat(userId, character, log);
         } else if (monsterHp <= 0) {
             status = "VICTORY";
             RewardResult reward = rewardVictory(userId, character, stage, battle.battleId(), battle.turnNumber(),
@@ -518,6 +532,9 @@ public class RpgGameService {
             rewardExp = reward.exp();
             rewardGold = reward.gold();
             levelUp = reward.levelUp();
+            previousLevel = reward.previousLevel();
+            recoveredHp = reward.recoveredHp();
+            recoveredMp = reward.recoveredMp();
         } else {
             TurnProgress progress = advanceToPlayerTurn(stage, character, battle, effects,
                     new TurnProgress(playerHp, monsterHp, monsterMp, playerAction, monsterAction, nextTurn), log);
@@ -534,9 +551,12 @@ public class RpgGameService {
                 rewardExp = reward.exp();
                 rewardGold = reward.gold();
                 levelUp = reward.levelUp();
+                previousLevel = reward.previousLevel();
+                recoveredHp = reward.recoveredHp();
+                recoveredMp = reward.recoveredMp();
             } else if (playerHp <= 0) {
                 status = "DEFEAT";
-                settleDefeat(userId, character, log);
+                experiencePenalty = settleDefeat(userId, character, log);
             }
         }
 
@@ -549,7 +569,8 @@ public class RpgGameService {
                 log.toString(), effects.serialize());
         repository.updateBattle(updated);
         CharacterData refreshed = requireCharacter(userId, character.id());
-        return toBattleView(updated, refreshed, stage, levelUp, rewardExp, rewardGold);
+        return toBattleView(updated, refreshed, stage, levelUp, rewardExp, rewardGold,
+                previousLevel, recoveredHp, recoveredMp, experiencePenalty);
     }
 
     @Transactional
@@ -590,10 +611,11 @@ public class RpgGameService {
                 new TurnProgress(hp, battle.monsterHp(), battle.monsterMp(), 0,
                         battle.monsterAction(), battle.turnNumber()), log);
         String status = progress.playerHp() <= 0 ? "DEFEAT" : "ACTIVE";
-        if ("DEFEAT".equals(status)) settleDefeat(userId, character, log);
+        Integer experiencePenalty = "DEFEAT".equals(status) ? settleDefeat(userId, character, log) : null;
         BattleData updated = withProgress(battle, progress, mp, status, log.toString(), effects.serialize());
         repository.updateBattle(updated);
-        return toBattleView(updated, requireCharacter(userId, character.id()), stage, false, null, null);
+        return toBattleView(updated, requireCharacter(userId, character.id()), stage, false, null, null,
+                null, null, null, experiencePenalty);
     }
 
     private TurnProgress advanceToPlayerTurn(StageData stage, CharacterData character, BattleData battle,
@@ -669,7 +691,7 @@ public class RpgGameService {
 
     private MonsterActionResult applyMonsterDamage(String actionName, int damage, int playerHp, int monsterHp,
             int monsterMp, int retainedActionPercent, EffectState effects, StringBuilder log) {
-        int reflected = effects.reflectPercent > 0 && (effects.shield > 0 || effects.equipmentReflect > 0)
+        int shieldReflected = effects.reflectPercent > 0 && effects.shield > 0
                 ? (int) Math.ceil(damage * effects.reflectPercent / 100.0) : 0;
         DamageResult hit = absorb(damage, effects.shield);
         effects.shield = hit.remainingShield();
@@ -677,9 +699,14 @@ public class RpgGameService {
         playerHp -= actualDamage;
         appendLog(log, actionName + "造成 " + actualDamage + " 點生命傷害"
                 + (hit.absorbed() > 0 ? "，另有 " + hit.absorbed() + " 點被護盾吸收。" : "。"));
-        if (reflected > 0) {
-            monsterHp = Math.max(0, monsterHp - reflected);
-            appendLog(log, "【壁壘反傷】反射 " + reflected + " 點傷害。");
+        int equipmentReflected = (int) (actualDamage * Math.max(0, effects.equipmentReflect) / 100.0);
+        if (shieldReflected > 0) {
+            monsterHp = Math.max(0, monsterHp - shieldReflected);
+            appendLog(log, "【壁壘反傷】反射 " + shieldReflected + " 點傷害。");
+        }
+        if (equipmentReflected > 0) {
+            monsterHp = Math.max(0, monsterHp - equipmentReflected);
+            appendLog(log, "【尖刺反擊】反射 " + equipmentReflected + " 點傷害。");
         }
         return new MonsterActionResult(playerHp, monsterHp, monsterMp, retainedActionPercent);
     }
@@ -748,14 +775,6 @@ public class RpgGameService {
         };
     }
 
-    private int baseCriticalChance(String professionCode) {
-        return switch (professionCode) {
-            case "E003" -> 25;
-            case "E005" -> 10;
-            default -> 0;
-        };
-    }
-
     private DamageResult absorb(int damage, int shield) {
         int absorbed = Math.min(Math.max(0, shield), Math.max(0, damage));
         return new DamageResult(damage - absorbed, absorbed, shield - absorbed);
@@ -772,6 +791,8 @@ public class RpgGameService {
         boolean levelUp = result.level() > character.level();
         int savedHp = currentHp;
         int savedMp = currentMp;
+        int recoveredHp = 0;
+        int recoveredMp = 0;
         if (levelUp) {
             CharacterData leveled = new CharacterData(character.id(), character.userId(), character.name(),
                     character.professionCode(), character.professionName(), result.level(), result.experience(),
@@ -785,8 +806,12 @@ public class RpgGameService {
                     character.professionCode(), character.professionName(), result.level(), result.experience(),
                     character.gold() + rewardGold, savedHp, savedMp);
             CharacterStats targetStats = characterStats(target, requireProfession(character.professionCode()));
+            int hpBeforeRecovery = savedHp;
+            int mpBeforeRecovery = savedMp;
             savedHp = Math.min(targetStats.hp(), savedHp + (int) (targetStats.hp() * 0.08));
             savedMp = Math.min(targetStats.mp(), savedMp + (int) (targetStats.mp() * 0.08));
+            recoveredHp = savedHp - hpBeforeRecovery;
+            recoveredMp = savedMp - mpBeforeRecovery;
         }
         repository.saveCharacterState(userId, character.id(), result.level(), result.experience(),
                 character.gold() + rewardGold, savedHp, savedMp);
@@ -802,7 +827,7 @@ public class RpgGameService {
         rollAndAddEquipmentDrops(character.id(), stage.monsterCode(), battleId, log);
         appendLog(log, "戰鬥勝利！獲得 " + rewardExp + " 經驗與 " + rewardGold + " 金幣。"
                 + (levelUp ? "角色升級了！" : ""));
-        return new RewardResult(rewardExp, rewardGold, levelUp);
+        return new RewardResult(rewardExp, rewardGold, levelUp, character.level(), recoveredHp, recoveredMp);
     }
 
     private void rollAndAddItemDrops(long characterId, String monsterCode,
@@ -869,7 +894,8 @@ public class RpgGameService {
     }
 
     private RpgBattleView toBattleView(BattleData battle, CharacterData character, StageData stage,
-            boolean levelUp, Integer rewardExp, Integer rewardGold) {
+            boolean levelUp, Integer rewardExp, Integer rewardGold, Integer previousLevel,
+            Integer recoveredHp, Integer recoveredMp, Integer experiencePenalty) {
         EffectState effects = EffectState.parse(battle.effectState());
         List<RpgSkillView> skills = repository.findEquippedSkills(character.id()).stream()
                 .map(skill -> toSkillView(skill,
@@ -882,14 +908,105 @@ public class RpgGameService {
                 .map(drop -> RpgDropView.item(drop.itemCode(), drop.itemName(), drop.quantity())).toList());
         drops.addAll(repository.findBattleEquipmentDrops(battle.battleId()).stream()
                 .map(drop -> RpgDropView.equipment(drop.equipmentCode(), drop.equipmentName())).toList());
+        List<String> playerStatuses = playerStatuses(effects);
+        List<String> monsterStatuses = monsterStatuses(effects);
+        List<String> monsterTraits = repository.findMonsterTraits(stage.monsterCode()).stream()
+                .map(trait -> ("RACE".equals(trait.sourceType()) ? "種族特性｜" : "個體特性｜")
+                        + trait.name() + "：" + trait.description())
+                .toList();
         return new RpgBattleView(battle.battleId(), battle.status(), battle.turnNumber(), battle.monsterLevel(),
                 new RpgCombatantView(character.professionCode(), character.name(), battle.playerHp(), battle.maxPlayerHp(),
                         battle.playerMp(), battle.maxPlayerMp(), effects.shield,
-                        actionPercent(battle.playerAction()), null),
+                        actionPercent(battle.playerAction()), null, character.professionName(),
+                        percentValue(battle.playerAtk(), effects.atkBonus),
+                        percentValue(battle.playerAp(), effects.apBonus),
+                        percentValue(battle.playerDef(), effects.defBonus), battle.playerMdef(),
+                        percentValue(battle.playerSpeed(), effects.speedBonus), playerStatuses,
+                        playerTraits(character)),
                 new RpgCombatantView(stage.monsterCode(), stage.monsterName(), battle.monsterHp(), battle.maxMonsterHp(),
                         battle.monsterMp(), battle.maxMonsterMp(), effects.monsterShield,
-                        actionPercent(battle.monsterAction()), stage.monsterImagePath()),
-                skills, logs, rewardExp, rewardGold, levelUp, drops);
+                        actionPercent(battle.monsterAction()), stage.monsterImagePath(),
+                        monsterIdentity(stage.monsterRankCode(), stage.monsterRaceCode()),
+                        effectiveMonsterAtk(battle, effects), effectiveMonsterAp(battle, effects),
+                        effectiveMonsterDef(battle, effects), effectiveMonsterMdef(battle, effects),
+                        effectiveMonsterSpeed(battle, effects), monsterStatuses, monsterTraits),
+                skills, logs, rewardExp, rewardGold, levelUp,
+                previousLevel, character.level(), character.experience(),
+                experienceForLevel(character.level()), character.gold(),
+                recoveredHp, recoveredMp, experiencePenalty, drops);
+    }
+
+    private List<String> playerStatuses(EffectState effects) {
+        List<String> statuses = new java.util.ArrayList<>();
+        addStatus(statuses, effects.shield > 0, "護盾 " + effects.shield, effects.shieldTurns);
+        addStatus(statuses, effects.atkBonus != 0, "ATK " + signedPercent(effects.atkBonus), effects.atkTurns);
+        addStatus(statuses, effects.apBonus != 0, "AP " + signedPercent(effects.apBonus), effects.apTurns);
+        addStatus(statuses, effects.defBonus != 0, "DEF " + signedPercent(effects.defBonus), effects.defTurns);
+        addStatus(statuses, effects.criticalBonus != 0,
+                "爆擊率 " + signedPercent(effects.criticalBonus), effects.criticalTurns);
+        addStatus(statuses, effects.speedBonus != 0,
+                "SPEED " + signedPercent(effects.speedBonus), effects.speedTurns);
+        if (effects.killingIntent > 0) statuses.add("殺意 " + effects.killingIntent + " 層");
+        if (effects.nextAttackBonus != 0) statuses.add("下一次攻擊傷害 " + signedPercent(effects.nextAttackBonus));
+        addStatus(statuses, effects.reflectPercent > 0,
+                "傷害反彈 " + effects.reflectPercent + "%", effects.reflectTurns);
+        if (effects.equipmentReflect > 0) statuses.add("裝備反彈 " + effects.equipmentReflect + "%");
+        return statuses;
+    }
+
+    private List<String> playerTraits(CharacterData character) {
+        List<String> traits = new java.util.ArrayList<>();
+        traits.add(professionTraitDescription(character.professionCode()));
+        repository.findEquipment(character.id()).stream()
+                .filter(item -> item.equippedSlot() != null)
+                .flatMap(item -> equipmentTraits(item.code()).stream())
+                .forEach(trait -> traits.add("裝備特性｜" + trait));
+        return traits;
+    }
+
+    private List<String> monsterStatuses(EffectState effects) {
+        List<String> statuses = new java.util.ArrayList<>();
+        addStatus(statuses, effects.monsterShield > 0,
+                "護盾 " + effects.monsterShield, effects.monsterShieldTurns);
+        addStatus(statuses, effects.monsterAtkBonus != 0,
+                "ATK " + signedPercent(effects.monsterAtkBonus), effects.monsterAtkTurns);
+        addStatus(statuses, effects.monsterApBonus != 0,
+                "AP " + signedPercent(effects.monsterApBonus), effects.monsterApTurns);
+        addStatus(statuses, effects.monsterDefBonus != 0,
+                "DEF " + signedPercent(effects.monsterDefBonus), effects.monsterDefTurns);
+        addStatus(statuses, effects.monsterMdefBonus != 0,
+                "MDEF " + signedPercent(effects.monsterMdefBonus), effects.monsterMdefTurns);
+        addStatus(statuses, effects.monsterSpeedBonus != 0,
+                "SPEED " + signedPercent(effects.monsterSpeedBonus), effects.monsterSpeedTurns);
+        addStatus(statuses, effects.monsterReflectPercent > 0,
+                "傷害反彈 " + effects.monsterReflectPercent + "%", effects.monsterReflectTurns);
+        return statuses;
+    }
+
+    private void addStatus(List<String> statuses, boolean active, String text, int turns) {
+        if (active) statuses.add(text + (turns > 0 ? "（剩餘 " + turns + " 回合）" : ""));
+    }
+
+    private String signedPercent(int value) {
+        return (value >= 0 ? "+" : "") + value + "%";
+    }
+
+    private String monsterIdentity(String rankCode, String raceCode) {
+        String rank = switch (rankCode) {
+            case "K002" -> "菁英怪";
+            case "K003" -> "首領";
+            default -> "普通怪";
+        };
+        String race = switch (raceCode) {
+            case "MR001" -> "野獸";
+            case "MR002" -> "植物";
+            case "MR003" -> "元素";
+            case "MR004" -> "不死族";
+            case "MR005" -> "人型";
+            case "MR006" -> "龍族";
+            default -> "未知種族";
+        };
+        return rank + "・" + race;
     }
 
     private RpgCharacterView toCharacterView(CharacterData character) {
@@ -927,7 +1044,20 @@ public class RpgGameService {
                 equipment.equippedSlot(), "UNIVERSAL".equals(equipment.usageType()) || professions.contains(professionCode),
                 professions, repository.findEquipmentStats(equipment.code()).stream()
                         .map(stat -> new RpgEquipmentStatView(stat.statType(), stat.modifierType(), stat.modifierValue()))
-                        .toList());
+                        .toList(), equipmentTraits(equipment.code()));
+    }
+
+    private List<String> equipmentTraits(String equipmentCode) {
+        return switch (equipmentCode) {
+            case "EQ010" -> List.of("【尖刺反擊】受到生命傷害時反彈 10% 傷害");
+            case "EQ017" -> List.of("【魔泉湧動】自身回合結束時恢復 15 MP");
+            case "EQ067" -> List.of("【遠征補給】戰鬥勝利後恢復 8% 最大 HP 與 MP");
+            case "EQ068" -> List.of("【先鋒步伐】戰鬥開始時獲得 15% 行動值");
+            case "EQ069" -> List.of("【商會採集術】道具與裝備掉落率相對提高 15%");
+            case "EQ070" -> List.of("【商會分紅】所有戰鬥金幣獎勵提高 15%");
+            case "EQ071" -> List.of("【魔物研究】所有戰鬥經驗值提高 10%");
+            default -> List.of();
+        };
     }
 
     private boolean professionAllowed(EquipmentData equipment, String professionCode) {
@@ -1246,7 +1376,8 @@ public class RpgGameService {
     private record LevelResult(int level, int experience) { }
     private record DamageResult(int hpDamage, int absorbed, int remainingShield) { }
     private record MonsterActionResult(int playerHp, int monsterHp, int monsterMp, int retainedActionPercent) { }
-    private record RewardResult(int exp, int gold, boolean levelUp) { }
+    private record RewardResult(int exp, int gold, boolean levelUp, int previousLevel,
+            int recoveredHp, int recoveredMp) { }
     private record TurnProgress(int playerHp, int monsterHp, int monsterMp,
             double playerAction, double monsterAction, int turnNumber) { }
 

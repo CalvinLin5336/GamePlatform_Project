@@ -6,4 +6,7 @@ public record RpgBattleView(String battleId, String status, int turnNumber, int 
         RpgCombatantView player, RpgCombatantView monster,
         List<RpgSkillView> skills, List<String> logs,
         Integer rewardExp, Integer rewardGold, boolean levelUp,
+        Integer previousLevel, int currentLevel, int currentExperience,
+        int experienceToNextLevel, int currentGold,
+        Integer recoveredHp, Integer recoveredMp, Integer experiencePenalty,
         List<RpgDropView> drops) { }

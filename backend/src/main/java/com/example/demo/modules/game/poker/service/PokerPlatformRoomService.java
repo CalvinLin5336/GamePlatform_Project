@@ -35,7 +35,10 @@ public class PokerPlatformRoomService {
         if (!"PLAYING".equals(room.getStatus())) {
             throw new GameException("ROOM_NOT_STARTED", "平台房間尚未開始遊戲");
         }
-        if (requestedModeId == null || !requestedModeId.equals(room.getModeId())) {
+        if (room.getModeId() == null) {
+            throw new GameException("MISSING_MODE", "平台房間缺少遊戲模式資料");
+        }
+        if (requestedModeId != null && !requestedModeId.equals(room.getModeId())) {
             throw new GameException("MODE_MISMATCH", "遊戲模式與平台房間不一致");
         }
         if (playerAccount == null || !room.getPlayers().contains(playerAccount)) {

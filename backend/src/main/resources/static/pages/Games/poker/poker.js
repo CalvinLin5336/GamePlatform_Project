@@ -20,6 +20,7 @@ var platformModeId=null;
 var platformJwt="";
 var boardPostId=null;
 var boardMemberId=null;
+var leaving=false;
 
 function element(id) {
     return document.getElementById(id);
@@ -45,48 +46,12 @@ $(document).ready(function() {
     element("leaveButton").onclick=leave;
 
     if(platformRoomParameter) {
-        loadPlatformRoom(platformRoomParameter);
+        join("PLATFORM", platformRoomParameter);
         return;
     }
     if(modeParameter==="PLAYER" && roomParameter) join("PLAYER", roomParameter);
     if(modeParameter==="COMPUTER" && roomParameter) join("COMPUTER", roomParameter);
 });
-
-function loadPlatformRoom(id) {
-    if(!platformJwt) {
-        showMessage("請先登入平台再進入遊戲", true);
-        return;
-    }
-    showMessage("正在讀取平台房間資料...", true);
-    $.ajax({
-        method:"GET",
-        url:lobbyApi+"/room/"+encodeURIComponent(id),
-        dataType:"json",
-        success:function(response) {
-            if(!response.success || !response.room) {
-                showMessage(response.message || "找不到平台房間", true);
-                return;
-            }
-            if(response.room.status!=="PLAYING") {
-                showMessage("平台房間尚未開始遊戲", true);
-                return;
-            }
-            platformModeId=Number(response.room.modeId);
-            if(!platformModeId) {
-                showMessage("平台房間缺少遊戲模式資料", true);
-                return;
-            }
-            join("PLATFORM", id);
-        },
-        error:function(response) {
-            var message="無法取得平台房間資料";
-            if(response.responseJSON && response.responseJSON.message) {
-                message=response.responseJSON.message;
-            }
-            showMessage(message, true);
-        }
-    });
-}
 
 function getParameter(name) {
     var query=location.search;
@@ -143,10 +108,6 @@ function join(mode, id) {
     }
     var body={roomId:id};
     if(platformRoom) {
-        if(!platformModeId) {
-            showMessage("缺少遊戲模式資料", true);
-            return;
-        }
         if(boardPostId && !boardMemberId) {
             showMessage("缺少房間玩家資料", true);
             return;
@@ -155,7 +116,9 @@ function join(mode, id) {
             showMessage("請先登入平台再進入遊戲", true);
             return;
         }
-        body.modeId=platformModeId;
+        // 一般 Lobby 只傳房號；模式由 Poker 後端依平台房間取得。
+        // Board 若有傳 modeId，後端仍會與房間資料交叉驗證。
+        if(platformModeId) body.modeId=platformModeId;
     }
     var joinPath=boardPostId ? "/board/team-posts/"+boardPostId+"/game/join?memberId="+boardMemberId : "/join";
     request("POST", joinPath, body, function(joined) {
@@ -603,17 +566,64 @@ function cardImagePath(card) {
 }
 
 function leave() {
+    if(leaving) return;
     if(game && game.status!=="FINISHED" && !confirm("確定要離開目前遊戲嗎？")) return;
-    if(!token) {
-        location.replace(exitDestination());
+    if(platformRoom && roomId) {
+        abandonPlatformRoom();
         return;
     }
+    leavePokerSession();
+}
+
+function abandonPlatformRoom() {
+    var account=localStorage.getItem("account") || "";
+    if(!platformJwt || !account) {
+        showMessage("無法取得平台登入資料，房間尚未關閉");
+        return;
+    }
+    leaving=true;
+    element("leaveButton").disabled=true;
+    showMessage("正在關閉平台房間...");
+    $.ajax({
+        method:"POST",
+        url:lobbyApi+"/room/"+encodeURIComponent(roomId)+"/abandon",
+        headers:{"Authorization":"Bearer "+platformJwt},
+        contentType:"application/json",
+        dataType:"json",
+        data:JSON.stringify({playerAccount:account}),
+        success:function(response) {
+            if(!response || !response.success) {
+                leaveFailed(response && response.message ? response.message : "平台房間關閉失敗");
+                return;
+            }
+            leavePokerSession();
+        },
+        error:function(response) {
+            var message="平台房間關閉失敗，請稍後再試";
+            if(response.responseJSON && response.responseJSON.message) message=response.responseJSON.message;
+            leaveFailed(message);
+        }
+    });
+}
+
+function leaveFailed(message) {
+    leaving=false;
+    element("leaveButton").disabled=false;
+    showMessage(message);
+}
+
+function leavePokerSession() {
     var destination=exitDestination();
     var leaveToken=token;
+    leaving=true;
     token="";
     refreshing=false;
     clearInterval(pollTimer);
     if(socket) socket.close();
+    if(!leaveToken || !roomId) {
+        location.replace(destination);
+        return;
+    }
     $.ajax({
         method:"DELETE",
         url:api+"/rooms/"+encodeURIComponent(roomId)+"/leave",

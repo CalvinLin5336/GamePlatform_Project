@@ -6,6 +6,7 @@
         ? 'http://' + window.location.hostname + ':8080'
         : window.location.origin;
     const RPG_API = '/api/games/rpg';
+    const platformRoomId = new URLSearchParams(window.location.search).get('room') || '';
     const state = {
         user: null,
         professions: [],
@@ -28,9 +29,15 @@
         selectedRegionCode: 'A001',
         selectedStage: null,
         battle: null,
-        selectedSkillCode: null
+        battleAnimating: false,
+        battleAnimationId: 0,
+        selectedSkillCode: null,
+        activeScreen: null,
+        characterInfoReturnScreen: 'characterScreen'
     };
     const byId = id => document.getElementById(id);
+    const screenIds = ['characterScreen', 'characterInfoScreen', 'createCharacterScreen',
+        'adventureScreen', 'stageScreen', 'battleScreen'];
     const professionCodes = ['E001', 'E002', 'E003', 'E004', 'E005', 'E006'];
     const monsterCodes = Array.from({ length: 15 }, (_, index) => 'M' + String(index + 1).padStart(3, '0'));
 
@@ -91,13 +98,89 @@
         byId(barId).style.width = percent(current, max) + '%';
     }
 
+    function setBattleValue(side, type, current, maximum) {
+        const prefix = side === 'player' ? 'player' : 'monster';
+        const label = type === 'Hp' || type === 'Mp'
+            ? current + ' / ' + maximum : current + '%';
+        byId(prefix + type + 'Text').textContent = label;
+        setBar(prefix + type + 'Bar', current, maximum);
+    }
+
+    function setBattleVitals(battle) {
+        ['player', 'monster'].forEach(side => {
+            const combatant = battle[side];
+            setBattleValue(side, 'Hp', combatant.currentHp, combatant.maxHp);
+            setBattleValue(side, 'Mp', combatant.currentMp, combatant.maxMp);
+            setBattleValue(side, 'Action', combatant.actionPercent, 100);
+        });
+    }
+
+    function setBattleAnimationControls(disabled, finished, selectedSkill) {
+        byId('useSelectedSkillBtn').disabled = disabled || finished
+            || !selectedSkill || !selectedSkill.available;
+        byId('battleItemBtn').disabled = disabled || finished;
+        byId('abandonBattleBtn').disabled = disabled || finished;
+        byId('openPlayerBattleInfoBtn').disabled = disabled;
+        byId('openMonsterBattleInfoBtn').disabled = disabled;
+    }
+
+    function waitAnimationFrame() {
+        return new Promise(resolve => window.setTimeout(resolve, 20));
+    }
+
+    async function animateNumber(from, to, frames, update, animationId) {
+        const frameCount = Math.max(1, frames);
+        for (let frame = 1; frame <= frameCount; frame++) {
+            if (animationId !== state.battleAnimationId) return false;
+            const value = Math.round(from + (to - from) * frame / frameCount);
+            update(value);
+            if (frame < frameCount) await waitAnimationFrame();
+        }
+        return true;
+    }
+
+    async function animateActionValue(side, from, to, animationId) {
+        const update = value => setBattleValue(side, 'Action', value, 100);
+        const animateForward = (start, target) => animateNumber(start, target,
+            Math.max(1, Math.ceil((target - start) / 3)), update, animationId);
+        if (to <= from) {
+            if (from < 100 && !await animateForward(from, 100)) return;
+            if (animationId !== state.battleAnimationId) return;
+            update(0);
+            await animateForward(0, to);
+            return;
+        }
+        await animateForward(from, to);
+    }
+
+    async function animateBattleTransition(previous, battle, animationId) {
+        const vitalAnimations = [];
+        ['player', 'monster'].forEach(side => {
+            ['Hp', 'Mp'].forEach(type => {
+                const property = 'current' + type;
+                const maximum = battle[side]['max' + type];
+                vitalAnimations.push(animateNumber(previous[side][property], battle[side][property], 20,
+                    value => setBattleValue(side, type, value, maximum), animationId));
+            });
+        });
+        await Promise.all(vitalAnimations.concat([
+            animateActionValue('player', previous.player.actionPercent,
+                battle.player.actionPercent, animationId),
+            animateActionValue('monster', previous.monster.actionPercent,
+                battle.monster.actionPercent, animationId)
+        ]));
+    }
+
     function setProfessionSprite(element, code) {
         professionCodes.forEach(value => element.classList.remove('profession-' + value));
+        monsterCodes.forEach(value => element.classList.remove('monster-' + value));
+        element.style.backgroundPosition = '';
         element.classList.add('profession-' + (professionCodes.includes(code) ? code : 'E001'));
     }
 
     function setMonsterSprite(element, code) {
         monsterCodes.forEach(value => element.classList.remove('monster-' + value));
+        professionCodes.forEach(value => element.classList.remove('profession-' + value));
         const normalized = monsterCodes.includes(code) ? code : 'M001';
         element.classList.add('monster-' + normalized);
         const index = Math.max(0, Number(normalized.slice(1)) - 1);
@@ -158,15 +241,35 @@
     function showScreen(name) {
         const subtitles = {
             characterScreen: '選擇出征角色',
+            characterInfoScreen: '角色狀態',
+            createCharacterScreen: '建立角色',
             adventureScreen: '冒險地圖',
             stageScreen: '出征準備',
             battleScreen: '戰鬥'
         };
-        ['characterScreen', 'adventureScreen', 'stageScreen', 'battleScreen'].forEach(id => {
+        screenIds.forEach(id => {
             byId(id).hidden = id !== name;
         });
+        document.querySelectorAll('.modal-backdrop').forEach(dialog => {
+            dialog.hidden = true;
+        });
+        state.activeScreen = name;
         byId('pageSubtitle').textContent = subtitles[name] || '';
         window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+
+    function openDialog(id) {
+        screenIds.forEach(screenId => {
+            byId(screenId).hidden = true;
+        });
+        document.querySelectorAll('.modal-backdrop').forEach(dialog => {
+            dialog.hidden = dialog.id !== id;
+        });
+    }
+
+    function closeDialog(id) {
+        byId(id).hidden = true;
+        showScreen(state.activeScreen || 'characterScreen');
     }
 
     function professionByCode(code) {
@@ -358,7 +461,7 @@
         state.selectedConfigSkillCode = state.skillConfiguration.learnedSkills.length
             ? state.skillConfiguration.learnedSkills[0].skillCode : null;
         renderSkillConfiguration();
-        byId('skillConfigModal').hidden = false;
+        openDialog('skillConfigModal');
     }
 
     async function persistSkillConfiguration(codes) {
@@ -505,9 +608,9 @@
         showScreen('stageScreen');
     }
 
-    async function startBattle() {
+    async function startBattle(actionButton) {
         if (!state.selectedStage) return;
-        const button = byId('confirmBattleBtn');
+        const button = actionButton || byId('confirmBattleBtn');
         setBusy(button, true, '進入戰鬥……');
         try {
             state.battle = await request(RPG_API + '/battles', {
@@ -518,9 +621,9 @@
                 })
             });
             state.selectedSkillCode = state.battle.skills.length ? state.battle.skills[0].skillCode : null;
-            renderBattle();
             showMessage('');
             showScreen('battleScreen');
+            await renderBattle(null, true);
         } catch (error) {
             showMessage(error.message, 'error');
         } finally {
@@ -528,37 +631,29 @@
         }
     }
 
-    function renderBattle() {
+    async function renderBattle(previousBattle, animateFromStart) {
         const battle = state.battle;
         const character = state.selectedCharacter;
         const stage = state.selectedStage;
         const finished = battle.status !== 'ACTIVE';
+        const shouldAnimate = Boolean(previousBattle || animateFromStart);
+        const animationId = ++state.battleAnimationId;
+        state.battleAnimating = shouldAnimate;
 
         byId('battleMeta').textContent = '區域：' + stage.regionName + '・' + stage.stageName
             + '　｜　Lv' + character.level + '　｜　行動回合：' + battle.turnNumber;
         byId('turnBadge').textContent = String(battle.turnNumber);
         setProfessionSprite(byId('playerPortrait'), battle.player.code);
         byId('playerName').textContent = battle.player.name + '　等級 ' + character.level;
-        byId('playerStats').textContent = 'ATK ' + character.attack + '　AP ' + character.magic
-            + '　DEF ' + character.defense + '　MDEF ' + character.magicDefense
-            + '　SPEED ' + character.speed;
-        byId('playerHpText').textContent = battle.player.currentHp + ' / ' + battle.player.maxHp;
-        byId('playerMpText').textContent = battle.player.currentMp + ' / ' + battle.player.maxMp;
+        byId('playerStats').textContent = 'ATK ' + battle.player.attack + '　AP ' + battle.player.magic
+            + '　DEF ' + battle.player.defense + '　MDEF ' + battle.player.magicDefense
+            + '　SPEED ' + battle.player.speed;
         byId('playerShieldText').textContent = battle.player.shield > 0 ? '護盾 ' + battle.player.shield : '';
-        setBar('playerHpBar', battle.player.currentHp, battle.player.maxHp);
-        setBar('playerMpBar', battle.player.currentMp, battle.player.maxMp);
-        byId('playerActionText').textContent = battle.player.actionPercent + '%';
-        setBar('playerActionBar', battle.player.actionPercent, 100);
 
         setMonsterSprite(byId('monsterPortrait'), battle.monster.code);
         byId('monsterName').textContent = battle.monster.name + '　等級 ' + battle.monsterLevel;
-        byId('monsterHpText').textContent = battle.monster.currentHp + ' / ' + battle.monster.maxHp;
-        byId('monsterMpText').textContent = battle.monster.currentMp + ' / ' + battle.monster.maxMp;
+        byId('monsterStats').textContent = battle.monster.identity;
         byId('monsterShieldText').textContent = battle.monster.shield > 0 ? '護盾 ' + battle.monster.shield : '';
-        setBar('monsterHpBar', battle.monster.currentHp, battle.monster.maxHp);
-        setBar('monsterMpBar', battle.monster.currentMp, battle.monster.maxMp);
-        byId('monsterActionText').textContent = battle.monster.actionPercent + '%';
-        setBar('monsterActionBar', battle.monster.actionPercent, 100);
 
         byId('skillGrid').innerHTML = battle.skills.map((skill, index) =>
             '<button class="skill-button' + (skill.skillCode === state.selectedSkillCode ? ' selected' : '')
@@ -572,23 +667,123 @@
         renderSkillDetail(selected);
         byId('useSelectedSkillBtn').textContent = byId('useSelectedSkillBtn').dataset.label
             || '使用選擇的技能';
-        byId('useSelectedSkillBtn').disabled = finished || !selected || !selected.available;
+        setBattleAnimationControls(shouldAnimate, finished, selected);
         byId('battleLog').innerHTML = battle.logs.map(line => '<li>' + escapeHtml(line) + '</li>').join('');
         byId('battleLog').scrollTop = byId('battleLog').scrollHeight;
-        byId('returnToMapBtn').hidden = !finished;
-        byId('repeatStageBtn').hidden = !finished;
         byId('abandonBattleBtn').hidden = finished;
-        byId('battleStatusTitle').hidden = !finished;
+        if (shouldAnimate) {
+            const animationStart = previousBattle || {
+                player: Object.assign({}, battle.player, { actionPercent: 0 }),
+                monster: Object.assign({}, battle.monster, { actionPercent: 0 })
+            };
+            setBattleVitals(animationStart);
+            await animateBattleTransition(animationStart, battle, animationId);
+            if (animationId !== state.battleAnimationId) return;
+            setBattleVitals(battle);
+            state.battleAnimating = false;
+            setBattleAnimationControls(false, finished, selected);
+        } else {
+            setBattleVitals(battle);
+            state.battleAnimating = false;
+            setBattleAnimationControls(false, finished, selected);
+        }
 
         if (battle.status === 'VICTORY') {
-            byId('battleStatusTitle').textContent = '戰鬥勝利';
+            renderBattleResult(true);
             showMessage('獲得 ' + battle.rewardExp + ' 經驗與 ' + battle.rewardGold + ' 金幣。'
                 + (battle.levelUp ? '角色升級了！' : '')
                 + ((battle.drops || []).length ? '　掉落：' + battle.drops.map(drop =>
                     (drop.itemName || drop.equipmentName) + (drop.quantity > 1 ? ' × ' + drop.quantity : '')).join('、') : ''), 'success');
         } else if (battle.status === 'DEFEAT') {
-            byId('battleStatusTitle').textContent = '戰鬥失敗';
+            renderBattleResult(false);
             showMessage('休整後可再次挑戰。', 'error');
+        }
+        if (finished) openDialog('battleResultModal');
+    }
+
+    function openCombatantInfo(side) {
+        const battle = state.battle;
+        if (!battle) return;
+        const playerSide = side === 'player';
+        const combatant = playerSide ? battle.player : battle.monster;
+        const level = playerSide ? state.selectedCharacter.level : battle.monsterLevel;
+        const portrait = byId('combatantInfoPortrait');
+        portrait.classList.toggle('profession-sprite', playerSide);
+        portrait.classList.toggle('monster-sprite', !playerSide);
+        if (playerSide) setProfessionSprite(portrait, combatant.code);
+        else setMonsterSprite(portrait, combatant.code);
+
+        byId('combatantInfoTitle').textContent = playerSide ? '角色狀態' : '敵方狀態';
+        byId('combatantInfoName').textContent = combatant.name;
+        byId('combatantInfoIdentity').textContent = combatant.identity + '　Lv' + level;
+        byId('combatantInfoHp').textContent = combatant.currentHp + ' / ' + combatant.maxHp;
+        byId('combatantInfoMp').textContent = combatant.currentMp + ' / ' + combatant.maxMp;
+        byId('combatantInfoAction').textContent = combatant.actionPercent + '%';
+        setBar('combatantInfoHpBar', combatant.currentHp, combatant.maxHp);
+        setBar('combatantInfoMpBar', combatant.currentMp, combatant.maxMp);
+        setBar('combatantInfoActionBar', combatant.actionPercent, 100);
+        byId('combatantInfoReward').textContent = playerSide ? ''
+            : '擊敗經驗　' + state.selectedStage.rewardExp
+                + '　｜　擊敗金幣　' + state.selectedStage.rewardGold;
+
+        const stats = [
+            ['ATK', combatant.attack], ['AP', combatant.magic],
+            ['DEF', combatant.defense], ['MDEF', combatant.magicDefense],
+            ['SPEED', combatant.speed]
+        ];
+        byId('combatantInfoStats').innerHTML = stats.map(stat =>
+            '<div class="combatant-stat-card"><span>' + stat[0] + '</span><strong>'
+            + stat[1] + '</strong></div>').join('');
+        const statuses = combatant.statuses || [];
+        byId('combatantInfoStatuses').innerHTML = statuses.length
+            ? statuses.map(status => '・' + escapeHtml(status)).join('<br>')
+            : '目前沒有額外狀態。';
+        byId('combatantInfoTraitsTitle').textContent = playerSide ? '職業特性' : '種族與個體特性';
+        const traits = combatant.traits || [];
+        byId('combatantInfoTraits').innerHTML = traits.length
+            ? traits.map(trait => escapeHtml(trait)).join('<br><br>')
+            : '沒有額外特性。';
+        openDialog('combatantInfoModal');
+    }
+
+    function renderBattleResult(victory) {
+        const battle = state.battle;
+        const dialog = byId('battleResultDialog');
+        dialog.classList.toggle('defeat', !victory);
+        byId('battleResultEnglish').textContent = victory ? 'V I C T O R Y' : 'D E F E A T';
+        byId('battleResultTitle').textContent = victory
+            ? '成功擊敗「' + battle.monster.name + '」'
+            : '冒險者在「' + battle.monster.name + '」面前倒下';
+
+        if (victory) {
+            const drops = battle.drops || [];
+            const recovery = (battle.recoveredHp > 0 || battle.recoveredMp > 0)
+                ? '<br>戰後恢復　HP <strong>+' + battle.recoveredHp
+                    + '</strong>、MP <strong>+' + battle.recoveredMp + '</strong>'
+                : '';
+            const levelChange = battle.levelUp
+                ? '<br>等級提升　<strong>Lv' + battle.previousLevel
+                    + ' → Lv' + battle.currentLevel + '</strong>'
+                : '';
+            byId('battleResultDetails').innerHTML = '<h4>戰鬥獎勵</h4>'
+                + '<p>經驗值　<strong>+' + battle.rewardExp + '</strong><br>'
+                + '金幣　　<strong>+' + battle.rewardGold + '</strong>'
+                + '<br>持有金幣　<strong>' + battle.currentGold + '</strong>'
+                + recovery + levelChange + '</p>'
+                + '<h4>戰利品</h4>'
+                + (drops.length ? '<ul>' + drops.map(drop => '<li>'
+                    + escapeHtml(drop.itemName || drop.equipmentName)
+                    + (drop.quantity > 1 ? ' × ' + drop.quantity : '') + '</li>').join('') + '</ul>'
+                    : '<p>本次沒有額外掉落。</p>')
+                + '<p>目前 EXP　<strong>' + battle.currentExperience + ' / '
+                    + battle.experienceToNextLevel + '</strong></p>';
+        } else {
+            byId('battleResultDetails').innerHTML = '<h4>戰鬥結果</h4>'
+                + '<p>失去經驗值　<strong>-' + (battle.experiencePenalty || 0) + '</strong></p>'
+                + '<p>返回據點後 HP、MP 已完全恢復。</p>'
+                + '<p>目前 EXP　<strong>' + battle.currentExperience + ' / '
+                    + battle.experienceToNextLevel + '</strong></p>'
+                + '<p>重新整備後可以再次挑戰。</p>';
         }
     }
 
@@ -617,7 +812,7 @@
             tab.classList.toggle('selected', tab.dataset.type === 'CONSUMABLE');
         });
         renderInventory();
-        byId('inventoryModal').hidden = false;
+        openDialog('inventoryModal');
     }
 
     function renderInventoryCharacterSummary() {
@@ -659,7 +854,8 @@
             + '持有數量：' + selected.quantity + ' / ' + selected.maxStack + '<br><br>'
             + escapeHtml(selected.description)
             + (effects.length ? '<br><br>' + effects.map(escapeHtml).join('<br>') : '');
-        const inBattle = state.battle && state.battle.status === 'ACTIVE' && !byId('battleScreen').hidden;
+        const inBattle = state.battle && state.battle.status === 'ACTIVE'
+            && state.activeScreen === 'battleScreen';
         byId('useInventoryItemBtn').disabled = inBattle
             ? selected.itemType !== 'CONSUMABLE'
             : !['CONSUMABLE', 'SKILL_SCROLL'].includes(selected.itemType);
@@ -670,11 +866,13 @@
         const button = byId('useInventoryItemBtn');
         setBusy(button, true, '使用中……');
         try {
-            if (state.battle && state.battle.status === 'ACTIVE' && !byId('battleScreen').hidden) {
+            if (state.battle && state.battle.status === 'ACTIVE'
+                    && state.activeScreen === 'battleScreen') {
+                const previousBattle = state.battle;
                 state.battle = await request(RPG_API + '/battles/' + encodeURIComponent(state.battle.battleId)
                     + '/items', { method: 'POST', body: JSON.stringify({ itemCode: state.selectedItemCode }) });
-                byId('inventoryModal').hidden = true;
-                renderBattle();
+                showScreen('battleScreen');
+                await renderBattle(previousBattle);
                 showMessage('道具已使用，並消耗本回合行動。', 'success');
                 return;
             }
@@ -715,7 +913,7 @@
             + encodeURIComponent(state.selectedCharacter.characterId) + '/equipment');
         state.selectedEquipmentId = state.equipment.length ? state.equipment[0].ownedEquipmentId : null;
         byId('equipmentCharacterName').textContent = state.selectedCharacter.characterName;
-        byId('equipmentModal').hidden = false;
+        openDialog('equipmentModal');
         renderEquipment();
     }
 
@@ -743,10 +941,13 @@
         }
         const stats = selected.stats.length ? selected.stats.map(stat => stat.statType + ' '
             + (stat.modifierType === 'MULTIPLIER' ? '+' + stat.modifierValue + '%' : '+' + stat.modifierValue)).join('、') : '無';
+        const traits = (selected.traits || []).length
+            ? selected.traits.map(trait => escapeHtml(trait)).join('<br>') : '無';
         byId('equipmentDetail').innerHTML = '<strong>【' + escapeHtml(selected.equipmentName) + '】</strong><br>裝備部位：'
             + selected.equipmentType + '<br>需求等級：Lv' + selected.requiredLevel + '<br>可用職業：'
             + (selected.usageType === 'UNIVERSAL' ? '全職業' : selected.professions.join('、'))
-            + '<br>屬性加成：' + escapeHtml(stats) + '<br><br>' + escapeHtml(selected.description);
+            + '<br>屬性加成：' + escapeHtml(stats) + '<br><br>裝備特性：<br>' + traits
+            + '<br><br>裝備描述：<br>' + escapeHtml(selected.description);
         if (selected.equippedSlot) {
             byId('equipmentSlotButtons').innerHTML = '<button class="medieval-button danger" data-unequip="'
                 + selected.ownedEquipmentId + '" type="button">卸下裝備</button>';
@@ -775,7 +976,7 @@
         if (!state.selectedCharacter) return;
         state.shop = await request(RPG_API + '/characters/' + state.selectedCharacter.characterId + '/shop');
         state.shopTab = 'equipment';
-        byId('shopModal').hidden = false;
+        openDialog('shopModal');
         renderShop();
     }
 
@@ -823,6 +1024,7 @@
     }
 
     function selectSkill(skillCode) {
+        if (state.battleAnimating) return;
         state.selectedSkillCode = skillCode;
         renderBattle();
     }
@@ -833,12 +1035,13 @@
         const button = byId('useSelectedSkillBtn');
         setBusy(button, true, '行動中……');
         try {
+            const previousBattle = state.battle;
             state.battle = await request(RPG_API + '/battles/'
                 + encodeURIComponent(state.battle.battleId) + '/actions', {
                 method: 'POST',
                 body: JSON.stringify({ skillCode: skill.skillCode })
             });
-            renderBattle();
+            await renderBattle(previousBattle);
         } catch (error) {
             showMessage(error.message, 'error');
             renderBattle();
@@ -859,6 +1062,28 @@
         state.battle = null;
         state.selectedSkillCode = null;
         showMessage('');
+    }
+
+    async function leaveGame() {
+        if (!window.confirm('確定要放棄這局並離開嗎？')) return;
+
+        const button = byId('leaveGameBtn');
+        setBusy(button, true, '離開中……');
+        try {
+            if (platformRoomId) {
+                if (!state.user || !state.user.account) {
+                    throw new Error('無法取得目前玩家帳號，房間尚未關閉。');
+                }
+                await request('/api/lobby/room/' + encodeURIComponent(platformRoomId) + '/abandon', {
+                    method: 'POST',
+                    body: JSON.stringify({ playerAccount: state.user.account })
+                });
+            }
+            window.location.assign('../../Lobby/jquery_lobby.html');
+        } catch (error) {
+            showMessage(error.message, 'error');
+            setBusy(button, false, '');
+        }
     }
 
     byId('characterGrid').addEventListener('click', event => {
@@ -883,11 +1108,11 @@
         state.selectedProfessionSkillCode = null;
         byId('characterName').value = '';
         renderProfessions();
-        byId('createCharacterScreen').hidden = false;
+        showScreen('createCharacterScreen');
     });
     byId('cancelCreateBtn').addEventListener('click', () => {
         showMessage('');
-        byId('createCharacterScreen').hidden = true;
+        showScreen('characterScreen');
     });
     byId('createCharacterForm').addEventListener('submit', async event => {
         event.preventDefault();
@@ -905,7 +1130,7 @@
             state.selectedCharacter = null;
             await loadCharacters();
             showMessage('角色已加入冒險者名冊。', 'success');
-            byId('createCharacterScreen').hidden = true;
+            showScreen('characterScreen');
         } catch (error) {
             showMessage(error.message, 'error');
         } finally {
@@ -916,15 +1141,16 @@
     byId('enterWorldBtn').addEventListener('click', () => {
         enterWorld().catch(error => showMessage(error.message, 'error'));
     });
-    function openCharacterInfo() {
+    function openCharacterInfo(returnScreen) {
+        state.characterInfoReturnScreen = returnScreen;
         renderCharacterStatus();
         showMessage('');
-        byId('characterInfoScreen').hidden = false;
+        showScreen('characterInfoScreen');
     }
-    byId('openCharacterInfoBtn').addEventListener('click', openCharacterInfo);
-    byId('mapCharacterInfoBtn').addEventListener('click', openCharacterInfo);
+    byId('openCharacterInfoBtn').addEventListener('click', () => openCharacterInfo('characterScreen'));
+    byId('mapCharacterInfoBtn').addEventListener('click', () => openCharacterInfo('adventureScreen'));
     byId('closeCharacterInfoBtn').addEventListener('click', () => {
-        byId('characterInfoScreen').hidden = true;
+        showScreen(state.characterInfoReturnScreen);
     });
     ['mapSkillConfigBtn', 'stageSkillConfigBtn'].forEach(id => {
         byId(id).addEventListener('click', () => {
@@ -940,7 +1166,7 @@
         openEquipment().catch(error => showMessage(error.message, 'error'))));
     ['mapShopBtn'].forEach(id => byId(id).addEventListener('click', () =>
         openShop().catch(error => showMessage(error.message, 'error'))));
-    byId('closeEquipmentBtn').addEventListener('click', () => { byId('equipmentModal').hidden = true; showMessage(''); });
+    byId('closeEquipmentBtn').addEventListener('click', () => { closeDialog('equipmentModal'); showMessage(''); });
     byId('equipmentProfessionFilter').addEventListener('change', renderEquipment);
     ['equippedSlots', 'equipmentInventory'].forEach(id => byId(id).addEventListener('click', event => {
         const button = event.target.closest('[data-id]');
@@ -951,7 +1177,7 @@
         const button = event.target.closest('[data-equip],[data-unequip]');
         if (button) changeEquipment(button).catch(error => showMessage(error.message, 'error'));
     });
-    byId('closeShopBtn').addEventListener('click', () => { byId('shopModal').hidden = true; showMessage(''); });
+    byId('closeShopBtn').addEventListener('click', () => { closeDialog('shopModal'); showMessage(''); });
     document.querySelectorAll('.shop-tab').forEach(tab => tab.addEventListener('click', () => {
         state.shopTab = tab.dataset.shopTab; state.selectedShopProductId = null; renderShop();
     }));
@@ -979,7 +1205,7 @@
     });
     byId('useInventoryItemBtn').addEventListener('click', useInventoryItem);
     byId('closeInventoryBtn').addEventListener('click', () => {
-        byId('inventoryModal').hidden = true;
+        closeDialog('inventoryModal');
         showMessage('');
     });
     byId('reloadInventoryBtn').addEventListener('click', async () => {
@@ -1014,7 +1240,7 @@
         unequipSkill(button.dataset.code).catch(error => showMessage(error.message, 'error'));
     });
     byId('closeSkillConfigBtn').addEventListener('click', () => {
-        byId('skillConfigModal').hidden = true;
+        closeDialog('skillConfigModal');
         showMessage('');
     });
     byId('changeCharacterBtn').addEventListener('click', () => {
@@ -1032,16 +1258,19 @@
         renderStages();
     });
     byId('backToMapBtn').addEventListener('click', () => showScreen('adventureScreen'));
-    byId('confirmBattleBtn').addEventListener('click', startBattle);
+    byId('confirmBattleBtn').addEventListener('click', () => startBattle());
     byId('skillGrid').addEventListener('click', event => {
         const button = event.target.closest('.skill-button');
         if (button) selectSkill(button.dataset.code);
     });
     byId('useSelectedSkillBtn').addEventListener('click', useSelectedSkill);
+    byId('openPlayerBattleInfoBtn').addEventListener('click', () => openCombatantInfo('player'));
+    byId('openMonsterBattleInfoBtn').addEventListener('click', () => openCombatantInfo('monster'));
+    byId('closeCombatantInfoBtn').addEventListener('click', () => closeDialog('combatantInfoModal'));
     byId('returnToMapBtn').addEventListener('click', () => {
         returnToMap().catch(error => showMessage(error.message, 'error'));
     });
-    byId('repeatStageBtn').addEventListener('click', startBattle);
+    byId('repeatStageBtn').addEventListener('click', () => startBattle(byId('repeatStageBtn')));
     byId('abandonBattleBtn').addEventListener('click', async () => {
         if (!window.confirm('確定要撤離這場戰鬥嗎？')) return;
         try {
@@ -1052,9 +1281,7 @@
             showMessage(error.message, 'error');
         }
     });
-    byId('leaveGameBtn').addEventListener('click', () => {
-        window.location.assign('../../Lobby/jquery_lobby.html');
-    });
+    byId('leaveGameBtn').addEventListener('click', leaveGame);
 
     async function initialize() {
         document.body.classList.toggle('embedded', window.self !== window.top);
