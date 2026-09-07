@@ -3,7 +3,9 @@ package com.example.demo.modules.lobby.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -58,6 +60,13 @@ public class Room {
     @Column(name = "player_account")
     private List<String> players = new ArrayList<>();
 
+    // 🌟 新增：儲存 帳號 -> Username 的對照表
+    @ElementCollection
+    @CollectionTable(name = "room_player_names", joinColumns = @JoinColumn(name = "room_id"))
+    @MapKeyColumn(name = "player_account")
+    @Column(name = "player_name")
+    private Map<String, String> playerNames = new HashMap<>();
+
     @PrePersist
     public void prePersist() {
         if (this.id == null) {
@@ -68,6 +77,7 @@ public class Room {
         }
     }
 
+    // --- Getters and Setters ---
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -109,4 +119,7 @@ public class Room {
 
     public List<String> getPlayers() { return players; }
     public void setPlayers(List<String> players) { this.players = players; }
+
+    public Map<String, String> getPlayerNames() { return playerNames; }
+    public void setPlayerNames(Map<String, String> playerNames) { this.playerNames = playerNames; }
 }

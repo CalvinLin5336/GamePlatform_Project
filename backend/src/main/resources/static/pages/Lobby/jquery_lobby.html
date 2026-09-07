@@ -253,6 +253,9 @@
             // 4. 建立房間 API 串接
             $('#confirmCreateBtn').on('click', function() {
                 const currentAccount = localStorage.getItem("account") || "test_account_01";
+                // 🌟 優先取得 username 作為顯示名稱傳給後端
+                const currentUsername = localStorage.getItem("username") || currentAccount; 
+                
                 const modeCode = $('#roomModeSelect').val(); 
                 const playerCount = $('#playerCountSelect').val(); 
                 
@@ -272,7 +275,8 @@
                         gameId: selectedGameId, 
                         modeCode: modeCode, 
                         playerCount: parseInt(playerCount), 
-                        hostAccount: currentAccount 
+                        hostAccount: currentAccount,
+                        hostName: currentUsername // 🌟 傳遞名稱
                     }),
                     success: function(response) {
                         if (response.success) {
@@ -328,19 +332,21 @@
                                     加入遊戲
                                 </button>
                             `;
+// 🌟 優先從 playerNames 取出房主的 Username，若無則退回顯示 hostAccount
+const hostDisplayName = (room.playerNames && room.playerNames[room.hostAccount]) ? room.playerNames[room.hostAccount] : room.hostAccount;
 
-                            const roomHtml = `
-                                <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 flex justify-between items-center hover:border-indigo-500 transition">
-                                    <div>
-                                        <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded mr-2">${displayGameName}</span>
-                                        <span class="font-bold text-slate-200">房主: ${room.hostAccount}</span>
-                                        <p class="text-slate-400 text-sm mt-1">模式: ${displayModeName} (${room.minPlayers}~${room.maxPlayers}人)</p>
-                                        <p class="text-cyan-400 text-sm font-medium mt-1">👥 房間人數: ${currentPlayers} / ${room.maxPlayers} 人</p>
-                                        <p class="text-slate-500 text-xs mt-1">房號: ${room.id}</p>
-                                    </div>
-                                    ${buttonHtml}
-                                </div>
-                            `;
+const roomHtml = `
+    <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 flex justify-between items-center hover:border-indigo-500 transition">
+        <div>
+            <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded mr-2">${displayGameName}</span>
+            <span class="font-bold text-slate-200">房主: ${hostDisplayName}</span>
+            <p class="text-slate-400 text-sm mt-1">模式: ${displayModeName} (${room.minPlayers}~${room.maxPlayers}人)</p>
+            <p class="text-cyan-400 text-sm font-medium mt-1">👥 房間人數: ${currentPlayers} / ${room.maxPlayers} 人</p>
+            <p class="text-slate-500 text-xs mt-1">房號: ${room.id}</p>
+        </div>
+        ${buttonHtml}
+    </div>
+`;
                             $container.append(roomHtml);
                         });
                     },
@@ -358,7 +364,7 @@
                 }
             });
 
-            // 6. 取得進行中的房間列表（動態對應資料庫路徑）
+            // 6. 取得進行中的房間列表
             function fetchActiveRooms() {
                 const currentAccount = localStorage.getItem("account") || "test_account_01";
                 lobbyRequest({
@@ -414,11 +420,18 @@
             // 7. 加入房間 API 串接
             window.joinRoom = function(roomId) {
                 const currentAccount = localStorage.getItem("account") || "test_account_02";
+                // 🌟 優先取得 username 作為顯示名稱傳給後端
+                const currentUsername = localStorage.getItem("username") || currentAccount; 
+
                 lobbyRequest({
                     url: apiHost + '/api/lobby/join-room',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ roomId: roomId, playerAccount: currentAccount }),
+                    data: JSON.stringify({ 
+                        roomId: roomId, 
+                        playerAccount: currentAccount,
+                        playerName: currentUsername // 🌟 傳遞名稱
+                    }),
                     success: function(res) {
                         if (res.success) {
                             window.location.href = `waiting_room.html?room=${roomId}`;
@@ -429,7 +442,7 @@
                 });
             };
 
-            // 🌟 8. 手動輸入房號加入邏輯
+            // 8. 手動輸入房號加入邏輯
             $('#manualJoinBtn').on('click', function() {
                 const inputRoomId = $('#manualRoomIdInput').val().trim().toUpperCase();
                 if (!inputRoomId) {
@@ -439,7 +452,6 @@
                 
                 $(this).prop('disabled', true).text('加入中...');
                 
-                // 先檢查房間是否存在且可以加入
                 lobbyRequest({
                     url: apiHost + '/api/lobby/room/' + inputRoomId,
                     type: 'GET',
@@ -460,7 +472,6 @@
                                 return;
                             }
                             
-                            // 呼叫原本的加入邏輯
                             window.joinRoom(inputRoomId);
                         } else {
                             alert('找不到指定的房間，請確認房號是否正確！');
@@ -474,7 +485,6 @@
                 });
             });
 
-            // 綁定 Enter 鍵觸發加入
             $('#manualRoomIdInput').on('keypress', function(e) {
                 if (e.which === 13) {
                     $('#manualJoinBtn').click();

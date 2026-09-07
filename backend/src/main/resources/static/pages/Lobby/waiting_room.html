@@ -187,7 +187,7 @@
                             currentRoomData = res.room;
                             isHost = (myAccount === currentRoomData.hostAccount);
                             $('#leaveRoomBtn').prop('disabled', false);
-                            if (!boardPostId) $('#startGameBtn').prop('disabled', !isHost);
+                            if (!boardPostId && !isHost) $('#startGameBtn').prop('disabled', true);
                             
                             updateWaitingRoomUI(currentRoomData);
                             connectWebSocket(); 
@@ -259,7 +259,26 @@
 
                 $('#waitCurrentPlayers').text(room.players.length);
                 $('#waitMaxPlayers').text(room.maxPlayers);
-                if (boardPostId) $('#startGameBtn').prop('disabled', room.players.length !== room.maxPlayers || room.status !== 'WAITING');
+                
+                // 🌟 修正：只要是房主，就必須檢查人數是否已滿，未滿則按鈕反灰不可點擊
+                if (isHost) {
+                    const isFull = (room.players.length === room.maxPlayers);
+                    const $startBtn = $('#startGameBtn');
+                    
+                    if (boardPostId) {
+                        $startBtn.prop('disabled', !isFull || room.status !== 'WAITING');
+                    } else {
+                        $startBtn.prop('disabled', !isFull);
+                    }
+                    
+                    if ($startBtn.prop('disabled')) {
+                        $startBtn.addClass('opacity-50 cursor-not-allowed').removeClass('hover:bg-emerald-500 hover:scale-105 active:scale-95');
+                        $startBtn.attr('title', '人數未滿，無法開始遊戲');
+                    } else {
+                        $startBtn.removeClass('opacity-50 cursor-not-allowed').addClass('hover:bg-emerald-500 hover:scale-105 active:scale-95');
+                        $startBtn.removeAttr('title');
+                    }
+                }
 
                 const $list = $('#waitPlayerList');
                 $list.empty();
@@ -271,6 +290,15 @@
                     // 🌟 自己的行套用專屬 Base64 頭貼
                     const playerAvatar = isMe ? (myAvatarBase64 || localStorage.getItem("avatar")) : null;
                     
+                    // 🌟 新增：決定要顯示的名稱 (Username)
+                    let displayUsername = playerAccount;
+                    if (isMe) {
+                        displayUsername = localStorage.getItem("username") || playerAccount;
+                    } else if (room.playerNames && room.playerNames[playerAccount]) {
+                        // 預留擴充點：若未來後端有傳遞其他玩家的 username 對應，可在此套用
+                        displayUsername = room.playerNames[playerAccount];
+                    }
+
                     let kickBtnHtml = '';
                     if (isHost && !isMe) {
                         kickBtnHtml = `<button onclick="kickPlayer('${playerAccount}')" class="text-xs bg-red-900/50 hover:bg-red-600 text-red-200 px-2.5 py-1 rounded transition active:scale-95">踢除</button>`;
@@ -291,7 +319,7 @@
                             <div class="flex items-center gap-3">
                                 ${avatarHtml}
                                 <span class="text-white font-medium ${isThisHost ? 'text-amber-400' : ''}">
-                                    ${playerAccount} ${isMe ? '(你)' : ''} ${isThisHost ? '👑' : ''}
+                                    ${displayUsername} ${isMe ? '(你)' : ''} ${isThisHost ? '👑' : ''}
                                 </span>
                             </div>
                             <div>${kickBtnHtml}</div>
@@ -488,6 +516,13 @@
 
             $('#startGameBtn').on('click', function() {
                 if (!hasRoomSession()) return;
+                
+                // 🌟 雙重防呆：點擊時如果人數未滿，跳出提示並阻擋 API 請求
+                if (currentRoomData && currentRoomData.players.length < currentRoomData.maxPlayers) {
+                    alert('人數未滿，請等待其他玩家加入後再開始遊戲！');
+                    return;
+                }
+
                 if (boardPostId) {
                     const button=$(this).prop('disabled',true);
                     boardRequest('/start?captainId='+boardMemberId, 'POST')

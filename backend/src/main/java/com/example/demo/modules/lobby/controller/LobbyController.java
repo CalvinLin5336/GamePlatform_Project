@@ -29,11 +29,9 @@ import java.util.ArrayList;
 @RequestMapping("/api/lobby")
 public class LobbyController {
 
-    // 注入 Repository 來操作資料庫
     @Autowired
     private RoomRepository roomRepository;
 
-    // 注入隊員寫好的 Game 與 GameMode Repository
     @Autowired
     private GameRepository gameRepository;
 
@@ -62,9 +60,8 @@ public class LobbyController {
             gameMap.put("gameName", game.getGameName());
             gameMap.put("description", game.getDescription());
             gameMap.put("imagePath", game.getImagePath());
-            gameMap.put("frontendPath", game.getFrontendPath()); // 確保回傳前端路徑
+            gameMap.put("frontendPath", game.getFrontendPath()); 
             
-            // 抓出這款遊戲對應的所有「已啟用」模式
             List<GameMode> modes = gameModeRepository.findByGameIdAndEnabledTrueOrderByModeIdAsc(game.getGameId());
             
             List<Map<String, Object>> modesData = new ArrayList<>();
@@ -94,12 +91,9 @@ public class LobbyController {
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> checkPlayerStatus(@RequestParam String username) {
         Map<String, Object> response = new HashMap<>();
-        
-        // 暫時的模擬邏輯：預設玩家沒有在進行中的遊戲
         response.put("hasActiveGame", false);
         response.put("roomId", null);
         response.put("gameType", null);
-        
         return ResponseEntity.ok(response);
     }
 
@@ -108,17 +102,15 @@ public class LobbyController {
     // =========================================================
     @PostMapping("/create-room")
     public ResponseEntity<Map<String, Object>> createRoom(@RequestBody Map<String, Object> request) {
-    	String hostAccount = (String) request.get("hostAccount"); 
-        
-        // 接收前端傳來的 gameId 與 modeCode
+        String hostAccount = (String) request.get("hostAccount"); 
+        String hostName = (String) request.get("hostName"); // 🌟 接收前端傳來的 Username
+        if (hostName == null || hostName.isBlank()) hostName = hostAccount;
+
         Long gameId = Long.valueOf(request.get("gameId").toString());
         String modeCode = (String) request.get("modeCode");
-        
         Object playerCountObj = request.get("playerCount");
         
-        // 呼叫隊員寫好的方法，精準查出該模式的設定
         Optional<GameMode> optionalMode = gameModeRepository.findByGameIdAndModeCode(gameId, modeCode);
-        
         if (optionalMode.isEmpty()) {
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
@@ -127,18 +119,11 @@ public class LobbyController {
         }
 
         GameMode modeConfig = optionalMode.get();
-
-        // 決定最終人數：如果前端有傳，就用前端的；如果沒傳(或發生錯誤)，就退回使用資料庫的預設最大值
         int finalMaxPlayers = modeConfig.getMaxPlayers();
         if (playerCountObj != null) {
-            try {
-                finalMaxPlayers = Integer.parseInt(playerCountObj.toString());
-            } catch (NumberFormatException e) {
-                // 忽略錯誤，維持預設值
-            }
+            try { finalMaxPlayers = Integer.parseInt(playerCountObj.toString()); } catch (NumberFormatException e) {}
         }
         
-        // 建立新的 Room 物件並寫入限制條件
         Room newRoom = new Room();
         newRoom.setHostAccount(hostAccount); 
         newRoom.setGameId(gameId);
@@ -147,13 +132,11 @@ public class LobbyController {
         newRoom.setMaxPlayers(finalMaxPlayers);
         newRoom.setComputerPlayers(modeConfig.getComputerPlayers()); 
         
-        // 房主開房的同時，自動把房主加入玩家名單中
         newRoom.getPlayers().add(hostAccount);
+        newRoom.getPlayerNames().put(hostAccount, hostName); // 🌟 儲存房主對應名稱
         
-        // 存入資料庫
         Room savedRoom = roomRepository.save(newRoom);
         
-        // 回傳真正的房間資料給前端
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("roomId", savedRoom.getId());
@@ -171,10 +154,12 @@ public class LobbyController {
     public ResponseEntity<Map<String, Object>> joinRoom(@RequestBody Map<String, Object> request) {
         String roomId = (String) request.get("roomId");
         String playerAccount = (String) request.get("playerAccount");
+        String playerName = (String) request.get("playerName"); // 🌟 接收前端傳來的 Username
+        if (playerName == null || playerName.isBlank()) playerName = playerAccount;
+
         Map<String, Object> response = new HashMap<>();
 
         Optional<Room> optionalRoom = roomRepository.findById(roomId);
-        
         if (optionalRoom.isEmpty()) {
             response.put("success", false);
             response.put("message", "找不到該房間，請確認房號是否正確！");
@@ -189,7 +174,6 @@ public class LobbyController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        // 防護網：檢查人數是否已達上限
         if (room.getPlayers().size() >= room.getMaxPlayers()) {
             response.put("success", false);
             response.put("message", "加入失敗：房間人數已滿！");
@@ -198,8 +182,8 @@ public class LobbyController {
         
         if (!room.getPlayers().contains(playerAccount)) {
             room.getPlayers().add(playerAccount); 
+            room.getPlayerNames().put(playerAccount, playerName); // 🌟 儲存玩家對應名稱
             roomRepository.save(room);    
-            // 🌟 加入成功，廣播給全場更新名單
             broadcastRoomSync(roomId, room);
         }
 
@@ -217,11 +201,9 @@ public class LobbyController {
     @GetMapping("/rooms")
     public ResponseEntity<Map<String, Object>> getWaitingRooms() {
         List<Room> waitingRooms = roomRepository.findByStatus("WAITING");
-        
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("rooms", waitingRooms); 
-        
         return ResponseEntity.ok(response);
     }
     
@@ -245,7 +227,7 @@ public class LobbyController {
     }
     
     // =========================================================
-    // 6. 離開房間 (升級版：支援廣播解散指令 & 遊戲中防呆)
+    // 6. 離開房間 
     // =========================================================
     @PostMapping("/room/{roomId}/leave")
     public ResponseEntity<Map<String, Object>> leaveRoom(
@@ -264,7 +246,6 @@ public class LobbyController {
 
         Room room = optionalRoom.get();
 
-        // 🚨 新增防呆：如果遊戲已經在進行中，拒絕透過此 API 直接離開或解散房間
         if ("PLAYING".equals(room.getStatus())) {
             response.put("success", false);
             response.put("message", "遊戲進行中，無法直接離開房間。");
@@ -272,26 +253,21 @@ public class LobbyController {
         }
 
         room.getPlayers().remove(playerAccount);
+        room.getPlayerNames().remove(playerAccount); // 清理名字對照
 
         if (room.getHostAccount().equals(playerAccount) || room.getPlayers().isEmpty()) {
-            // ⭐ 1. 準備解散指令的 JSON
             try {
                 Map<String, Object> disbandMsg = new HashMap<>();
                 disbandMsg.put("type", "ROOM_DISBANDED");
                 disbandMsg.put("message", "房主已離開，房間解散");
-                
-                // ⭐ 2. 廣播給房間內還在等待的所有人 
                 broadcastAfterCommit(roomId, objectMapper.writeValueAsString(disbandMsg));
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
-            // ⭐ 3. 廣播完畢後，將房間從資料庫刪除
             roomRepository.delete(room);
             response.put("message", "房間已解散");
         } else {
             roomRepository.save(room);
-            // 🌟 一般玩家離開，廣播給全場更新名單
             broadcastRoomSync(roomId, room);
             response.put("message", "成功離開房間");
         }
@@ -301,7 +277,7 @@ public class LobbyController {
     }
     
     // =========================================================
-    // 7. 更新房間設定 (僅限房主)
+    // 7. 更新房間設定
     // =========================================================
     @PutMapping("/room/{roomId}/settings")
     public ResponseEntity<Map<String, Object>> updateRoomSettings(
@@ -340,7 +316,6 @@ public class LobbyController {
         room.setMaxPlayers(maxPlayers);
         roomRepository.save(room);
         
-        // 🌟 廣播設定變更
         broadcastRoomSync(roomId, room);
 
         response.put("success", true);
@@ -379,9 +354,9 @@ public class LobbyController {
         }
 
         room.getPlayers().remove(targetAccount);
+        room.getPlayerNames().remove(targetAccount);
         roomRepository.save(room);
 
-        // 發送 KICKED 指令給被踢的人
         try {
             Map<String, Object> kickMessage = new HashMap<>();
             kickMessage.put("action", "KICKED");
@@ -391,7 +366,6 @@ public class LobbyController {
             e.printStackTrace();
         }
 
-        // 廣播給留在房間裡的人更新名單
         broadcastRoomSync(roomId, room);
 
         response.put("success", true);
@@ -399,9 +373,6 @@ public class LobbyController {
         return ResponseEntity.ok(response);
     }
 
-    // =========================================================
-    // 輔助方法：發送房間狀態同步廣播
-    // =========================================================
     private void broadcastRoomSync(String roomId, Room room) {
         try {
             Map<String, Object> wsMessage = new HashMap<>();
@@ -427,7 +398,6 @@ public class LobbyController {
         String hostAccount = request.get("hostAccount");
         Map<String, Object> response = new HashMap<>();
 
-        // 1. 尋找房間
         Optional<Room> optionalRoom = roomRepository.findById(roomId);
         if (optionalRoom.isEmpty()) {
             response.put("success", false);
@@ -437,7 +407,6 @@ public class LobbyController {
 
         Room room = optionalRoom.get();
 
-        // 2. 防護網：確認是房主按的
         if (!room.getHostAccount().equals(hostAccount)) {
             response.put("success", false);
             response.put("message", "只有房主可以開始遊戲！");
@@ -450,38 +419,31 @@ public class LobbyController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        // 3. (選擇性) 防護網：檢查人數是否符合最低要求
         if (room.getPlayers().size() < room.getMinPlayers()) {
             response.put("success", false);
             response.put("message", "人數不足，無法開始遊戲！最低需要 " + room.getMinPlayers() + " 人。");
             return ResponseEntity.badRequest().body(response);
         }
 
-        // 4. 更改房間狀態、記錄開始時間與逾時時間
         roomLifecycleService.startRoom(room);
 
-        // 5. 找出這款遊戲的前端網址並加入防呆對應
         Optional<Game> optionalGame = gameRepository.findById(room.getGameId());
-        String frontendUrl = "/pages/Games/poker/poker_client.html"; // 預設值
+        String frontendUrl = "/pages/Games/poker/poker_client.html"; 
         
         if (optionalGame.isPresent() && optionalGame.get().getFrontendPath() != null) {
             frontendUrl = optionalGame.get().getFrontendPath();
         } else {
-            // 💡 後端防呆：根據 gameId 確保限時問答挑戰不會跑錯棚
             if (room.getGameId() != null && room.getGameId() == 3L) {
                 frontendUrl = "/pages/Games/quiz/quiz_client.html";
             }
         }
         
-        // 確保路徑開頭帶有 /
         if (!frontendUrl.startsWith("/")) {
             frontendUrl = "/" + frontendUrl;
         }
         
-        // 組合出最終帶有房號的網址
         String targetUrl = frontendUrl + "?room=" + roomId;
 
-        // 6. 廣播 START_GAME 指令給全場
         try {
             Map<String, Object> startMessage = new HashMap<>();
             startMessage.put("action", "START_GAME");
@@ -512,7 +474,6 @@ public class LobbyController {
     // =========================================================
     @GetMapping("/my-active-rooms")
     public ResponseEntity<Map<String, Object>> getMyActiveRooms(@RequestParam String account) {
-        // 找出所有狀態為 PLAYING 的房間，並過濾出玩家名單包含此帳號的房間
         List<Room> allPlayingRooms = roomRepository.findByStatus("PLAYING");
         List<Room> myActiveRooms = new ArrayList<>();
         
@@ -530,7 +491,7 @@ public class LobbyController {
     }
     
  // =========================================================
-    // 10. 廢棄/放棄房間 (遊戲中途離開)
+    // 10. 廢棄/放棄房間
     // =========================================================
     @PostMapping("/room/{roomId}/abandon")
     @Transactional
@@ -544,16 +505,12 @@ public class LobbyController {
         Optional<Room> optionalRoom = roomRepository.findById(roomId);
         if (optionalRoom.isPresent()) {
             Room room = optionalRoom.get();
-            
-         // 🌟 核心邏輯：將房間狀態改為 ABANDONED (廢棄)
             room.setStatus("ABANDONED");
-            // 補上這兩行，精準寫入結束原因與當下時間！
             room.setEndReason("ABANDONED");
             room.setEndedAt(java.time.LocalDateTime.now()); 
             
             roomRepository.save(room);
             
-            // 順便發送廣播，讓可能還在該房間連線的其他人知道房間已廢棄
             try {
                 Map<String, Object> disbandMsg = new HashMap<>();
                 disbandMsg.put("type", "ROOM_DISBANDED");
