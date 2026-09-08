@@ -118,9 +118,9 @@ public class GameDataInitializer implements CommandLineRunner {
             turing = gameRepository.save(turing);
         }
 
-        createModeIfMissing(turing.getGameId(), "TURING_4", "4張卡", 1, 1, 0, true);
-        createModeIfMissing(turing.getGameId(), "TURING_5", "5張卡", 1, 1, 0, true);
-        createModeIfMissing(turing.getGameId(), "TURING_6", "6張卡", 1, 1, 0, true);
+        createModeIfMissing(turing.getGameId(), "TURING_4", "4張卡", 1, 4, 0, true);
+        createModeIfMissing(turing.getGameId(), "TURING_5", "5張卡", 1, 4, 0, true);
+        createModeIfMissing(turing.getGameId(), "TURING_6", "6張卡", 1, 4, 0, true);
     }
 
     private void migrateStaticPaths(
