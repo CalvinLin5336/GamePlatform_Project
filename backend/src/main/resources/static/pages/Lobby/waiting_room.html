@@ -430,7 +430,10 @@
                         hasLeftRoom = true;
 
                         if (window.parent && window.parent.RoomChatManager) {
-                            window.parent.RoomChatManager.startGameChannel(roomId, myAccount);
+                            // 🌟 聰明判斷：只要網址不包含圖靈解密，就維持由外層建立聊天連線
+                            if (!message.url.includes("turing_client.html")) {
+                                window.parent.RoomChatManager.startGameChannel(roomId, myAccount);
+                            }
                         }
 
                         window.location.href = message.url;

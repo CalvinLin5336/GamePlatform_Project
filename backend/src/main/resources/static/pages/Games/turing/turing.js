@@ -20,7 +20,20 @@ let roomSocket = null;
 let loggedReadyPlayers = new Set(); 
 let submittedPlayers = new Set(); 
 let hasSubmitted = false;         
-let roomPlayerNames = {}; // 🌟 新增：全房間的名字對照表
+let roomPlayerNames = {}; 
+
+// 🌟 1. 新增：開放給外層 chatclient 呼叫的發送訊息 API
+window.sendRoomChatMessage = function(text) {
+    if (roomSocket && roomSocket.readyState === WebSocket.OPEN) {
+        const currentUsername = localStorage.getItem("username") || localStorage.getItem("account") || "訪客";
+        roomSocket.send(JSON.stringify({
+            type: "ROOM_CHAT",
+            roomId: currentRoomId,
+            userName: currentUsername,
+            message: text
+        }));
+    }
+};
 
 $(document).ready(function() {
     const token = localStorage.getItem("token"); 
@@ -55,9 +68,9 @@ $(document).ready(function() {
     if (currentRoomId) {
         $('#roomIdDisplay').text(currentRoomId);
         
-        // 🌟 關鍵補上這行：通知外層平台開啟此房間的聊天頻道
-        if (window.parent && window.parent.RoomChatManager && typeof window.parent.RoomChatManager.startGameChannel === 'function') {
-            window.parent.RoomChatManager.startGameChannel(currentRoomId, currentAccount);
+        // 🌟 2. 修正：只呼叫 showTab() 喚醒聊天介面，不要呼叫 startGameChannel 建立重複連線
+        if (window.parent && window.parent.RoomChatManager && typeof window.parent.RoomChatManager.showTab === 'function') {
+            window.parent.RoomChatManager.showTab();
         }
         
         $.ajax({
@@ -66,7 +79,7 @@ $(document).ready(function() {
             success: function(res) {
                 if (res.success && res.room) {
                     if (res.room.players) roomPlayersCount = res.room.players.length;
-                    roomPlayerNames = res.room.playerNames || {}; // 🌟 存下全房間的名字對照表
+                    roomPlayerNames = res.room.playerNames || {}; 
                 }
                 connectWebSocket(); 
             }
@@ -166,17 +179,25 @@ function connectWebSocket() {
     roomSocket.onmessage = function(event) {
         const msg = JSON.parse(event.data);
         
+        // 🌟 3. 關鍵修復：攔截伺服器廣播的聊天訊息，轉發給外層的聊天室 UI
+        if (msg.type === 'ROOM_CHAT' || (msg.userName && msg.message)) {
+            if (window.parent && window.parent.RoomChatManager) {
+                window.parent.RoomChatManager.appendMessage(msg.userName, msg.message, msg.userName === '系統');
+            }
+            return; // 處理完聊天就終止，不往下執行當作遊戲指令
+        }
+        
         if (msg.type === 'ROUND_READY' && msg.round === currentRound) {
             if (!submittedPlayers.has(msg.playerName) && !loggedReadyPlayers.has(msg.playerName)) {
                 loggedReadyPlayers.add(msg.playerName);
                 const activeCount = roomPlayersCount - submittedPlayers.size;
-                const displayName = roomPlayerNames[msg.playerName] || msg.playerName; // 🌟 優先顯示 Username
+                const displayName = roomPlayerNames[msg.playerName] || msg.playerName; 
                 logAction(`等待中... 玩家 [${displayName}] 已結束本輪！( ${loggedReadyPlayers.size} / ${activeCount} )`, "text-indigo-300");
             }
             checkRoundAdvance();
         } 
         else if (msg.type === 'PLAYER_SUBMITTED') {
-            const displayName = roomPlayerNames[msg.playerName] || msg.playerName; // 🌟 優先顯示 Username
+            const displayName = roomPlayerNames[msg.playerName] || msg.playerName; 
             logAction(`🔔 玩家 [${displayName}] 已經提交最終答案！`, "text-amber-400 font-bold");
             submittedPlayers.add(msg.playerName);
             loggedReadyPlayers.delete(msg.playerName); 
@@ -185,7 +206,6 @@ function connectWebSocket() {
         else if (msg.type === 'GAME_OVER') {
             $('#resultTitle').text(msg.title).addClass(msg.title.includes("🎉") ? "text-emerald-400" : "text-red-500");
             
-            // 🌟 結算字串內若有含到帳號，順便把它替換成 Username
             let finalMsg = msg.message;
             Object.keys(roomPlayerNames).forEach(acc => {
                 finalMsg = finalMsg.replace(acc, roomPlayerNames[acc]);
@@ -369,3 +389,10 @@ function initNotepad() {
 function updateStatsUI() { $('#currentRound').text(currentRound); $('#testsThisRound').text(`${testsThisRound} / 3`); }
 function getCurrentProposal() { return { blue: parseInt($('#blueInput').val()), yellow: parseInt($('#yellowInput').val()), purple: parseInt($('#purpleInput').val()) }; }
 function logAction(msg, cssClass = "text-slate-300") { $('#actionLog').prepend(`<div class="${cssClass} pb-0.5 border-b border-slate-700/50">▶ ${msg}</div>`); }
+
+// 🌟 4. 新增：當離開遊戲（不論是按離開按鈕、還是結算後返回大廳），自動通知外層隱藏聊天室
+window.addEventListener('pagehide', function() {
+    if (window.parent && window.parent.RoomChatManager && typeof window.parent.RoomChatManager.hideTab === 'function') {
+        window.parent.RoomChatManager.hideTab();
+    }
+});
