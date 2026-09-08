@@ -55,6 +55,11 @@ $(document).ready(function() {
     if (currentRoomId) {
         $('#roomIdDisplay').text(currentRoomId);
         
+        // 🌟 關鍵補上這行：通知外層平台開啟此房間的聊天頻道
+        if (window.parent && window.parent.RoomChatManager && typeof window.parent.RoomChatManager.startGameChannel === 'function') {
+            window.parent.RoomChatManager.startGameChannel(currentRoomId, currentAccount);
+        }
+        
         $.ajax({
             url: `/api/lobby/room/${currentRoomId}`,
             type: 'GET',
