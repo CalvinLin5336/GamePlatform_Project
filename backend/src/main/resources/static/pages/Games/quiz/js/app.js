@@ -61,16 +61,28 @@ async function authFetch(url,options={}){
 	if(platformJwt){
 		options.headers["Authorization"]= `Bearer ${platformJwt}`;
 	}
-	const res = await fetch(url,options);
-
-	//攔截Token 過期或未授權
-	if(res.status===401 || res.status ===403){
-		alert("登入憑證已失效或無權限，請重新登入!");
-		localStorage.removeItem("token");
-		platformJwt="";
+	
+	try{
+		const res = await fetch(url,options);
+		//攔截Token 過期或未授權
+		if(res.status===401 || res.status ===403){
+			alert("登入憑證已失效或無權限，請重新登入!");
+			localStorage.removeItem("token");
+			platformJwt="";
+			return null;
+		}
+		
+		//若不是 HTTP 200~299，拋出錯誤避免後續 res.json()崩潰
+		if(!res.ok){
+			console.error(`API 請求失敗:[${res.status} ${url}]`);
+			return null;
+		}
+		
+		return res;
+	}catch(err){
+		console.error("伺服器連線失敗:",err);
 		return null;
 	}
-	return res;
 }
 
 // 頁面初始化
@@ -139,7 +151,7 @@ async function startQuiz(){
 	if(!currentUsername) return alert('請輸入暱稱!');
 	
 	try{
-		const res = await fetch(`${API_BASE}/questions/exam`);
+		const res = await authFetch(`${API_BASE}/questions/exam`);
 		examQuestions = await res.json();
 		
 		if(examQuestions.length===0){
@@ -225,7 +237,7 @@ async function submitWholeQuiz(){
 			answers: userExamAnswers
 		};
 		
-		const res = await fetch(`${API_BASE}/questions/submit`,{
+		const res = await authFetch(`${API_BASE}/questions/submit`,{
 			method:'POST',
 			headers:{'Content-Type':'application/json'},
 			body: JSON.stringify(payload)
@@ -287,7 +299,7 @@ function resetQuiz(){
 
 async function loadReaderData(){
 	try{
-		const res= await fetch(`${API_BASE}/questions`);
+		const res= await authFetch(`${API_BASE}/questions`);
 		const questions = await res.json();
 		const container = document.getElementById('reader-container');
 		container.innerHTML ='';
@@ -393,7 +405,7 @@ async function saveQuestion(){
 	const url = id ? `${API_BASE}/questions/${id}`: `${API_BASE}/questions`;
 	
 	try{
-		const res = await fetch(url,{
+		const res = await authFetch(url,{
 			method: method,
 			headers: {'Content-Type':'application/json'},
 			body: JSON.stringify(payload)
@@ -411,7 +423,7 @@ async function saveQuestion(){
 
 async function editQuestion(id){
 	try{
-		const res = await fetch(`${API_BASE}/questions/${id}`);
+		const res = await authFetch(`${API_BASE}/questions/${id}`);
 		const q = await res.json();
 		
 		document.getElementById('form-title').innerText = `✏ 編輯題目 (ID: ${q.id})`;
@@ -435,9 +447,10 @@ async function editQuestion(id){
 }
 
 async function deleteQuestion(id){
+	if(!requireAuth())return;
 	if(!confirm("確定要刪除這題嗎?"))return;
 	try{
-		await fetch(`${API_BASE}/questions/${id}`,{method: 'DELETE'});
+		await authFetch(`${API_BASE}/questions/${id}`,{method: 'DELETE'});
 		loadAdminTable();
 	}catch(err){
 		alert("刪除失敗");
@@ -460,7 +473,7 @@ function resetAdminForm(){
 async function loadAdminTable(){
 	try{
 		//發送HTTP GET 請求，await 等待伺服器回應
-		const res = await fetch(`${API_BASE}/questions`);
+		const res = await authFetch(`${API_BASE}/questions`);
 		//將回應的原始資料解析為JavaScript 物件或陣列
 		const list = await res.json();		
 		const tbody = document.getElementById('admin-table-body');
@@ -493,7 +506,7 @@ async function loadAdminTable(){
 
 async function loadLeaderboard(){
 	try{
-		const res = await fetch(`${API_BASE}/players/leaderboard`);
+		const res = await authFetch(`${API_BASE}/players/leaderboard`);
 		const data = await res.json();
 		const tbody = document.getElementById('leaderboard-body');
 		tbody.innerHTML = '';
